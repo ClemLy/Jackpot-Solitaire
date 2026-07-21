@@ -1,0 +1,296 @@
+/* ---------------------------------------------------------------------------
+   Les cartes: papier creme aux bords irreguliers, pips et figures dessinees.
+--------------------------------------------------------------------------- */
+
+.card {
+  position: absolute;
+  width: var(--card-w);
+  height: var(--card-h);
+  perspective: 900px;
+  will-change: transform;
+}
+
+.card__inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+}
+
+.card[data-face-up='true'] .card__inner {
+  transform: rotateY(0deg);
+}
+.card[data-face-up='false'] .card__inner {
+  transform: rotateY(180deg);
+}
+
+.card__front,
+.card__back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 9px 8px 10px 7px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* Recto: papier avec double liseret dessine a la main. */
+.card__front {
+  background:
+    radial-gradient(140% 120% at 20% 8%, #fffdf3, transparent 55%),
+    linear-gradient(160deg, var(--paper), var(--paper-shade));
+  box-shadow:
+    var(--shadow-card),
+    inset 0 0 0 1.6px rgba(42, 35, 32, 0.8),
+    inset 0 0 0 4px rgba(42, 35, 32, 0.08);
+}
+
+.card[data-color='red'] .card__front {
+  --suit-ink: var(--red);
+}
+.card[data-color='black'] .card__front {
+  --suit-ink: #241f1c;
+}
+
+/* Coins: rang et enseigne, en haut a gauche et repris en bas a droite. */
+.card__corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.82;
+  color: var(--suit-ink);
+  font-family: var(--font-hand);
+  font-weight: 700;
+}
+.card__corner .rank {
+  font-size: calc(var(--card-w) * 0.24);
+}
+.card__corner .suit {
+  font-size: calc(var(--card-w) * 0.2);
+  margin-top: 1px;
+}
+.card__corner--tl {
+  top: calc(var(--card-w) * 0.06);
+  left: calc(var(--card-w) * 0.08);
+}
+.card__corner--br {
+  bottom: calc(var(--card-w) * 0.06);
+  right: calc(var(--card-w) * 0.08);
+  transform: rotate(180deg);
+}
+
+/* Pips au centre. */
+.card__pips {
+  position: absolute;
+  inset: calc(var(--card-w) * 0.2) calc(var(--card-w) * 0.16);
+}
+.card__pip {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: calc(var(--card-w) * 0.28);
+  line-height: 1;
+  color: var(--suit-ink);
+}
+.card__pip[data-flip='true'] {
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+/* As: une grande enseigne bien centree. */
+.card__ace {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--card-w) * 0.62);
+  color: var(--suit-ink);
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.1));
+}
+
+/* Figures: un cartouche colore et un petit portrait dessine. */
+.card__court {
+  position: absolute;
+  inset: calc(var(--card-w) * 0.16);
+  border-radius: 8px 7px 9px 6px;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 2px rgba(42, 35, 32, 0.55);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.35) 0 6px,
+    rgba(255, 255, 255, 0.12) 6px 12px
+  );
+}
+.card[data-color='red'] .card__court {
+  background-color: rgba(192, 57, 43, 0.14);
+}
+.card[data-color='black'] .card__court {
+  background-color: rgba(36, 31, 28, 0.1);
+}
+.card__court svg {
+  width: 78%;
+  height: 78%;
+}
+
+/* Verso: quatre dos au choix. Pre-pivote pour le retournement 3D. */
+.card__back {
+  transform: rotateY(180deg);
+  background: linear-gradient(160deg, #b8342b, #7d1f18);
+  box-shadow:
+    var(--shadow-card),
+    inset 0 0 0 2px rgba(246, 239, 220, 0.9),
+    inset 0 0 0 6px rgba(0, 0, 0, 0.12);
+}
+.card__back::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 6px;
+  background-size: 16px 16px;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(246, 239, 220, 0.5) 0 2px,
+      transparent 2px 8px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(246, 239, 220, 0.5) 0 2px,
+      transparent 2px 8px
+    );
+  opacity: 0.6;
+}
+
+[data-back='modern'] .card__back {
+  background: linear-gradient(160deg, #2d6ca8, #1b466f);
+}
+[data-back='modern'] .card__back::after {
+  background-image: radial-gradient(
+    circle,
+    rgba(246, 239, 220, 0.85) 22%,
+    transparent 24%
+  );
+  background-size: 18px 18px;
+  opacity: 0.5;
+}
+
+[data-back='minimal'] .card__back {
+  background: linear-gradient(160deg, #34302b, #23201c);
+}
+[data-back='minimal'] .card__back::after {
+  inset: 12px;
+  background: none;
+  border: 2px solid rgba(246, 239, 220, 0.75);
+  border-radius: 8px;
+  opacity: 0.9;
+}
+
+[data-back='pixel'] .card__back {
+  background: #4a2f6b;
+}
+[data-back='pixel'] .card__back::after {
+  image-rendering: pixelated;
+  background-size: 10px 10px;
+  background-image:
+    linear-gradient(45deg, rgba(246, 239, 220, 0.55) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(246, 239, 220, 0.55) 25%, transparent 25%);
+  opacity: 0.55;
+}
+
+/* Etats interactifs. */
+.card.is-playable .card__front {
+  cursor: grab;
+}
+.card.is-dragging {
+  opacity: 0;
+}
+.card.is-hint .card__front {
+  animation: hintGlow 0.9s ease-in-out 2;
+  box-shadow:
+    var(--shadow-card),
+    inset 0 0 0 1.6px rgba(42, 35, 32, 0.8),
+    0 0 0 3px var(--gold),
+    0 0 18px 4px rgba(242, 193, 78, 0.7);
+}
+.card.is-hint-target .card__front {
+  animation: hintTarget 0.9s ease-in-out 2;
+}
+.card.is-shake {
+  animation: shake 0.4s ease;
+  z-index: 60 !important;
+}
+
+@keyframes hintGlow {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
+@keyframes hintTarget {
+  0%,
+  100% {
+    box-shadow: var(--shadow-card);
+  }
+  50% {
+    box-shadow:
+      var(--shadow-card),
+      0 0 0 3px var(--green),
+      0 0 16px 3px rgba(75, 191, 123, 0.6);
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(var(--tilt, 0deg));
+  }
+  20% {
+    transform: translateX(-7px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(6px) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-5px) rotate(-1.5deg);
+  }
+  80% {
+    transform: translateX(4px) rotate(1deg);
+  }
+}
+
+/* Apparition facon livre pop-up a la distribution. */
+@keyframes dealPop {
+  0% {
+    transform: translateY(14px) scale(0.7) rotate(-6deg);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-3px) scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+.card.is-dealing .card__inner {
+  animation: dealPop 0.34s var(--ease-pop) backwards;
+}
+
+/* Petit rebond organique au retour d'un annuler. */
+@keyframes undoBounce {
+  0% {
+    transform: scale(0.92) rotate(-3deg);
+  }
+  60% {
+    transform: scale(1.03) rotate(1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+.card.is-undo .card__inner {
+  animation: undoBounce 0.3s var(--ease-pop);
+}

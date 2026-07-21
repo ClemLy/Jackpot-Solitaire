@@ -1,0 +1,146 @@
+/* ---------------------------------------------------------------------------
+   Disposition du plateau: pioche, talon, fondations et sept colonnes.
+--------------------------------------------------------------------------- */
+
+.game {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.board {
+  flex: 1;
+  min-height: 0;
+  padding: clamp(6px, 1.4vw, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.8vh, 22px);
+  --gap: clamp(4px, 1.1vw, 13px);
+  --card-w: min(
+    calc((100vw - 2 * clamp(6px, 1.4vw, 16px) - 6 * var(--gap)) / 7),
+    94px
+  );
+  --card-h: calc(var(--card-w) * 1.4);
+  --fan-down: calc(var(--card-w) * 0.28);
+  --fan-up: calc(var(--card-w) * 0.42);
+}
+
+.board__row {
+  display: grid;
+  grid-template-columns: repeat(7, var(--card-w));
+  gap: var(--gap);
+  justify-content: center;
+}
+
+.board__tableau {
+  flex: 1;
+  min-height: 0;
+  align-items: start;
+}
+
+/* Emplacement d'une pile (reference de positionnement pour les cartes). */
+.pile {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+}
+
+.pile__slot {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px 8px 11px 7px;
+  box-shadow: inset 0 0 0 2px rgba(246, 239, 220, 0.28);
+  background: rgba(0, 0, 0, 0.16);
+  display: grid;
+  place-items: center;
+  color: rgba(246, 239, 220, 0.4);
+  font-size: calc(var(--card-w) * 0.5);
+}
+
+.pile__slot .ghost-suit[data-color='red'] {
+  color: rgba(224, 120, 100, 0.42);
+}
+
+.pile.is-target .pile__slot {
+  box-shadow: inset 0 0 0 3px var(--gold);
+  background: rgba(242, 193, 78, 0.16);
+}
+.pile.is-drop-ok .pile__slot {
+  box-shadow: inset 0 0 0 3px var(--green);
+  background: rgba(75, 191, 123, 0.22);
+}
+
+/* Colonne du tableau: hauteur libre, cartes en eventail vertical. */
+.pile--column {
+  height: auto;
+  min-height: var(--card-h);
+}
+.pile--column .card {
+  position: absolute;
+  left: 0;
+}
+
+.stock-empty-icon {
+  font-size: calc(var(--card-w) * 0.44);
+  transform: rotate(-8deg);
+}
+
+/* Couche de glissement: la pile fantome suit le doigt ou la souris. */
+.drag-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+.drag-ghost {
+  position: absolute;
+  width: var(--card-w);
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.4));
+  transform: rotate(2deg);
+}
+.drag-ghost .card {
+  position: absolute;
+  left: 0;
+}
+
+/* Nombre flottant de points au dessus du score. */
+.float-score {
+  position: absolute;
+  font-family: var(--font-hand);
+  font-weight: 800;
+  font-size: 1.3rem;
+  pointer-events: none;
+  animation: floatUp 0.9s ease forwards;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  z-index: 40;
+}
+.float-score[data-kind='gain'] {
+  color: #7be6a1;
+}
+.float-score[data-kind='loss'] {
+  color: #ff8a7a;
+}
+@keyframes floatUp {
+  0% {
+    transform: translateY(4px) scale(0.8);
+    opacity: 0;
+  }
+  25% {
+    transform: translateY(-6px) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-38px) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Feux d'artifice de cartes qui rebondissent a la victoire. */
+.victory-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+  overflow: hidden;
+}

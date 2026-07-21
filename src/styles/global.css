@@ -1,0 +1,284 @@
+/* ---------------------------------------------------------------------------
+   Jackpot Solitaire, feuille de style principale.
+   Parti pris: du fait main. Bords un peu de travers, ombres douces, une
+   typographie manuscrite. On evite le rendu lisse et impersonnel.
+--------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Typographie: on privilegie des fontes systeme au trait manuscrit. */
+  --font-hand:
+    'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', 'Comic Neue',
+    'Segoe Print', 'Marker Felt', cursive;
+  --font-body:
+    'Chalkboard SE', 'Comic Sans MS', 'Comic Neue', 'Segoe UI', system-ui,
+    sans-serif;
+
+  /* Encre et papier. */
+  --ink: #2a2320;
+  --ink-soft: #5c524c;
+  --paper: #f6efdc;
+  --paper-shade: #e9dcc0;
+
+  /* Couleurs de marque, saturees facon gouache. */
+  --gold: #f2c14e;
+  --gold-deep: #d99b1c;
+  --red: #c0392b;
+  --green: #1f6b3b;
+  --green-deep: #123a24;
+  --blue: #2d6ca8;
+  --plum: #6c3d73;
+
+  --radius: 14px;
+  --shadow-card: 0 6px 0 rgba(0, 0, 0, 0.14), 0 10px 22px rgba(0, 0, 0, 0.22);
+  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.18);
+
+  --ease-pop: cubic-bezier(0.18, 1.35, 0.5, 1);
+
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: #123a24;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+button {
+  font-family: var(--font-hand);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+/* ---- Le plateau et ses ambiances (tapis de jeu) ---- */
+
+.app {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  --felt-a: #1f6b3b;
+  --felt-b: #185831;
+  --felt-glow: rgba(255, 255, 255, 0.06);
+  --edge: rgba(0, 0, 0, 0.35);
+  --panel: #f6efdc;
+  --hud-ink: #f6efdc;
+}
+
+.app::before {
+  /* Texture de feutrine: petits grains et taches fantomes de cafe. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      120px 90px at 22% 18%,
+      rgba(60, 40, 20, 0.16),
+      transparent 70%
+    ),
+    radial-gradient(
+      160px 120px at 82% 78%,
+      rgba(60, 40, 20, 0.13),
+      transparent 70%
+    ),
+    radial-gradient(circle at 50% 40%, var(--felt-glow), transparent 60%),
+    linear-gradient(160deg, var(--felt-a), var(--felt-b));
+  z-index: 0;
+}
+
+.app::after {
+  /* Grain fin genere en SVG, applique en superposition tres discrete. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.app[data-table='dark'] {
+  --felt-a: #23272e;
+  --felt-b: #171a1f;
+  --felt-glow: rgba(120, 160, 220, 0.06);
+}
+
+.app[data-table='wood'] {
+  --felt-a: #7a4d2b;
+  --felt-b: #5c3a20;
+  --felt-glow: rgba(255, 210, 150, 0.08);
+}
+
+.app[data-table='neon'] {
+  --felt-a: #241542;
+  --felt-b: #150c29;
+  --felt-glow: rgba(255, 60, 200, 0.12);
+}
+
+.app > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Boutons facon etiquette decoupee ---- */
+
+.btn {
+  --btn-bg: var(--paper);
+  --btn-ink: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  padding: 0.55em 1.05em;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--btn-ink);
+  background: var(--btn-bg);
+  border-radius: 12px 10px 13px 9px;
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.22),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.14);
+  transform: rotate(-0.6deg);
+  transition:
+    transform 0.12s var(--ease-pop),
+    box-shadow 0.12s ease,
+    filter 0.12s ease;
+}
+
+.btn:nth-of-type(even) {
+  transform: rotate(0.7deg);
+}
+
+.btn:hover {
+  transform: translateY(-1px) rotate(-0.3deg);
+  filter: brightness(1.03);
+}
+
+.btn:active {
+  transform: translateY(2px) rotate(-0.4deg);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.25),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.16);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
+
+.btn--gold {
+  --btn-bg: linear-gradient(160deg, #ffd873, var(--gold-deep));
+  --btn-ink: #4a3405;
+}
+
+.btn--green {
+  --btn-bg: linear-gradient(160deg, #4bbf7b, #178047);
+  --btn-ink: #06331b;
+}
+
+.btn--red {
+  --btn-bg: linear-gradient(160deg, #e2685a, #b02a1c);
+  --btn-ink: #3a0b06;
+}
+
+.btn--ghost {
+  --btn-bg: rgba(246, 239, 220, 0.14);
+  --btn-ink: var(--hud-ink);
+  box-shadow: inset 0 0 0 2px rgba(246, 239, 220, 0.4);
+}
+
+.btn--lg {
+  font-size: 1.25rem;
+  padding: 0.7em 1.4em;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* ---- Titres manuscrits ---- */
+
+.title {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0.5px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.25em 0.7em;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 0 0 1.5px rgba(246, 239, 220, 0.3);
+  color: var(--hud-ink);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* Respect de la preference systeme et du reglage utilisateur. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.app[data-motion='reduced'] * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Barre de defilement discrete pour les fenetres. */
+.scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+.scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 999px;
+}

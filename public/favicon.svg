@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#1f6b3b" stroke="#123a24" stroke-width="2.5"/>
+  <g transform="rotate(-8 32 34)">
+    <path d="M18 12 L47 14 Q50 14 49.5 18 L47 50 Q46.7 53 43 52.5 L15 50 Q12 49.7 12.5 46 L15 15 Q15.3 12 18 12 Z"
+          fill="#f6efdc" stroke="#2a2320" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M30.5 20 C24 27 18 30 18 36 C18 40 21.5 42 25 40.5 C26.5 39.8 27.8 38.5 28.7 37
+             C28.2 41 27 43.6 24.5 45.5 L36.5 46 C34.4 44 33.2 41.2 33 37.2
+             C34 38.6 35.4 39.7 37 40.2 C40.6 41.4 44 39 43.6 35 C43 29.4 37 26.6 30.5 20 Z"
+          fill="#241f1c"/>
+  </g>
+  <g transform="translate(40 38)">
+    <circle cx="10" cy="10" r="12" fill="#f2c14e" stroke="#b8860b" stroke-width="2.4"/>
+    <circle cx="10" cy="10" r="8" fill="none" stroke="#d9a520" stroke-width="1.6" stroke-dasharray="2 2"/>
+    <text x="10" y="14.5" font-family="'Marker Felt','Comic Sans MS',cursive" font-size="12" font-weight="700" text-anchor="middle" fill="#7a5a0a">J</text>
+  </g>
+</svg>
