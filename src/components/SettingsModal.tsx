@@ -36,12 +36,12 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const update = useMetaStore((s) => s.updateSettings);
 
   return (
-    <Modal title="Reglages" onClose={onClose}>
+    <Modal title="Réglages" onClose={onClose}>
       <div className="stack">
         <Toggle
           label="Sons du jeu"
           value={settings.soundEnabled}
-          hint="Bruitages faits main, synthetises a la volee."
+          hint="Bruitages faits maison, synthétisés à la volée."
           onChange={(v) => {
             update({ soundEnabled: v });
             if (v) {
@@ -68,23 +68,23 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <Toggle
-          label="Animations reduites"
+          label="Animations réduites"
           value={settings.reducedMotion}
-          hint="Pour un rendu plus calme, ou si le mouvement te gene."
+          hint="Pour un rendu plus calme, ou si le mouvement te gêne."
           onChange={(v) => update({ reducedMotion: v })}
         />
 
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <div>
-            <strong>Pioche par defaut</strong>
+            <strong>Pioche par défaut</strong>
             <div className="muted">
-              Pioche 1 est plus facile, Pioche 3 plus corsee.
+              Pioche 1 est plus facile, Pioche 3 plus corsée.
             </div>
           </div>
           <div
             className="segmented"
             role="group"
-            aria-label="Pioche par defaut"
+            aria-label="Pioche par défaut"
           >
             <button
               aria-pressed={settings.defaultDraw === 1}
@@ -102,7 +102,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="callout">
-          Tes reglages, tes statistiques et ta banque restent stockes uniquement
+          Tes réglages, tes statistiques et ta banque restent stockés uniquement
           dans ce navigateur.
         </div>
       </div>

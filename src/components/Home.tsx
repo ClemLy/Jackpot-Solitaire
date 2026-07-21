@@ -15,8 +15,8 @@ const TILES: ModeTile[] = [
   {
     mode: 'classic',
     title: 'Classique',
-    badge: 'Detente',
-    desc: 'Le Klondike de toujours. Score, indices, annuler illimite. Le bon endroit pour se faire la main.',
+    badge: 'Détente',
+    desc: 'Le Klondike de toujours. Score, indices, annuler illimité. Le bon endroit pour se faire la main.',
   },
   {
     mode: 'gambling',
@@ -27,15 +27,15 @@ const TILES: ModeTile[] = [
   },
   {
     mode: 'daily',
-    title: 'Defi du jour',
+    title: 'Défi du jour',
     badge: 'Une donne par jour',
-    desc: 'La meme donne pour tout le monde aujourd hui. Reviens chaque jour pour gonfler ta collection.',
+    desc: "La même donne pour tout le monde aujourd'hui. Reviens chaque jour pour gonfler ta collection.",
   },
   {
     mode: 'chrono',
     title: 'Chrono',
     badge: 'Contre la montre',
-    desc: 'Memes regles, mais le temps te colle aux talons. Chaque seconde grignote ton bonus de vitesse.',
+    desc: 'Mêmes règles, mais le temps te colle aux talons. Chaque seconde grignote ton bonus de vitesse.',
   },
   {
     mode: 'zen',
@@ -62,14 +62,14 @@ export function Home() {
           <span className="gold">Jackpot</span> Solitaire
         </h1>
         <p className="home__tag">
-          Le solitaire dessine a la main ou l on mise son sang froid.
+          Le solitaire dessiné à la main où l&rsquo;on mise son sang-froid.
         </p>
       </div>
 
       <div className="bankline">
-        <span className="chip">Banque securisee {formatNumber(secured)}</span>
+        <span className="chip">Banque sécurisée {formatNumber(secured)}</span>
         <span className="chip">Record de magot {formatNumber(bestRun)}</span>
-        <span className="chip">Plus longue serie {longest}</span>
+        <span className="chip">Plus longue série {longest}</span>
       </div>
 
       <div className="modes">
@@ -88,7 +88,7 @@ export function Home() {
             <span className="mode-card__head">
               <span className="mode-card__title">{tile.title}</span>
               <span className="mode-card__badge">
-                {tile.mode === 'daily' && dailyDone ? 'Termine' : tile.badge}
+                {tile.mode === 'daily' && dailyDone ? 'Terminé' : tile.badge}
               </span>
             </span>
             <span className="mode-card__desc">{tile.desc}</span>
@@ -98,7 +98,7 @@ export function Home() {
 
       <div className="home__actions">
         <button className="btn" onClick={() => openModal('rules')}>
-          Regles du jeu
+          Règles du jeu
         </button>
         <button className="btn" onClick={() => openModal('stats')}>
           Statistiques
@@ -107,7 +107,7 @@ export function Home() {
           Personnaliser
         </button>
         <button className="btn" onClick={() => openModal('settings')}>
-          Reglages
+          Réglages
         </button>
       </div>
     </div>

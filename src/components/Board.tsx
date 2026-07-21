@@ -367,23 +367,29 @@ export function Board() {
       <div className="board__row">
         {/* Pioche */}
         <div
-          className="pile"
+          className={`pile${hintInfo?.stock ? ' is-hint' : ''}`}
           onClick={() => phase === 'playing' && clickStock()}
         >
           <div className="pile__slot">
             {board.stock.length === 0 && <RecycleIcon />}
           </div>
-          {board.stock.map((card, i) => (
-            <CardView
-              key={card.id}
-              card={card}
-              style={{
-                top: 0,
-                zIndex: i,
-                transform: `translate(${Math.min(i, 3) * 0.4}px, ${Math.min(i, 3) * 0.4}px)`,
-              }}
-            />
-          ))}
+          {(() => {
+            // On ne rend que les 3 dernieres cartes: au dela, l'empilement des
+            // ombres de chaque carte finissait par deborder sur le talon voisin.
+            const visibleCount = Math.min(3, board.stock.length);
+            const start = board.stock.length - visibleCount;
+            return board.stock.slice(start).map((card, i) => (
+              <CardView
+                key={card.id}
+                card={card}
+                style={{
+                  top: 0,
+                  zIndex: i,
+                  transform: `translate(${i * 0.4}px, ${i * 0.4}px)`,
+                }}
+              />
+            ));
+          })()}
         </div>
 
         {/* Talon */}

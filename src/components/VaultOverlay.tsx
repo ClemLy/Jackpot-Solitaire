@@ -11,13 +11,13 @@ export function VaultOverlay() {
   return (
     <div className="modal" style={{ zIndex: 320 }}>
       <div className="casino">
-        <div className="casino__title">Le coffre-fort mystere</div>
+        <div className="casino__title">Le coffre-fort mystère</div>
         <div className="vault">
           {!vaultResult ? (
             <>
               <p className="muted">
                 Trois victoires de suite ! Touche le coffre pour tenter ta
-                chance. Gros gain probable, mais gare au piege.
+                chance. Gros gain probable, mais gare au piège.
               </p>
               <button
                 className="vault__chest"
@@ -32,14 +32,14 @@ export function VaultOverlay() {
               <div
                 className={`vault__result ${vaultResult.trapped ? 'trap' : 'win'}`}
               >
-                {vaultResult.trapped ? 'Coffre piege !' : 'Jackpot !'} x
+                {vaultResult.trapped ? 'Coffre piégé !' : 'Jackpot !'} x
                 {vaultResult.multiplier}
               </div>
               <div className="casino__pot">{formatNumber(pot)}</div>
               <div className="muted">
                 {vaultResult.trapped
-                  ? 'Aie, le magot a fondu. On se refait ?'
-                  : 'Le magot a pris de l ampleur.'}
+                  ? 'Aïe, le magot a fondu. On se refait ?'
+                  : 'Le magot a pris de l’ampleur.'}
               </div>
               <div className="casino__actions">
                 <button className="btn btn--green btn--lg" onClick={cashOut}>

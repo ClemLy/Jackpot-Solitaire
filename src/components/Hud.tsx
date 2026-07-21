@@ -77,7 +77,7 @@ export function Hud() {
         <button
           className="iconbtn"
           onClick={goHome}
-          aria-label="Retour a l accueil"
+          aria-label="Retour à l'accueil"
         >
           Menu
         </button>
@@ -106,7 +106,7 @@ export function Hud() {
           <div className={`pot${pot > 0 ? ' is-risk' : ''}`}>
             <span className="coin">J</span>
             <span>Magot {formatNumber(pot)}</span>
-            {combo > 1 && <span className="chip">serie x{combo}</span>}
+            {combo > 1 && <span className="chip">série x{combo}</span>}
           </div>
         </div>
       )}

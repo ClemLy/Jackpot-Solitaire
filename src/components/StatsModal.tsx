@@ -51,7 +51,7 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
           </>
         ) : (
           <button className="btn btn--ghost" onClick={() => setConfirm(true)}>
-            Reinitialiser ma progression
+            Réinitialiser ma progression
           </button>
         )
       }
@@ -62,10 +62,10 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
             k="Taux de victoire"
             v={`${percent(stats.gamesWon, stats.gamesPlayed)} %`}
           />
-          <Stat k="Parties gagnees" v={formatNumber(stats.gamesWon)} />
-          <Stat k="Parties jouees" v={formatNumber(stats.gamesPlayed)} />
-          <Stat k="Serie en cours" v={stats.currentWinStreak} />
-          <Stat k="Meilleure serie" v={stats.bestWinStreak} />
+          <Stat k="Parties gagnées" v={formatNumber(stats.gamesWon)} />
+          <Stat k="Parties jouées" v={formatNumber(stats.gamesPlayed)} />
+          <Stat k="Série en cours" v={stats.currentWinStreak} />
+          <Stat k="Meilleure série" v={stats.bestWinStreak} />
           <Stat
             k="Meilleur temps"
             v={stats.bestTimeMs ? formatDuration(stats.bestTimeMs) : '--:--'}
@@ -82,11 +82,11 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
           Jackpot
         </h3>
         <div className="stat-grid">
-          <Stat k="Banque securisee" v={formatNumber(gambling.secured)} />
+          <Stat k="Banque sécurisée" v={formatNumber(gambling.secured)} />
           <Stat k="Record de magot" v={formatNumber(gambling.bestSecuredRun)} />
-          <Stat k="Plus longue serie" v={gambling.longestStreak} />
+          <Stat k="Plus longue série" v={gambling.longestStreak} />
           <Stat k="Coffres ouverts" v={gambling.vaultsOpened} />
-          <Stat k="Defis du jour" v={daily.completedDates.length} />
+          <Stat k="Défis du jour" v={daily.completedDates.length} />
         </div>
 
         <h3

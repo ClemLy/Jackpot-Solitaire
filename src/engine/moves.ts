@@ -380,3 +380,108 @@ export function nextAutoCompleteMove(board: Board): Move | null {
   if (board.waste.length > 0) return { type: 'recycle' };
   return null;
 }
+
+function canGoToAnyFoundation(board: Board, card: Card): boolean {
+  return board.foundations.some((pile) =>
+    canPlaceOnFoundation(card, top(pile)),
+  );
+}
+
+function canGoToAnyTableau(
+  board: Board,
+  card: Card,
+  excludeColumn = -1,
+): boolean {
+  return board.tableau.some(
+    (col, i) => i !== excludeColumn && canPlaceOnTableau(card, top(col)),
+  );
+}
+
+/**
+ * Vrai s'il existe un coup de tableau ou de fondation qui fait reellement
+ * progresser la partie. Deplacer un Roi seul (rien en dessous) vers une autre
+ * colonne vide ne change rien: ce brassage sans effet est explicitement
+ * exclu, sinon un plateau deux fois bloque semblerait jouable indefiniment.
+ */
+function tableauHasMove(board: Board): boolean {
+  for (let col = 0; col < board.tableau.length; col++) {
+    const column = board.tableau[col];
+    for (let start = 0; start < column.length; start++) {
+      if (!column[start].faceUp) continue;
+      const run = movableRun(column, start);
+      if (!run) continue;
+      if (run.length === 1 && canGoToAnyFoundation(board, run[0])) return true;
+
+      const revealsHidden = start > 0 && !column[start - 1].faceUp;
+      for (let to = 0; to < board.tableau.length; to++) {
+        if (to === col) continue;
+        const destTop = top(board.tableau[to]);
+        if (!canPlaceOnTableau(run[0], destTop)) continue;
+        // Destination occupee: un vrai changement d'etat.
+        // Destination vide: utile seulement si ca devoile une carte cachee.
+        if (destTop || revealsHidden) return true;
+      }
+    }
+  }
+  for (const pile of board.foundations) {
+    const card = top(pile);
+    if (card && canGoToAnyTableau(board, card)) return true;
+  }
+  return false;
+}
+
+/**
+ * Simule, sans modifier le plateau reel, toutes les cartes qui deviendront
+ * un jour sommet du talon si on ne fait que piocher/recycler. Le tirage est
+ * entierement deterministe: un premier passage epuise la pioche courante,
+ * puis un recyclage suivi d'un cycle complet suffit a couvrir le regime
+ * stable qui se repetera ensuite indefiniment a l'identique.
+ */
+function simulateReachableWasteTops(board: Board): Card[] {
+  const tops: Card[] = [];
+  let current = board;
+  let guard = 0;
+
+  const drain = () => {
+    while (current.stock.length > 0 && guard++ < 60) {
+      const res = applyMove(current, { type: 'draw' });
+      if (!res) break;
+      current = res.board;
+      const t = top(current.waste);
+      if (t) tops.push(t);
+    }
+  };
+
+  drain();
+  if (current.waste.length > 0) {
+    const recycled = applyMove(current, { type: 'recycle' });
+    if (recycled) {
+      current = recycled.board;
+      guard = 0;
+      drain();
+    }
+  }
+  return tops;
+}
+
+/**
+ * Detecte une partie mathematiquement bloquee: aucun coup n'est jouable
+ * maintenant, et aucune carte qui deviendra un jour accessible au talon ne
+ * pourra etre jouee non plus. Comme rien d'autre ne peut bouger entre temps
+ * (par definition, puisqu'aucun coup n'est possible), une seule passe suffit.
+ */
+export function isDeadlock(board: Board): boolean {
+  if (isWon(board)) return false;
+  if (tableauHasMove(board)) return false;
+
+  const wasteTop = top(board.waste);
+  const candidates = wasteTop
+    ? [wasteTop, ...simulateReachableWasteTops(board)]
+    : simulateReachableWasteTops(board);
+
+  for (const card of candidates) {
+    if (canGoToAnyFoundation(board, card)) return false;
+    if (canGoToAnyTableau(board, card)) return false;
+  }
+  return true;
+}

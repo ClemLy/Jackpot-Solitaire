@@ -10,6 +10,7 @@ import {
   deal,
   endGameBonuses,
   findHint,
+  isDeadlock,
   isValidRun,
   isWon,
   movableRun,
@@ -305,6 +306,41 @@ describe('indices', () => {
       stock: [card('spades', 9, false)],
     };
     expect(findHint(board)).toEqual({ type: 'draw' });
+  });
+});
+
+describe('blocage', () => {
+  it('detecte une partie sans aucun coup possible, meme apres avoir tout pioche', () => {
+    // Deux colonnes de rois seuls (rien a deplacer), un talon et une pioche
+    // dont aucune carte ne peut jamais rejoindre une fondation ou le tableau.
+    const board: Board = {
+      ...emptyBoard(1),
+      tableau: [[card('spades', 13)], [card('hearts', 13)], [], [], [], [], []],
+      waste: [card('clubs', 11)],
+      stock: [card('diamonds', 9, false), card('clubs', 9, false)],
+    };
+    expect(isDeadlock(board)).toBe(true);
+  });
+
+  it('ne signale pas de blocage tant qu un coup reste possible', () => {
+    const board: Board = {
+      ...emptyBoard(1),
+      waste: [card('clubs', 1)],
+    };
+    expect(isDeadlock(board)).toBe(false);
+  });
+
+  it('ne signale jamais de blocage sur une partie gagnee', () => {
+    const board: Board = {
+      ...emptyBoard(1),
+      foundations: [
+        foundationUpTo('spades', 13),
+        foundationUpTo('hearts', 13),
+        foundationUpTo('diamonds', 13),
+        foundationUpTo('clubs', 13),
+      ],
+    };
+    expect(isDeadlock(board)).toBe(false);
   });
 });
 

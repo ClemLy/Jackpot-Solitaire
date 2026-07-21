@@ -9,14 +9,17 @@ import './styles/ui.css';
 // En developpement uniquement: on expose les stores pour piloter les captures
 // d'ecran automatisees (voir scripts/screenshots.mjs).
 if (import.meta.env.DEV) {
-  void Promise.all([import('./state/game'), import('./state/meta')]).then(
-    ([game, meta]) => {
-      (window as unknown as { __jackpot?: unknown }).__jackpot = {
-        game: game.useGameStore,
-        meta: meta.useMetaStore,
-      };
-    },
-  );
+  void Promise.all([
+    import('./state/game'),
+    import('./state/meta'),
+    import('./engine'),
+  ]).then(([game, meta, engine]) => {
+    (window as unknown as { __jackpot?: unknown }).__jackpot = {
+      game: game.useGameStore,
+      meta: meta.useMetaStore,
+      engine,
+    };
+  });
 }
 
 const rootEl = document.getElementById('root');

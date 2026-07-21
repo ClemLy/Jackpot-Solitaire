@@ -5,6 +5,7 @@ import {
   deal,
   endGameBonuses,
   findHint,
+  isDeadlock,
   isWon,
   nextAutoCompleteMove,
   scoreForOutcome,
@@ -24,7 +25,7 @@ export type GameMode = 'classic' | 'gambling' | 'zen' | 'chrono' | 'daily';
 export type Route = 'home' | 'game';
 export type Modal =
   'none' | 'rules' | 'stats' | 'settings' | 'newgame' | 'themes';
-export type Overlay = 'none' | 'win' | 'vault';
+export type Overlay = 'none' | 'win' | 'vault' | 'lost';
 
 interface Snapshot {
   board: Board;
@@ -43,6 +44,13 @@ export interface WinSummary {
   vaultEligible: boolean;
 }
 
+export interface LostSummary {
+  finalScore: number;
+  timeMs: number;
+  wasGambling: boolean;
+  potLost: number;
+}
+
 export interface NewGameOptions {
   mode?: GameMode;
   drawCount?: 1 | 3;
@@ -59,7 +67,7 @@ interface GameStore {
   seed: string;
 
   board: Board;
-  phase: 'idle' | 'playing' | 'won';
+  phase: 'idle' | 'playing' | 'won' | 'lost';
   score: number;
   moves: number;
   invalidMoves: number;
@@ -75,6 +83,7 @@ interface GameStore {
   pot: number;
   combo: number;
   win: WinSummary | null;
+  lost: LostSummary | null;
   vaultResult: {
     multiplier: number;
     trapped: boolean;
@@ -113,6 +122,7 @@ interface GameStore {
   enterVault: () => void;
   openVault: () => void;
   dismissWin: () => void;
+  dismissLost: () => void;
 }
 
 let autoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -133,7 +143,7 @@ export function computeElapsed(state: {
   startedAt: number | null;
   finalTimeMs: number;
 }): number {
-  if (state.phase === 'won') return state.finalTimeMs;
+  if (state.phase === 'won' || state.phase === 'lost') return state.finalTimeMs;
   if (state.startedAt === null) return 0;
   return Date.now() - state.startedAt;
 }
@@ -184,6 +194,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       pot: keepPot ? state.pot : 0,
       combo: keepPot ? state.combo : 0,
       win: null,
+      lost: null,
       vaultResult: null,
       bust: null,
       hint: null,
@@ -259,6 +270,45 @@ export const useGameStore = create<GameStore>()((set, get) => {
     });
   }
 
+  /** Partie mathematiquement bloquee: plus aucun coup ne peut jamais aider. */
+  function handleLost(): void {
+    stopAutoTimer();
+    const state = get();
+    const timeMs = computeElapsed(state);
+
+    useMetaStore.getState().resolveGame({
+      won: false,
+      timeMs,
+      moves: state.moves,
+      score: state.score,
+      drawCount: state.drawCount,
+      invalidMoves: state.invalidMoves,
+      undoCount: state.undoCount,
+      usedHint: state.usedHint,
+      isDaily: state.mode === 'daily',
+      dailyDate: state.mode === 'daily' ? todayISO() : undefined,
+    });
+
+    const wasGambling = state.mode === 'gambling' && state.pot > 0;
+    const potLost = wasGambling ? state.pot : 0;
+    if (wasGambling) {
+      useMetaStore.getState().secureBank(0, state.combo);
+    }
+
+    playSound('penalty');
+    set({
+      phase: 'lost',
+      finalTimeMs: timeMs,
+      overlay: 'lost',
+      autoAvailable: false,
+      autoCompleting: false,
+      hint: null,
+      pot: wasGambling ? 0 : state.pot,
+      combo: wasGambling ? 0 : state.combo,
+      lost: { finalScore: state.score, timeMs, wasGambling, potLost },
+    });
+  }
+
   /** Applique un coup valide, met a jour score, sons et signaux. */
   function commitMove(move: Move): boolean {
     const state = get();
@@ -296,6 +346,8 @@ export const useGameStore = create<GameStore>()((set, get) => {
 
     if (isWon(result.board)) {
       handleWin();
+    } else if (isDeadlock(result.board)) {
+      handleLost();
     }
     return true;
   }
@@ -346,6 +398,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     pot: 0,
     combo: 0,
     win: null,
+    lost: null,
     vaultResult: null,
     bust: null,
 
@@ -533,6 +586,10 @@ export const useGameStore = create<GameStore>()((set, get) => {
 
     dismissWin: () => {
       // Fermer la fenetre d'une victoire hors gambling.
+      set({ overlay: 'none' });
+    },
+
+    dismissLost: () => {
       set({ overlay: 'none' });
     },
   };

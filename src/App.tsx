@@ -8,6 +8,7 @@ import { Board } from './components/Board';
 import { Hud } from './components/Hud';
 import { WinOverlay } from './components/WinOverlay';
 import { VaultOverlay } from './components/VaultOverlay';
+import { LostOverlay } from './components/LostOverlay';
 import { VictoryBounce } from './components/VictoryBounce';
 import { Toaster } from './components/Toaster';
 import { RulesModal } from './components/RulesModal';
@@ -70,6 +71,7 @@ export default function App() {
       {phase === 'won' && <VictoryBounce />}
       {overlay === 'win' && <WinOverlay />}
       {overlay === 'vault' && <VaultOverlay />}
+      {overlay === 'lost' && <LostOverlay />}
 
       {modal === 'rules' && <RulesModal onClose={closeModal} />}
       {modal === 'stats' && <StatsModal onClose={closeModal} />}

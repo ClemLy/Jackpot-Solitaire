@@ -20,7 +20,7 @@ export function WinOverlay() {
   return (
     <div className="modal" style={{ zIndex: 320 }}>
       <div className="casino">
-        <div className="casino__title">C est gagne !</div>
+        <div className="casino__title">C&rsquo;est gagné !</div>
 
         {scoring ? (
           <>
@@ -30,7 +30,7 @@ export function WinOverlay() {
                 <div className="muted">Ton magot en jeu</div>
                 {combo > 1 && (
                   <div style={{ marginTop: '0.4rem' }}>
-                    <span className="combo-badge">Serie x{combo} en cours</span>
+                    <span className="combo-badge">Série x{combo} en cours</span>
                   </div>
                 )}
               </>
@@ -49,7 +49,7 @@ export function WinOverlay() {
               </div>
               {win.bonuses.precision > 0 && (
                 <div className="line">
-                  <span>Bonus de precision</span>
+                  <span>Bonus de précision</span>
                   <span>+{formatNumber(win.bonuses.precision)}</span>
                 </div>
               )}
@@ -59,7 +59,7 @@ export function WinOverlay() {
               </div>
               {gambling && win.multiplier !== 1 && (
                 <div className="line">
-                  <span>Multiplicateur de serie</span>
+                  <span>Multiplicateur de série</span>
                   <span>x{win.multiplier}</span>
                 </div>
               )}
@@ -67,7 +67,7 @@ export function WinOverlay() {
           </>
         ) : (
           <p className="muted" style={{ margin: '0.8rem 0' }}>
-            Une partie tout en douceur. Rien a compter, juste le plaisir.
+            Une partie tout en douceur. Rien à compter, juste le plaisir.
           </p>
         )}
 
@@ -76,7 +76,7 @@ export function WinOverlay() {
             <>
               {win.vaultEligible && (
                 <button className="btn btn--gold btn--lg" onClick={enterVault}>
-                  Ouvrir le coffre mystere
+                  Ouvrir le coffre mystère
                 </button>
               )}
               <button className="btn btn--green btn--lg" onClick={cashOut}>
@@ -106,7 +106,7 @@ export function WinOverlay() {
                 </button>
               )}
               <button className="btn" onClick={goHome}>
-                Retour a l accueil
+                Retour à l&rsquo;accueil
               </button>
             </>
           )}

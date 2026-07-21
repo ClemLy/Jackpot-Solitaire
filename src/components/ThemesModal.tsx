@@ -1,14 +1,42 @@
+import type { CSSProperties } from 'react';
 import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
 import { CARD_BACKS, TABLES } from '../state/themes';
 import { playSound } from '../audio/sfx';
+import { CardView } from './CardView';
+import type { Card } from '../engine';
 
 const TABLE_PREVIEW: Record<string, string> = {
   felt: 'linear-gradient(160deg, #1f6b3b, #185831)',
+  cream: 'linear-gradient(160deg, #f3ead2, #e6d9b8)',
   dark: 'linear-gradient(160deg, #23272e, #171a1f)',
   wood: 'linear-gradient(160deg, #7a4d2b, #5c3a20)',
   neon: 'linear-gradient(160deg, #241542, #150c29)',
 };
+
+const PREVIEW_VARS = {
+  '--card-w': '60px',
+  '--card-h': '84px',
+} as CSSProperties;
+
+const PREVIEW_CARD: Card = {
+  id: 'preview-back',
+  suit: 'spades',
+  rank: 13,
+  faceUp: false,
+};
+
+function CardBackPreview({ id }: { id: string }) {
+  return (
+    <span
+      className="theme-swatch"
+      data-back={id}
+      style={{ ...PREVIEW_VARS, position: 'relative', display: 'block' }}
+    >
+      <CardView card={PREVIEW_CARD} style={{ top: 0, left: 0 }} />
+    </span>
+  );
+}
 
 export function ThemesModal({ onClose }: { onClose: () => void }) {
   const settings = useMetaStore((s) => s.settings);
@@ -31,9 +59,7 @@ export function ThemesModal({ onClose }: { onClose: () => void }) {
                 playSound('flip');
               }}
             >
-              <span className="theme-swatch" data-back={opt.id}>
-                <span className="card__back" />
-              </span>
+              <CardBackPreview id={opt.id} />
               <span className="t">{opt.label}</span>
               <span className="d">{opt.hint}</span>
             </button>

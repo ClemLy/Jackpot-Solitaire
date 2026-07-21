@@ -37,9 +37,9 @@ const SECTIONS: Section[] = [
       <div className="rule-panel">
         <h3>Le but</h3>
         <p>
-          Ranger les 52 cartes sur les quatre fondations, chaque enseigne de l
-          As au Roi. Quand les quatre piles sont completes, la partie est gagnee
-          et les cartes font la fete.
+          Ranger les 52 cartes sur les quatre fondations, chaque enseigne de
+          l&rsquo;As au Roi. Quand les quatre piles sont complètes, la partie
+          est gagnée et les cartes font la fête.
         </p>
         <h3>Le tableau</h3>
         <RuleList
@@ -48,13 +48,13 @@ const SECTIONS: Section[] = [
               text: 'Sept colonnes. On empile en descendant, en alternant les couleurs (un rouge sur un noir, et inversement).',
             },
             {
-              text: 'On deplace une carte seule ou toute une sequence deja bien rangee.',
+              text: 'On déplace une carte seule ou toute une séquence déjà bien rangée.',
             },
             {
-              text: 'Une colonne vide accueille uniquement un Roi (ou une sequence menee par un Roi).',
+              text: 'Une colonne vide accueille uniquement un Roi (ou une séquence menée par un Roi).',
             },
             {
-              text: 'Retourner une carte cachee rapporte des points et ouvre le jeu.',
+              text: 'Retourner une carte cachée rapporte des points et ouvre le jeu.',
             },
           ]}
         />
@@ -71,9 +71,9 @@ const SECTIONS: Section[] = [
           ]}
         />
         <div className="callout">
-          Astuce ergonomie: fais glisser une carte, ou tape la simplement pour l
-          envoyer toute seule vers la meilleure destination. Priorite aux
-          fondations, sinon la colonne qui devoile une carte cachee.
+          Astuce ergonomie: fais glisser une carte, ou tape la simplement pour
+          l&rsquo;envoyer toute seule vers la meilleure destination. Priorité
+          aux fondations, sinon la colonne qui dévoile une carte cachée.
         </div>
       </div>
     ),
@@ -85,28 +85,28 @@ const SECTIONS: Section[] = [
       <div className="rule-panel">
         <h3>Classique</h3>
         <p>
-          Le Klondike tranquille. Score, indices et annuler illimite pour tester
-          tes idees.
+          Le Klondike tranquille. Score, indices et annuler illimité pour tester
+          tes idées.
         </p>
         <h3>Jackpot</h3>
         <p>
-          Le mode phare. Tu accumules un magot et tu choisis a chaque victoire:
-          encaisser en securite, ou tout remettre en jeu sur la manche suivante.
-          Voir l onglet Jackpot pour les details.
+          Le mode phare. Tu accumules un magot et tu choisis à chaque victoire:
+          encaisser en sécurité, ou tout remettre en jeu sur la manche suivante.
+          Voir l&rsquo;onglet Jackpot pour les détails.
         </p>
-        <h3>Defi du jour</h3>
+        <h3>Défi du jour</h3>
         <p>
-          Une donne unique, identique pour tout le monde ce jour la. Termine la
-          pour l ajouter a ta collection mensuelle.
+          Une donne unique, identique pour tout le monde ce jour-là. Termine-la
+          pour l&rsquo;ajouter à ta collection mensuelle.
         </p>
         <h3>Chrono</h3>
         <p>
-          Memes regles que le classique, mais le temps est ton adversaire: le
-          bonus de vitesse fond a chaque seconde.
+          Mêmes règles que le classique, mais le temps est ton adversaire: le
+          bonus de vitesse fond à chaque seconde.
         </p>
         <h3>Zen</h3>
         <p>
-          Aucun score, aucun chrono, aucune penalite. Annuler et indices sont
+          Aucun score, aucun chrono, aucune pénalité. Annuler et indices sont
           gratuits. Juste le plaisir de ranger des cartes.
         </p>
       </div>
@@ -114,7 +114,7 @@ const SECTIONS: Section[] = [
   },
   {
     id: 'score',
-    label: 'Score et penalites',
+    label: 'Score et pénalités',
     content: (
       <div className="rule-panel">
         <h3>Ce qui fait grimper le score</h3>
@@ -123,33 +123,33 @@ const SECTIONS: Section[] = [
             {
               tone: 'plus',
               mark: '+',
-              text: <>Carte posee sur une fondation: +{SCORE.toFoundation}.</>,
+              text: <>Carte posée sur une fondation: +{SCORE.toFoundation}.</>,
             },
             {
               tone: 'plus',
               mark: '+',
               text: (
-                <>Carte cachee revelee dans le tableau: +{SCORE.revealCard}.</>
+                <>Carte cachée révélée dans le tableau: +{SCORE.revealCard}.</>
               ),
             },
             {
               tone: 'gold',
               mark: '*',
-              text: 'Bonus de vitesse en fin de partie: plus tu es rapide, plus il est genereux.',
+              text: 'Bonus de vitesse en fin de partie: plus tu es rapide, plus il est généreux.',
             },
             {
               tone: 'gold',
               mark: '*',
               text: (
                 <>
-                  Bonus de precision: +{SCORE.precisionBonus} si aucun coup
+                  Bonus de précision: +{SCORE.precisionBonus} si aucun coup
                   invalide ni annuler.
                 </>
               ),
             },
           ]}
         />
-        <h3>Ce qui coute des points</h3>
+        <h3>Ce qui coûte des points</h3>
         <RuleList
           items={[
             {
@@ -181,7 +181,7 @@ const SECTIONS: Section[] = [
           ]}
         />
         <div className="callout">
-          Le score ne descend jamais sous zero. En mode Zen, tout est gratuit:
+          Le score ne descend jamais sous zéro. En mode Zen, tout est gratuit:
           on ne compte pas les points.
         </div>
       </div>
@@ -194,20 +194,20 @@ const SECTIONS: Section[] = [
       <div className="rule-panel">
         <h3>La banque de points</h3>
         <p>
-          A chaque manche gagnee en mode Jackpot, ton score grossit le magot. Un
-          multiplicateur de serie recompense les victoires enchainees.
+          À chaque manche gagnée en mode Jackpot, ton score grossit le magot. Un
+          multiplicateur de série récompense les victoires enchaînées.
         </p>
         <RuleList
           items={[
             {
               tone: 'gold',
               mark: '1',
-              text: 'Premiere victoire: le score entre tel quel dans le magot.',
+              text: 'Première victoire: le score entre tel quel dans le magot.',
             },
             {
               tone: 'gold',
               mark: '2',
-              text: 'Deuxieme d affilee: x1.5. Puis x2, x3, et jusqu a x5.',
+              text: "Deuxième d'affilée: x1,5. Puis x2, x3, et jusqu'à x5.",
             },
           ]}
         />
@@ -217,21 +217,21 @@ const SECTIONS: Section[] = [
             {
               tone: 'plus',
               mark: 'V',
-              text: 'Encaisser: le magot rejoint definitivement ta banque. Prudent et satisfaisant.',
+              text: 'Encaisser: le magot rejoint définitivement ta banque. Prudent et satisfaisant.',
             },
             {
               tone: 'minus',
               mark: 'R',
-              text: 'Quitte ou double: tu rejoues aussitot en risquant tout. Une manche perdue ou abandonnee, et le magot retombe a zero.',
+              text: 'Quitte ou double: tu rejoues aussitôt en risquant tout. Une manche perdue ou abandonnée, et le magot retombe à zéro.',
             },
           ]}
         />
-        <h3>Le coffre-fort mystere</h3>
+        <h3>Le coffre-fort mystère</h3>
         <p>
-          Trois victoires de suite en quitte ou double debloquent le coffre.
-          Ouvre le pour appliquer un multiplicateur surprise a tout ton magot:
-          souvent un joli gain, mais parfois le coffre est piege. C est ca, le
-          frisson.
+          Trois victoires de suite en quitte ou double débloquent le coffre.
+          Ouvre-le pour appliquer un multiplicateur surprise à tout ton magot:
+          souvent un joli gain, mais parfois le coffre est piégé. C&rsquo;est
+          ça, le frisson.
         </p>
       </div>
     ),
@@ -246,23 +246,28 @@ const SECTIONS: Section[] = [
           items={[
             { text: 'Indice: met en avant un coup jouable quand tu bloques.' },
             {
-              text: 'Annuler illimite: reviens autant de coups que tu veux en arriere.',
+              text: 'Annuler illimité: reviens autant de coups que tu veux en arrière.',
             },
             {
-              text: 'Autocompletion: des qu il n y a plus de suspense, un bouton termine la partie tout seul.',
+              text: "Autocomplétion: dès qu'il n'y a plus de suspense, un bouton termine la partie tout seul.",
             },
             {
-              text: 'Pioche 1 ou 3: choisis la difficulte dans les options de partie.',
+              text: 'Pioche 1 ou 3: choisis la difficulté dans les options de partie.',
             },
             {
-              text: 'Graine partageable: rejoue une donne precise ou envoie la a un ami via un lien.',
+              text: 'Graine partageable: rejoue une donne précise ou envoie-la à un ami via un lien.',
+            },
+            {
+              tone: 'minus',
+              mark: '!',
+              text: "Une donne peut parfois devenir mathématiquement bloquée: plus aucun coup ne peut jamais faire avancer la partie. Le jeu te le signale dès que c'est le cas, inutile de chercher plus loin.",
             },
           ]}
         />
         <div className="callout">
-          Tout reste sur ton appareil: statistiques, records et reglages ne
-          quittent jamais ton navigateur. Le jeu s installe et fonctionne meme
-          sans connexion.
+          Tout reste sur ton appareil: statistiques, records et réglages ne
+          quittent jamais ton navigateur. Le jeu s&rsquo;installe et fonctionne
+          même sans connexion.
         </div>
       </div>
     ),
@@ -274,7 +279,7 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
   const section = SECTIONS.find((s) => s.id === active) ?? SECTIONS[0];
 
   return (
-    <Modal title="Regles du jeu" onClose={onClose}>
+    <Modal title="Règles du jeu" onClose={onClose}>
       <div className="rules-nav" role="tablist">
         {SECTIONS.map((s) => (
           <button

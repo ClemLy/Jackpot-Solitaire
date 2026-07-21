@@ -9,48 +9,48 @@ export interface Achievement {
 export const ACHIEVEMENTS: readonly Achievement[] = [
   {
     id: 'first-win',
-    title: 'Premiere donne',
-    description: 'Remporter sa toute premiere partie.',
+    title: 'Première donne',
+    description: 'Remporter sa toute première partie.',
   },
   {
     id: 'lightning',
-    title: 'Eclair',
+    title: 'Éclair',
     description: 'Gagner une partie en moins de trois minutes.',
   },
   {
     id: 'strategist',
-    title: 'Stratege',
+    title: 'Stratège',
     description: 'Gagner en Pioche 3 sans le moindre coup invalide ni annuler.',
   },
   {
     id: 'clear-mind',
-    title: 'Tete froide',
+    title: 'Tête froide',
     description: 'Gagner une partie sans demander le moindre indice.',
   },
   {
     id: 'faithful',
-    title: 'Fidele',
-    description: 'Terminer dix defis du jour.',
+    title: 'Fidèle',
+    description: 'Terminer dix défis du jour.',
   },
   {
     id: 'hot-streak',
-    title: 'Serie chaude',
-    description: 'Enchainer trois victoires de suite.',
+    title: 'Série chaude',
+    description: 'Enchaîner trois victoires de suite.',
   },
   {
     id: 'high-roller',
     title: 'Gros bras',
-    description: 'Securiser un magot de 2000 points ou plus en une fois.',
+    description: 'Sécuriser un magot de 2000 points ou plus en une fois.',
   },
   {
     id: 'daredevil',
     title: 'Casse-cou',
-    description: 'Gagner trois manches d affilee en quitte ou double.',
+    description: "Gagner trois manches d'affilée en quitte ou double.",
   },
   {
     id: 'treasure-hunter',
-    title: 'Chasseur de tresor',
-    description: 'Ouvrir le coffre-fort mystere.',
+    title: 'Chasseur de trésor',
+    description: 'Ouvrir le coffre-fort mystère.',
   },
 ] as const;
 

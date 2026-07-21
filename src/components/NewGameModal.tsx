@@ -7,7 +7,7 @@ import { dailySeed, randomSeed, shareUrl } from '../utils/seed';
 const MODES: { id: GameMode; label: string }[] = [
   { id: 'classic', label: 'Classique' },
   { id: 'gambling', label: 'Jackpot' },
-  { id: 'daily', label: 'Defi du jour' },
+  { id: 'daily', label: 'Défi du jour' },
   { id: 'chrono', label: 'Chrono' },
   { id: 'zen', label: 'Zen' },
 ];
@@ -78,7 +78,7 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <strong>Difficulte de pioche</strong>
+          <strong>Difficulté de pioche</strong>
           <div className="segmented" role="group" aria-label="Pioche">
             <button
               aria-pressed={drawCount === 1}
@@ -99,8 +99,8 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
           <strong>Graine de partie</strong>
           <div className="muted">
             {isDaily
-              ? 'Le defi du jour utilise une graine imposee, la meme pour tout le monde.'
-              : 'Note ou colle une graine pour rejouer une donne precise.'}
+              ? 'Le défi du jour utilise une graine imposée, la même pour tout le monde.'
+              : 'Note ou colle une graine pour rejouer une donne précise.'}
           </div>
           <div className="field" style={{ marginTop: '0.4rem' }}>
             <input
@@ -117,14 +117,14 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
           </div>
           <div className="row" style={{ marginTop: '0.5rem' }}>
             <button className="btn btn--ghost" onClick={copyLink}>
-              {copied ? 'Lien copie' : 'Copier le lien a partager'}
+              {copied ? 'Lien copié' : 'Copier le lien à partager'}
             </button>
           </div>
         </div>
 
         <div className="callout">
-          Le mode Jackpot demarre une nouvelle serie: ton magot repart de zero,
-          a toi de le faire gonfler.
+          Le mode Jackpot démarre une nouvelle série: ton magot repart de zéro,
+          à toi de le faire gonfler.
         </div>
       </div>
     </Modal>
