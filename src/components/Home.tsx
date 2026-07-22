@@ -8,8 +8,14 @@ interface ModeTile {
   title: string;
   badge: string;
   desc: string;
-  accent?: 'gold';
 }
+
+const FEATURED_TILE: ModeTile = {
+  mode: 'gambling',
+  title: 'Jackpot',
+  badge: 'Quitte ou double',
+  desc: 'Empile ton magot, puis ose le quitte ou double. Encaisse ou risque tout sur la manche suivante.',
+};
 
 const TILES: ModeTile[] = [
   {
@@ -17,13 +23,6 @@ const TILES: ModeTile[] = [
     title: 'Classique',
     badge: 'Détente',
     desc: 'Le Klondike de toujours. Score, indices, annuler illimité. Le bon endroit pour se faire la main.',
-  },
-  {
-    mode: 'gambling',
-    title: 'Jackpot',
-    badge: 'Quitte ou double',
-    desc: 'Empile ton magot, puis ose le quitte ou double. Encaisse ou risque tout sur la manche suivante.',
-    accent: 'gold',
   },
   {
     mode: 'daily',
@@ -72,12 +71,26 @@ export function Home() {
         <span className="chip">Plus longue série {longest}</span>
       </div>
 
+      <button
+        key={FEATURED_TILE.mode}
+        className="mode-featured"
+        onClick={() => newGame({ mode: FEATURED_TILE.mode })}
+      >
+        <span className="mode-featured__coin">J</span>
+        <span className="mode-featured__body">
+          <span className="mode-card__head">
+            <span className="mode-featured__title">{FEATURED_TILE.title}</span>
+            <span className="mode-card__badge">{FEATURED_TILE.badge}</span>
+          </span>
+          <span className="mode-featured__desc">{FEATURED_TILE.desc}</span>
+        </span>
+      </button>
+
       <div className="modes">
         {TILES.map((tile) => (
           <button
             key={tile.mode}
             className="mode-card"
-            data-accent={tile.accent}
             onClick={() =>
               newGame({
                 mode: tile.mode,

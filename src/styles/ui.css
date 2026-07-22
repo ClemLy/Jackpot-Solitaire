@@ -162,6 +162,69 @@
   justify-content: center;
 }
 
+/* Bandeau vedette du mode Jackpot: nettement plus grand et dore, pour bien
+   signaler que c'est le mode phare, au-dessus de la grille des 4 autres. */
+.mode-featured {
+  width: min(920px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+  padding: 1.1rem 1.4rem;
+  border-radius: 20px 14px 22px 13px;
+  background:
+    radial-gradient(
+      120% 140% at 0% 0%,
+      rgba(255, 216, 115, 0.35),
+      transparent 60%
+    ),
+    linear-gradient(160deg, #fffdf3, var(--paper-shade));
+  color: var(--ink);
+  box-shadow:
+    var(--shadow-card),
+    inset 0 0 0 3px var(--gold-deep);
+  transform: rotate(-0.4deg);
+  transition: transform 0.14s var(--ease-pop);
+}
+.mode-featured:hover {
+  transform: translateY(-3px) rotate(-0.1deg);
+}
+.mode-featured:active {
+  transform: translateY(1px);
+}
+.mode-featured__coin {
+  flex: none;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-hand);
+  font-weight: 800;
+  font-size: 1.6rem;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, #d99b1c);
+  box-shadow:
+    inset 0 0 0 2px #a9770f,
+    var(--shadow-soft);
+  color: #7a5a0a;
+}
+.mode-featured__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.mode-featured__title {
+  font-family: var(--font-hand);
+  font-weight: 800;
+  font-size: 1.7rem;
+}
+.mode-featured__desc {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  line-height: 1.3;
+}
+
 .modes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -215,15 +278,6 @@
   font-size: 0.86rem;
   color: var(--ink-soft);
   line-height: 1.25;
-}
-.mode-card[data-accent='gold'] {
-  box-shadow:
-    var(--shadow-card),
-    inset 0 0 0 2px var(--gold-deep);
-}
-.mode-card[data-accent='gold'] .mode-card__badge {
-  background: var(--gold-deep);
-  color: #2a1c02;
 }
 
 .home__actions {
