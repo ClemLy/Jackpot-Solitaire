@@ -232,10 +232,13 @@ button {
   --btn-ink: #3a0b06;
 }
 
+/* Bouton discret. Il n'apparait que dans les fenetres (fond clair papier),
+   donc encre foncee et bordure sombre: sinon le texte creme etait invisible
+   sur le fond creme. */
 .btn--ghost {
-  --btn-bg: rgba(246, 239, 220, 0.14);
-  --btn-ink: var(--hud-ink);
-  box-shadow: inset 0 0 0 2px rgba(246, 239, 220, 0.4);
+  --btn-bg: rgba(42, 35, 32, 0.06);
+  --btn-ink: var(--ink);
+  box-shadow: inset 0 0 0 2px rgba(42, 35, 32, 0.32);
 }
 
 .btn--lg {

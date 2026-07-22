@@ -6,6 +6,13 @@ import './styles/cards.css';
 import './styles/board.css';
 import './styles/ui.css';
 
+// Marqueur de version, affiche dans la console au demarrage. Sert a verifier
+// d'un coup d'oeil qu'on tourne bien sur le dernier code (et pas un ancien
+// bundle servi par un serveur de dev ou un service worker perimes).
+const BUILD_TAG =
+  'jackpot-2026-07-build4 (indice+defaite unifies, selection sommet-seul)';
+console.info(`Jackpot Solitaire: ${BUILD_TAG}`);
+
 // En developpement uniquement: on expose les stores pour piloter les captures
 // d'ecran automatisees (voir scripts/screenshots.mjs).
 if (import.meta.env.DEV) {

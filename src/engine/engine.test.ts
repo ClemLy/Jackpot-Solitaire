@@ -300,12 +300,26 @@ describe('indices', () => {
     });
   });
 
-  it('suggere de piocher quand rien d autre n est possible', () => {
+  it('suggere de piocher quand cela mene a un vrai coup', () => {
+    // La pioche cache un As: piocher permettra de le poser sur une fondation,
+    // donc l'indice doit conseiller de piocher.
+    const board: Board = {
+      ...emptyBoard(1),
+      stock: [card('spades', 1, false)],
+    };
+    expect(findHint(board)).toEqual({ type: 'draw' });
+  });
+
+  it('ne conseille pas de piocher indefiniment quand ca ne mene nulle part', () => {
+    // Une seule carte injouable dans la pioche: aucun coup ne peut jamais
+    // aider. L'ancien findHint bouclait sur "piocher"; desormais il renvoie
+    // null et la partie est declaree bloquee (les deux sont coherents).
     const board: Board = {
       ...emptyBoard(1),
       stock: [card('spades', 9, false)],
     };
-    expect(findHint(board)).toEqual({ type: 'draw' });
+    expect(findHint(board)).toBeNull();
+    expect(isDeadlock(board)).toBe(true);
   });
 });
 

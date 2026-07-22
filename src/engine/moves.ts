@@ -289,11 +289,18 @@ export function autoMoveFromTableau(
 }
 
 /**
- * Renvoie un coup utile a suggerer (indice), ou null si rien d'evident.
- * On evite les coups qui tournent en rond.
+ * Renvoie un coup utile a suggerer (indice), ou null si la partie est bloquee.
+ *
+ * On prefere d'abord les coups immediats les plus parlants (une carte vers une
+ * fondation, puis un deplacement qui devoile une carte cachee). Faute de quoi,
+ * on delegue a la recherche bornee: elle renvoie le premier coup d'un chemin
+ * menant a un vrai progres, y compris via des deplacements qui ne revelent
+ * rien ou plusieurs pioches d'affilee. C'est ce qui evite le fameux bug ou
+ * l'indice conseillait de piocher indefiniment alors qu'un vrai coup existait
+ * ailleurs. Si aucun progres n'est atteignable, findHint et isDeadlock
+ * renvoient de facon coherente "rien" et "bloque".
  */
 export function findHint(board: Board): Move | null {
-  // 1. Envoyer une carte sur une fondation.
   const wasteCard = top(board.waste);
   if (wasteCard) {
     const f = firstFoundationFor(board, wasteCard);
@@ -308,43 +315,31 @@ export function findHint(board: Board): Move | null {
     }
   }
 
-  // 2. Un deplacement de tableau qui revele une carte cachee.
   for (let from = 0; from < board.tableau.length; from++) {
     const source = board.tableau[from];
     for (let start = 0; start < source.length; start++) {
       if (!source[start].faceUp) continue;
+      const revealsHidden = start > 0 && !source[start - 1].faceUp;
+      if (!revealsHidden) continue;
       const run = movableRun(source, start);
       if (!run) continue;
-      const revealsHidden = start > 0 && !source[start - 1].faceUp;
-      const freesColumn = start === 0 && source[0].rank === 13;
-      if (!revealsHidden) {
-        // Deplacer un Roi deja seul dans sa colonne ne sert a rien.
-        if (freesColumn) continue;
-      }
       for (let to = 0; to < board.tableau.length; to++) {
         if (to === from) continue;
-        if (board.tableau[to].length === 0) continue;
         if (canPlaceOnTableau(run[0], top(board.tableau[to]))) {
-          if (revealsHidden)
-            return { type: 'tableauToTableau', from, to, count: run.length };
+          return { type: 'tableauToTableau', from, to, count: run.length };
         }
       }
     }
   }
 
-  // 3. Poser la carte du talon sur le tableau.
-  if (wasteCard) {
-    for (let col = 0; col < board.tableau.length; col++) {
-      if (canPlaceOnTableau(wasteCard, top(board.tableau[col]))) {
-        return { type: 'wasteToTableau', column: col };
-      }
-    }
+  const result = searchProgress(board);
+  if (result.move) return result.move;
+  // Verdict incertain (budget epuise): on propose un repli plutot que rien,
+  // pour ne jamais renvoyer null alors que la partie n'est pas declaree
+  // bloquee (findHint null doit rester equivalent a isDeadlock vrai).
+  if (result.exhausted) {
+    return fallbackMove(board) ?? enumerateMoves(board)[0] ?? null;
   }
-
-  // 4. Piocher, ou recycler le talon.
-  if (board.stock.length > 0) return { type: 'draw' };
-  if (board.waste.length > 0) return { type: 'recycle' };
-
   return null;
 }
 
@@ -381,52 +376,18 @@ export function nextAutoCompleteMove(board: Board): Move | null {
   return null;
 }
 
-function canGoToAnyFoundation(board: Board, card: Card): boolean {
-  return board.foundations.some((pile) =>
-    canPlaceOnFoundation(card, top(pile)),
-  );
-}
-
 /**
- * Vrai s'il existe, des maintenant, un coup qui fait reellement progresser
- * la partie: une carte qui rejoint une fondation, ou un deplacement qui
- * devoile une carte cachee. Deplacer un Roi seul vers une colonne vide, ou
- * rearranger deux colonnes deja occupees sans rien devoiler, ne compte pas:
- * ce sont des brassages sans effet garanti, seule la recherche bornee de
- * isDeadlock sait dire s'ils menent quelque part.
+ * Un coup constitue un "progres" verifiable s'il pose une carte sur une
+ * fondation, revele une carte cachee, ou gagne la partie. C'est le seul
+ * critere fiable: tout le reste (brassages, pioches) n'est qu'un moyen
+ * d'atteindre un de ces trois objectifs.
  */
-function hasImmediateProgress(board: Board): boolean {
-  for (let col = 0; col < board.tableau.length; col++) {
-    const column = board.tableau[col];
-    for (let start = 0; start < column.length; start++) {
-      if (!column[start].faceUp) continue;
-      const run = movableRun(column, start);
-      if (!run) continue;
-      if (run.length === 1 && canGoToAnyFoundation(board, run[0])) return true;
-
-      const revealsHidden = start > 0 && !column[start - 1].faceUp;
-      if (!revealsHidden) continue;
-      for (let to = 0; to < board.tableau.length; to++) {
-        if (to === col) continue;
-        if (canPlaceOnTableau(run[0], top(board.tableau[to]))) return true;
-      }
-    }
-  }
-
-  // Poser une carte du talon sur le tableau n'est pas retenu ici: comme le
-  // brassage de Rois, ca "ressemble" a un coup utile mais ne garantit rien
-  // (c'etait precisement le bug qui laissait le jeu suggerer de piocher a
-  // l'infini sans jamais verifier que ca menait quelque part). Seule une
-  // fondation compte comme progres immediat verifie; le reste passe par la
-  // recherche bornee.
-  const wasteTop = top(board.waste);
-  const candidates = wasteTop
-    ? [wasteTop, ...simulateReachableWasteTops(board)]
-    : simulateReachableWasteTops(board);
-  for (const card of candidates) {
-    if (canGoToAnyFoundation(board, card)) return true;
-  }
-  return false;
+function isProgressResult(result: ApplyResult): boolean {
+  return (
+    result.outcome.toFoundation > 0 ||
+    result.outcome.revealed > 0 ||
+    isWon(result.board)
+  );
 }
 
 /** Cle compacte et unique d'un plateau, pour deduplication dans la recherche. */
@@ -469,15 +430,10 @@ function enumerateMoves(board: Board): Move[] {
     }
   }
 
-  for (let f = 0; f < board.foundations.length; f++) {
-    const card = top(board.foundations[f]);
-    if (!card) continue;
-    for (let c = 0; c < board.tableau.length; c++) {
-      if (canPlaceOnTableau(card, top(board.tableau[c]))) {
-        moves.push({ type: 'foundationToTableau', foundation: f, column: c });
-      }
-    }
-  }
+  // On n'enumere volontairement PAS les retours fondation -> tableau: ils ne
+  // servent quasiment jamais a debloquer une partie, alourdissent la recherche
+  // et surtout produiraient des indices absurdes ("retire une carte de ta
+  // fondation"). Le joueur reste libre de le faire a la main.
 
   for (let col = 0; col < board.tableau.length; col++) {
     const column = board.tableau[col];
@@ -513,86 +469,87 @@ function enumerateMoves(board: Board): Move[] {
   return moves;
 }
 
-/** Nombre d'etats explores au maximum par la recherche de solvabilite. */
-const DEADLOCK_SEARCH_BUDGET = 20000;
+/** Nombre d'etats explores au maximum par la recherche. */
+const PROGRESS_SEARCH_BUDGET = 20000;
 
-/**
- * Cherche, par une recherche en largeur bornee, un enchainement de coups
- * (y compris des brassages a priori inutiles) qui menerait a un vrai progres
- * ou a la victoire. Renvoie true des qu'un tel chemin est trouve.
- */
-function canEventuallyProgress(board: Board): boolean {
-  const visited = new Set<string>([boardKey(board)]);
-  let frontier = [board];
-  let explored = 0;
-
-  while (frontier.length > 0 && explored < DEADLOCK_SEARCH_BUDGET) {
-    const next: Board[] = [];
-    for (const current of frontier) {
-      for (const move of enumerateMoves(current)) {
-        if (explored >= DEADLOCK_SEARCH_BUDGET) break;
-        const result = applyMove(current, move);
-        if (!result) continue;
-        explored++;
-        if (isWon(result.board) || hasImmediateProgress(result.board)) {
-          return true;
-        }
-        const key = boardKey(result.board);
-        if (visited.has(key)) continue;
-        visited.add(key);
-        next.push(result.board);
-      }
-      if (explored >= DEADLOCK_SEARCH_BUDGET) break;
-    }
-    frontier = next;
-  }
-  return false;
+interface ProgressSearch {
+  /** Premier coup d'un chemin menant a un progres, si trouve. */
+  move: Move | null;
+  /** Vrai si la recherche a ete coupee par le budget (verdict incertain). */
+  exhausted: boolean;
 }
 
 /**
- * Simule, sans modifier le plateau reel, toutes les cartes qui deviendront
- * un jour sommet du talon si on ne fait que piocher/recycler. Le tirage est
- * entierement deterministe: un premier passage epuise la pioche courante,
- * puis un recyclage suivi d'un cycle complet suffit a couvrir le regime
- * stable qui se repetera ensuite indefiniment a l'identique.
+ * Coeur commun a l'indice et a la detection de blocage. Recherche en largeur
+ * bornee: on part du plateau courant et on essaie tous les coups legaux (y
+ * compris pioche, recyclage et brassages qui ne revelent rien) jusqu'a
+ * atteindre un coup qui constitue un vrai progres (isProgressResult).
+ *
+ * - move non nul: le premier coup du plus court chemin vers un progres.
+ * - move nul, exhausted faux: l'espace atteignable a ete explore entierement
+ *   sans le moindre progres possible -> la partie est reellement bloquee.
+ * - move nul, exhausted vrai: le budget a ete atteint avant de conclure ->
+ *   verdict incertain, on choisit prudemment de considerer la partie NON
+ *   bloquee (jamais de fausse defaite). En pratique les vraies impasses ont
+ *   tres peu de coups et sont donc explorees en entier bien avant le budget;
+ *   seules les positions a large eventail (donc quasi jamais mortes) epuisent
+ *   le budget.
  */
-function simulateReachableWasteTops(board: Board): Card[] {
-  const tops: Card[] = [];
-  let current = board;
-  let guard = 0;
+function searchProgress(board: Board): ProgressSearch {
+  const visited = new Set<string>([boardKey(board)]);
+  let frontier: { board: Board; first: Move }[] = [];
+  let explored = 0;
+  let exhausted = false;
 
-  const drain = () => {
-    while (current.stock.length > 0 && guard++ < 60) {
-      const res = applyMove(current, { type: 'draw' });
-      if (!res) break;
-      current = res.board;
-      const t = top(current.waste);
-      if (t) tops.push(t);
+  const expand = (from: Board, first: Move | null): Move | null => {
+    for (const move of enumerateMoves(from)) {
+      if (explored >= PROGRESS_SEARCH_BUDGET) {
+        exhausted = true;
+        return null;
+      }
+      const result = applyMove(from, move);
+      if (!result) continue;
+      explored++;
+      const rootMove = first ?? move;
+      if (isProgressResult(result)) return rootMove;
+      const key = boardKey(result.board);
+      if (visited.has(key)) continue;
+      visited.add(key);
+      frontier.push({ board: result.board, first: rootMove });
     }
+    return null;
   };
 
-  drain();
-  if (current.waste.length > 0) {
-    const recycled = applyMove(current, { type: 'recycle' });
-    if (recycled) {
-      current = recycled.board;
-      guard = 0;
-      drain();
+  const direct = expand(board, null);
+  if (direct) return { move: direct, exhausted: false };
+
+  while (frontier.length > 0 && !exhausted) {
+    const level = frontier;
+    frontier = [];
+    for (const node of level) {
+      const found = expand(node.board, node.first);
+      if (found) return { move: found, exhausted: false };
+      if (exhausted) break;
     }
   }
-  return tops;
+  return { move: null, exhausted };
+}
+
+/** Coup de repli quand le verdict est incertain: piocher, recycler, ou rien. */
+function fallbackMove(board: Board): Move | null {
+  if (board.stock.length > 0) return { type: 'draw' };
+  if (board.waste.length > 0) return { type: 'recycle' };
+  return null;
 }
 
 /**
- * Detecte une partie mathematiquement bloquee. Deux niveaux:
- * un controle rapide (y a-t-il un progres immediat ?) qui suffit dans la
- * grande majorite des tours de jeu, et si ce n'est pas le cas, une recherche
- * bornee qui essaie aussi les brassages a priori inutiles (Rois qui
- * tournent, allers-retours entre colonnes occupees) pour verifier s'ils
- * menent malgre tout quelque part avant de declarer la partie perdue.
+ * Detecte une partie mathematiquement bloquee: l'espace de jeu atteignable a
+ * ete explore en entier sans qu'aucun enchainement ne puisse plus poser sur
+ * une fondation, reveler une carte ou gagner. Un budget epuise ne declenche
+ * jamais de defaite (voir searchProgress).
  */
 export function isDeadlock(board: Board): boolean {
   if (isWon(board)) return false;
-  if (hasImmediateProgress(board)) return false;
-  return !canEventuallyProgress(board);
+  const result = searchProgress(board);
+  return result.move === null && !result.exhausted;
 }

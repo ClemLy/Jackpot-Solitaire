@@ -142,6 +142,7 @@ interface GameStore {
 }
 
 let autoTimer: ReturnType<typeof setTimeout> | null = null;
+let shakeTimer: ReturnType<typeof setTimeout> | null = null;
 
 function stopAutoTimer(): void {
   if (autoTimer) {
@@ -364,8 +365,25 @@ export const useGameStore = create<GameStore>()((set, get) => {
 
     if (isWon(result.board)) {
       handleWin();
-    } else if (isDeadlock(result.board)) {
+      return true;
+    }
+    if (isDeadlock(result.board)) {
       handleLost();
+      return true;
+    }
+
+    // Des que la partie ne tient plus qu'a empiler les cartes sur les
+    // fondations, on lance tout seul l'animation de rangement: plus besoin de
+    // deplacer les cartes une par une. On evite de re-declencher pendant que
+    // l'autocompletion tourne deja (elle passe aussi par commitMove).
+    const after = get();
+    if (
+      after.phase === 'playing' &&
+      after.autoAvailable &&
+      !after.autoCompleting
+    ) {
+      set({ autoCompleting: true });
+      scheduleAutoStep();
     }
     return true;
   }
@@ -387,9 +405,10 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (get().phase === 'playing' && get().autoCompleting) {
         scheduleAutoStep();
       }
-      // Cadence pensee pour laisser le temps de voir chaque carte voler
-      // vers sa fondation (l'animation dure 0.32s) avant le coup suivant.
-    }, 220);
+      // Cadence rapide mais lisible: l'animation de vol dure 0.32s, donc
+      // plusieurs cartes sont en vol en meme temps, ce qui donne une jolie
+      // cascade de rangement.
+    }, 130);
   }
 
   return {
@@ -527,11 +546,21 @@ export const useGameStore = create<GameStore>()((set, get) => {
       const state = get();
       const scoring = state.mode !== 'zen';
       playSound('invalid');
+      const nonce = Date.now();
       set({
         invalidMoves: state.invalidMoves + 1,
         score: scoring ? state.score + SCORE.invalidPenalty : state.score,
-        shake: { id: cardId, nonce: Date.now() },
+        shake: { id: cardId, nonce },
       });
+      // On retire l'etat de secousse des la fin de l'animation. Sans ca, la
+      // carte gardait son z-index eleve (necessaire pendant la secousse pour
+      // etre bien visible) et restait donc au-dessus des cartes du dessous,
+      // les masquant jusqu'au coup suivant.
+      if (shakeTimer) clearTimeout(shakeTimer);
+      shakeTimer = setTimeout(() => {
+        shakeTimer = null;
+        if (get().shake?.nonce === nonce) set({ shake: null });
+      }, 450);
     },
 
     undo: () => {
@@ -557,7 +586,10 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (state.phase !== 'playing') return;
       const move = findHint(state.board);
       if (!move) {
-        playSound('invalid');
+        // Aucun indice possible = partie bloquee. On declenche la defaite
+        // (findHint ne renvoie null que si isDeadlock est vrai), c'est le
+        // scenario exact "je clique indice, rien ne se passe".
+        handleLost();
         return;
       }
       const scoring = state.mode !== 'zen';
@@ -576,6 +608,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     startAutoComplete: () => {
       const state = get();
       if (state.phase !== 'playing' || !state.autoAvailable) return;
+      if (state.autoCompleting) return; // deja en cours: pas de second timer
       set({ autoCompleting: true });
       scheduleAutoStep();
     },

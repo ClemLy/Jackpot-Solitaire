@@ -57,6 +57,7 @@ export function Hud() {
   const combo = useGameStore((s) => s.combo);
   const phase = useGameStore((s) => s.phase);
   const autoAvailable = useGameStore((s) => s.autoAvailable);
+  const autoCompleting = useGameStore((s) => s.autoCompleting);
   const canUndo = useGameStore((s) => s.history.length > 0);
 
   const goHome = useGameStore((s) => s.goHome);
@@ -131,7 +132,7 @@ export function Hud() {
           Annuler
           {scoring && <small>-15</small>}
         </button>
-        {autoAvailable && (
+        {autoAvailable && !autoCompleting && (
           <button
             className="iconbtn"
             onClick={startAutoComplete}

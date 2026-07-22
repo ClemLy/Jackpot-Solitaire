@@ -16,7 +16,10 @@ export function ConfirmLeaveModal() {
           comme un abandon.
         </p>
         <div className="casino__actions">
-          <button className="btn btn--ghost" onClick={cancelPendingAction}>
+          <button
+            className="btn btn--green btn--lg"
+            onClick={cancelPendingAction}
+          >
             Continuer la partie
           </button>
           <button

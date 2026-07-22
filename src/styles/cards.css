@@ -259,8 +259,10 @@
   animation: hintTarget 0.9s ease-in-out 2;
 }
 .card.is-shake {
+  /* Pas d'elevation de z-index: sinon une carte du milieu qui tremble
+     passerait au-dessus des cartes du dessous et les masquerait. La secousse
+     reste bien visible via le liseret de la carte qui glisse lateralement. */
   animation: shake 0.4s ease;
-  z-index: 60 !important;
 }
 
 @keyframes hintGlow {
