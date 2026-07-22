@@ -70,10 +70,12 @@ jobs:
       - name: Installation des dependances
         run: npm ci
 
+      # Prerequis a faire une seule fois a la main dans le depot:
+      # Settings > Pages > Build and deployment > Source: "GitHub Actions".
+      # (Le jeton du workflow n'a pas le droit d'activer Pages lui-meme, d'ou
+      # l'ancienne erreur "Resource not accessible by integration".)
       - name: Configuration de Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Build de production (base adaptee au sous-chemin Pages)
         run: npm run build
