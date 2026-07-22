@@ -387,23 +387,15 @@ function canGoToAnyFoundation(board: Board, card: Card): boolean {
   );
 }
 
-function canGoToAnyTableau(
-  board: Board,
-  card: Card,
-  excludeColumn = -1,
-): boolean {
-  return board.tableau.some(
-    (col, i) => i !== excludeColumn && canPlaceOnTableau(card, top(col)),
-  );
-}
-
 /**
- * Vrai s'il existe un coup de tableau ou de fondation qui fait reellement
- * progresser la partie. Deplacer un Roi seul (rien en dessous) vers une autre
- * colonne vide ne change rien: ce brassage sans effet est explicitement
- * exclu, sinon un plateau deux fois bloque semblerait jouable indefiniment.
+ * Vrai s'il existe, des maintenant, un coup qui fait reellement progresser
+ * la partie: une carte qui rejoint une fondation, ou un deplacement qui
+ * devoile une carte cachee. Deplacer un Roi seul vers une colonne vide, ou
+ * rearranger deux colonnes deja occupees sans rien devoiler, ne compte pas:
+ * ce sont des brassages sans effet garanti, seule la recherche bornee de
+ * isDeadlock sait dire s'ils menent quelque part.
  */
-function tableauHasMove(board: Board): boolean {
+function hasImmediateProgress(board: Board): boolean {
   for (let col = 0; col < board.tableau.length; col++) {
     const column = board.tableau[col];
     for (let start = 0; start < column.length; start++) {
@@ -413,19 +405,146 @@ function tableauHasMove(board: Board): boolean {
       if (run.length === 1 && canGoToAnyFoundation(board, run[0])) return true;
 
       const revealsHidden = start > 0 && !column[start - 1].faceUp;
+      if (!revealsHidden) continue;
       for (let to = 0; to < board.tableau.length; to++) {
         if (to === col) continue;
-        const destTop = top(board.tableau[to]);
-        if (!canPlaceOnTableau(run[0], destTop)) continue;
-        // Destination occupee: un vrai changement d'etat.
-        // Destination vide: utile seulement si ca devoile une carte cachee.
-        if (destTop || revealsHidden) return true;
+        if (canPlaceOnTableau(run[0], top(board.tableau[to]))) return true;
       }
     }
   }
-  for (const pile of board.foundations) {
-    const card = top(pile);
-    if (card && canGoToAnyTableau(board, card)) return true;
+
+  // Poser une carte du talon sur le tableau n'est pas retenu ici: comme le
+  // brassage de Rois, ca "ressemble" a un coup utile mais ne garantit rien
+  // (c'etait precisement le bug qui laissait le jeu suggerer de piocher a
+  // l'infini sans jamais verifier que ca menait quelque part). Seule une
+  // fondation compte comme progres immediat verifie; le reste passe par la
+  // recherche bornee.
+  const wasteTop = top(board.waste);
+  const candidates = wasteTop
+    ? [wasteTop, ...simulateReachableWasteTops(board)]
+    : simulateReachableWasteTops(board);
+  for (const card of candidates) {
+    if (canGoToAnyFoundation(board, card)) return true;
+  }
+  return false;
+}
+
+/** Cle compacte et unique d'un plateau, pour deduplication dans la recherche. */
+function boardKey(board: Board): string {
+  const enc = (c: Card) => c.id + (c.faceUp ? 'u' : 'd');
+  const stock = board.stock.map((c) => c.id).join(',');
+  const waste = board.waste.map((c) => c.id).join(',');
+  const foundations = board.foundations
+    .map((p) => (p.length > 0 ? p[p.length - 1].id : '-'))
+    .join(',');
+  const tableau = board.tableau.map((col) => col.map(enc).join(',')).join('|');
+  return `${stock}#${waste}#${foundations}#${tableau}`;
+}
+
+/**
+ * Enumere tous les coups legaux, y compris ceux sans effet garanti
+ * (brassage de Rois, va-et-vient entre colonnes occupees): la recherche
+ * bornee doit pouvoir les essayer pour verifier s'ils menent quelque part.
+ */
+function enumerateMoves(board: Board): Move[] {
+  const moves: Move[] = [];
+
+  if (board.stock.length > 0) {
+    moves.push({ type: 'draw' });
+  } else if (board.waste.length > 0) {
+    moves.push({ type: 'recycle' });
+  }
+
+  const wasteCard = top(board.waste);
+  if (wasteCard) {
+    for (let f = 0; f < board.foundations.length; f++) {
+      if (canPlaceOnFoundation(wasteCard, top(board.foundations[f]))) {
+        moves.push({ type: 'wasteToFoundation', foundation: f });
+      }
+    }
+    for (let c = 0; c < board.tableau.length; c++) {
+      if (canPlaceOnTableau(wasteCard, top(board.tableau[c]))) {
+        moves.push({ type: 'wasteToTableau', column: c });
+      }
+    }
+  }
+
+  for (let f = 0; f < board.foundations.length; f++) {
+    const card = top(board.foundations[f]);
+    if (!card) continue;
+    for (let c = 0; c < board.tableau.length; c++) {
+      if (canPlaceOnTableau(card, top(board.tableau[c]))) {
+        moves.push({ type: 'foundationToTableau', foundation: f, column: c });
+      }
+    }
+  }
+
+  for (let col = 0; col < board.tableau.length; col++) {
+    const column = board.tableau[col];
+    for (let start = 0; start < column.length; start++) {
+      if (!column[start].faceUp) continue;
+      const run = movableRun(column, start);
+      if (!run) continue;
+      if (run.length === 1) {
+        for (let f = 0; f < board.foundations.length; f++) {
+          if (canPlaceOnFoundation(run[0], top(board.foundations[f]))) {
+            moves.push({
+              type: 'tableauToFoundation',
+              column: col,
+              foundation: f,
+            });
+          }
+        }
+      }
+      for (let to = 0; to < board.tableau.length; to++) {
+        if (to === col) continue;
+        if (canPlaceOnTableau(run[0], top(board.tableau[to]))) {
+          moves.push({
+            type: 'tableauToTableau',
+            from: col,
+            to,
+            count: run.length,
+          });
+        }
+      }
+    }
+  }
+
+  return moves;
+}
+
+/** Nombre d'etats explores au maximum par la recherche de solvabilite. */
+const DEADLOCK_SEARCH_BUDGET = 20000;
+
+/**
+ * Cherche, par une recherche en largeur bornee, un enchainement de coups
+ * (y compris des brassages a priori inutiles) qui menerait a un vrai progres
+ * ou a la victoire. Renvoie true des qu'un tel chemin est trouve.
+ */
+function canEventuallyProgress(board: Board): boolean {
+  const visited = new Set<string>([boardKey(board)]);
+  let frontier = [board];
+  let explored = 0;
+
+  while (frontier.length > 0 && explored < DEADLOCK_SEARCH_BUDGET) {
+    const next: Board[] = [];
+    for (const current of frontier) {
+      for (const move of enumerateMoves(current)) {
+        if (explored >= DEADLOCK_SEARCH_BUDGET) break;
+        const result = applyMove(current, move);
+        if (!result) continue;
+        explored++;
+        if (isWon(result.board) || hasImmediateProgress(result.board)) {
+          return true;
+        }
+        const key = boardKey(result.board);
+        if (visited.has(key)) continue;
+        visited.add(key);
+        next.push(result.board);
+      }
+      if (explored >= DEADLOCK_SEARCH_BUDGET) break;
+    }
+    frontier = next;
   }
   return false;
 }
@@ -465,23 +584,15 @@ function simulateReachableWasteTops(board: Board): Card[] {
 }
 
 /**
- * Detecte une partie mathematiquement bloquee: aucun coup n'est jouable
- * maintenant, et aucune carte qui deviendra un jour accessible au talon ne
- * pourra etre jouee non plus. Comme rien d'autre ne peut bouger entre temps
- * (par definition, puisqu'aucun coup n'est possible), une seule passe suffit.
+ * Detecte une partie mathematiquement bloquee. Deux niveaux:
+ * un controle rapide (y a-t-il un progres immediat ?) qui suffit dans la
+ * grande majorite des tours de jeu, et si ce n'est pas le cas, une recherche
+ * bornee qui essaie aussi les brassages a priori inutiles (Rois qui
+ * tournent, allers-retours entre colonnes occupees) pour verifier s'ils
+ * menent malgre tout quelque part avant de declarer la partie perdue.
  */
 export function isDeadlock(board: Board): boolean {
   if (isWon(board)) return false;
-  if (tableauHasMove(board)) return false;
-
-  const wasteTop = top(board.waste);
-  const candidates = wasteTop
-    ? [wasteTop, ...simulateReachableWasteTops(board)]
-    : simulateReachableWasteTops(board);
-
-  for (const card of candidates) {
-    if (canGoToAnyFoundation(board, card)) return false;
-    if (canGoToAnyTableau(board, card)) return false;
-  }
-  return true;
+  if (hasImmediateProgress(board)) return false;
+  return !canEventuallyProgress(board);
 }

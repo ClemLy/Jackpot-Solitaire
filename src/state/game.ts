@@ -24,7 +24,13 @@ import { dailySeed, randomSeed, todayISO } from '../utils/seed';
 export type GameMode = 'classic' | 'gambling' | 'zen' | 'chrono' | 'daily';
 export type Route = 'home' | 'game';
 export type Modal =
-  'none' | 'rules' | 'stats' | 'settings' | 'newgame' | 'themes';
+  | 'none'
+  | 'rules'
+  | 'stats'
+  | 'settings'
+  | 'newgame'
+  | 'themes'
+  | 'confirmLeave';
 export type Overlay = 'none' | 'win' | 'vault' | 'lost';
 
 interface Snapshot {
@@ -95,6 +101,9 @@ interface GameStore {
   hintNonce: number;
   shake: { id: string; nonce: number } | null;
 
+  // Action differee, en attente de confirmation (voir requestLeave).
+  pendingAction: (() => void) | null;
+
   // Navigation et fenetres.
   openModal: (modal: Modal) => void;
   closeModal: () => void;
@@ -103,6 +112,13 @@ interface GameStore {
   // Cycle de vie de la partie.
   newGame: (options?: NewGameOptions) => void;
   restartSameSeed: () => void;
+
+  // Demande une action qui quitterait ou relancerait la partie: si un magot
+  // est en jeu en mode Jackpot, on demande confirmation avant de l'executer,
+  // sinon elle part directement.
+  requestLeave: (action: () => void) => void;
+  confirmPendingAction: () => void;
+  cancelPendingAction: () => void;
 
   // Coups.
   clickStock: () => void;
@@ -216,7 +232,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         })
       : { speed: 0, precision: 0, total: 0 };
     const baseScore = state.score;
-    const roundScore = Math.max(0, baseScore + bonuses.total);
+    const roundScore = baseScore + bonuses.total;
 
     useMetaStore.getState().resolveGame({
       won: true,
@@ -240,7 +256,9 @@ export const useGameStore = create<GameStore>()((set, get) => {
     if (state.mode === 'gambling') {
       multiplier = comboMultiplier(combo);
       gain = Math.round(roundScore * multiplier);
-      pot = pot + gain;
+      // Le magot lui-meme ne descend jamais sous zero: un score negatif
+      // rogne la mise mais ne rend jamais la banque debitrice.
+      pot = Math.max(0, pot + gain);
       combo = combo + 1;
     }
 
@@ -320,7 +338,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     const delta = scoring
       ? scoreForOutcome(result.outcome, state.drawCount)
       : 0;
-    const nextScore = Math.max(0, state.score + delta);
+    const nextScore = state.score + delta;
 
     // Sons selon la nature du coup.
     if (result.outcome.toFoundation > 0) playSound('foundation');
@@ -369,7 +387,9 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (get().phase === 'playing' && get().autoCompleting) {
         scheduleAutoStep();
       }
-    }, 140);
+      // Cadence pensee pour laisser le temps de voir chaque carte voler
+      // vers sa fondation (l'animation dure 0.32s) avant le coup suivant.
+    }, 220);
   }
 
   return {
@@ -406,8 +426,29 @@ export const useGameStore = create<GameStore>()((set, get) => {
     hintNonce: 0,
     shake: null,
 
+    pendingAction: null,
+
     openModal: (modal) => set({ modal }),
     closeModal: () => set({ modal: 'none' }),
+
+    requestLeave: (action) => {
+      const state = get();
+      if (isRiskingPot(state)) {
+        set({ modal: 'confirmLeave', pendingAction: action });
+      } else {
+        action();
+      }
+    },
+
+    confirmPendingAction: () => {
+      const action = get().pendingAction;
+      set({ modal: 'none', pendingAction: null });
+      action?.();
+    },
+
+    cancelPendingAction: () => {
+      set({ modal: 'none', pendingAction: null });
+    },
 
     goHome: () => {
       settleBust();
@@ -416,7 +457,13 @@ export const useGameStore = create<GameStore>()((set, get) => {
         route: 'home',
         overlay: 'none',
         modal: 'none',
+        // On sort completement de la partie: sans ca, une phase 'won' ou
+        // 'lost' restee active continuerait de faire tourner l'animation de
+        // victoire (ou l'ecran de defaite) par dessus l'accueil.
+        phase: 'idle',
         autoCompleting: false,
+        win: null,
+        lost: null,
         pot: isRiskingPot(state) ? 0 : state.pot,
         combo: isRiskingPot(state) ? 0 : state.combo,
       }));
@@ -482,9 +529,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       playSound('invalid');
       set({
         invalidMoves: state.invalidMoves + 1,
-        score: scoring
-          ? Math.max(0, state.score + SCORE.invalidPenalty)
-          : state.score,
+        score: scoring ? state.score + SCORE.invalidPenalty : state.score,
         shake: { id: cardId, nonce: Date.now() },
       });
     },
@@ -498,9 +543,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       set({
         board: previous.board,
         moves: previous.moves,
-        score: scoring
-          ? Math.max(0, previous.score + SCORE.undoPenalty)
-          : previous.score,
+        score: scoring ? previous.score + SCORE.undoPenalty : previous.score,
         undoCount: state.undoCount + 1,
         history: state.history.slice(0, -1),
         hint: null,
@@ -524,9 +567,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         hintNonce: state.hintNonce + 1,
         hintCount: state.hintCount + 1,
         usedHint: true,
-        score: scoring
-          ? Math.max(0, state.score + SCORE.hintPenalty)
-          : state.score,
+        score: scoring ? state.score + SCORE.hintPenalty : state.score,
       });
     },
 
@@ -549,6 +590,12 @@ export const useGameStore = create<GameStore>()((set, get) => {
         combo: 0,
         overlay: 'none',
         route: 'home',
+        // Meme raison que dans goHome: sans cette remise a zero, la phase
+        // 'won' restait active et l'animation de victoire continuait de
+        // tourner par dessus l'accueil, donnant l'impression que le bouton
+        // n'avait rien fait.
+        phase: 'idle',
+        win: null,
         bust: null,
       });
     },

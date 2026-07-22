@@ -130,7 +130,10 @@ button {
   --edge: rgba(90, 70, 40, 0.2);
   --hud-ink: #4a3c26;
 }
-.app[data-table='cream'] .chip,
+.app[data-table='cream'] .chip {
+  background: rgba(90, 70, 40, 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(90, 70, 40, 0.3);
+}
 .app[data-table='cream'] .hud {
   background: rgba(90, 70, 40, 0.1);
 }

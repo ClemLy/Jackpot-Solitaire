@@ -342,6 +342,32 @@ describe('blocage', () => {
     };
     expect(isDeadlock(board)).toBe(false);
   });
+
+  it('detecte un blocage meme quand un brassage vers une colonne occupee reste possible', () => {
+    // Un 6 noir peut se poser sur un 7 rouge, mais ce coup ne mene nulle
+    // part (aucun As sur le plateau, rien a devoiler derriere). Une
+    // heuristique naive qui s'arrete au premier coup "disponible" dirait a
+    // tort que la partie continue indefiniment.
+    const board: Board = {
+      ...emptyBoard(1),
+      tableau: [[card('spades', 6)], [card('hearts', 7)], [], [], [], [], []],
+    };
+    expect(isDeadlock(board)).toBe(true);
+  });
+
+  it('detecte un blocage meme quand le talon peut encore se poser sur le tableau', () => {
+    // Le talon peut poser son 6 noir sur le 7 rouge du tableau, mais ca ne
+    // menera jamais nulle part (aucun As sur le plateau). Traiter "le talon
+    // a une case ou se poser" comme une preuve de progres etait exactement
+    // le bug qui laissait le jeu suggerer de piocher indefiniment sans
+    // jamais declarer la partie perdue.
+    const board: Board = {
+      ...emptyBoard(1),
+      waste: [card('spades', 6)],
+      tableau: [[card('hearts', 7)], [], [], [], [], [], []],
+    };
+    expect(isDeadlock(board)).toBe(true);
+  });
 });
 
 describe('scoring', () => {

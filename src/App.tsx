@@ -16,6 +16,7 @@ import { StatsModal } from './components/StatsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ThemesModal } from './components/ThemesModal';
 import { NewGameModal } from './components/NewGameModal';
+import { ConfirmLeaveModal } from './components/ConfirmLeaveModal';
 
 function GameScreen() {
   return (
@@ -78,6 +79,7 @@ export default function App() {
       {modal === 'settings' && <SettingsModal onClose={closeModal} />}
       {modal === 'themes' && <ThemesModal onClose={closeModal} />}
       {modal === 'newgame' && <NewGameModal onClose={closeModal} />}
+      {modal === 'confirmLeave' && <ConfirmLeaveModal />}
 
       <Toaster />
     </div>

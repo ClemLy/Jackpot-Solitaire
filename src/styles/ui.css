@@ -139,7 +139,7 @@
 }
 .home__brand {
   text-align: center;
-  color: var(--paper);
+  color: var(--hud-ink);
   filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.25));
 }
 .home__brand .title {

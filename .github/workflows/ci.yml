@@ -20,7 +20,7 @@ jobs:
       - name: Installation de Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Installation des dependances
@@ -64,7 +64,7 @@ jobs:
       - name: Installation de Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Installation des dependances
@@ -72,6 +72,8 @@ jobs:
 
       - name: Configuration de Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Build de production (base adaptee au sous-chemin Pages)
         run: npm run build

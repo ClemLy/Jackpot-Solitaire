@@ -42,14 +42,14 @@ export function VaultOverlay() {
                   : 'Le magot a pris de l’ampleur.'}
               </div>
               <div className="casino__actions">
-                <button className="btn btn--green btn--lg" onClick={cashOut}>
-                  Encaisser {formatNumber(pot)} points
-                </button>
                 <button
                   className="btn btn--red btn--lg"
                   onClick={doubleOrNothing}
                 >
                   Quitte ou double
+                </button>
+                <button className="btn btn--green btn--lg" onClick={cashOut}>
+                  Encaisser {formatNumber(pot)} points
                 </button>
               </div>
             </>

@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -82,6 +83,7 @@ export function Board() {
   const shake = useGameStore((s) => s.shake);
   const scoring = useGameStore((s) => s.mode !== 'zen');
   const phase = useGameStore((s) => s.phase);
+  const autoCompleting = useGameStore((s) => s.autoCompleting);
 
   const clickStock = useGameStore((s) => s.clickStock);
   const autoFromWaste = useGameStore((s) => s.autoFromWaste);
@@ -95,12 +97,51 @@ export function Board() {
   );
   const meta = useRef<DragMeta | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
+  const boardRootRef = useRef<HTMLDivElement | null>(null);
+  const prevRectsRef = useRef<Map<string, DOMRect>>(new Map());
 
   const positionGhost = useCallback((x: number, y: number) => {
     if (ghostRef.current) {
       ghostRef.current.style.transform = `translate(${x}px, ${y}px) rotate(2deg)`;
     }
   }, []);
+
+  // Anime les cartes qui volent vers leur fondation pendant l'autocompletion
+  // (technique FLIP): on mesure la position de chaque carte avant et apres le
+  // rendu, et on rejoue la difference sous forme de transition CSS. Sans ca,
+  // une carte qui change de pile "teleporte" instantanement d'un container a
+  // l'autre, ce qui rendait la fin de partie franchement peu satisfaisante.
+  useLayoutEffect(() => {
+    const root = boardRootRef.current;
+    if (!root) return;
+    const cardEls = root.querySelectorAll<HTMLElement>('[data-card-id]');
+    const nextRects = new Map<string, DOMRect>();
+    cardEls.forEach((el) => {
+      const id = el.dataset.cardId;
+      if (!id) return;
+      const rect = el.getBoundingClientRect();
+      nextRects.set(id, rect);
+      if (!autoCompleting) return;
+      const prev = prevRectsRef.current.get(id);
+      if (!prev) return;
+      const dx = prev.left - rect.left;
+      const dy = prev.top - rect.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      el.style.transition = 'none';
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 0.32s ease';
+        el.style.transform = '';
+        // On retire la transition une fois jouee: sinon elle resterait
+        // collee a l'element et animerait aussi les prochains changements
+        // de transform hors autocompletion (pioche, glisser-deposer...).
+        setTimeout(() => {
+          el.style.transition = '';
+        }, 340);
+      });
+    });
+    prevRectsRef.current = nextRects;
+  }, [board, autoCompleting]);
 
   const setGhostNode = useCallback(
     (node: HTMLDivElement | null) => {
@@ -363,7 +404,7 @@ export function Board() {
   };
 
   return (
-    <div className="board">
+    <div className="board" ref={boardRootRef}>
       <div className="board__row">
         {/* Pioche */}
         <div
@@ -491,8 +532,11 @@ export function Board() {
                   { kind: 'tableau', column: c, index: i },
                   positions[i],
                   {
+                    // Seule une carte qui demarre une sequence deplacable
+                    // reagit au clic: une carte "cassee" au milieu d'une
+                    // colonne ne doit jamais repondre au pointeur.
                     draggable,
-                    playable: card.faceUp,
+                    playable: draggable,
                     dragCards: run ?? [card],
                   },
                 );

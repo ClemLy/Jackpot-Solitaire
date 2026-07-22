@@ -30,7 +30,7 @@ function CardBackPreview({ id }: { id: string }) {
   return (
     <span
       className="theme-swatch"
-      data-back={id}
+      data-back-preview={id}
       style={{ ...PREVIEW_VARS, position: 'relative', display: 'block' }}
     >
       <CardView card={PREVIEW_CARD} style={{ top: 0, left: 0 }} />

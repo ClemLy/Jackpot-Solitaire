@@ -65,6 +65,7 @@ export function Hud() {
   const startAutoComplete = useGameStore((s) => s.startAutoComplete);
   const newGame = useGameStore((s) => s.newGame);
   const openModal = useGameStore((s) => s.openModal);
+  const requestLeave = useGameStore((s) => s.requestLeave);
 
   const elapsed = useElapsed();
   const scoring = mode !== 'zen';
@@ -76,7 +77,7 @@ export function Hud() {
       <div className="hud__group">
         <button
           className="iconbtn"
-          onClick={goHome}
+          onClick={() => requestLeave(goHome)}
           aria-label="Retour à l'accueil"
         >
           Menu
@@ -141,7 +142,7 @@ export function Hud() {
         )}
         <button
           className="iconbtn"
-          onClick={() => newGame({ mode })}
+          onClick={() => requestLeave(() => newGame({ mode }))}
           aria-label="Nouvelle donne"
         >
           Rejouer

@@ -19,6 +19,7 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
     seed: s.seed,
   }));
   const newGame = useGameStore((s) => s.newGame);
+  const requestLeave = useGameStore((s) => s.requestLeave);
   const defaultDraw = useMetaStore((s) => s.settings.defaultDraw);
 
   const [mode, setMode] = useState<GameMode>(current.mode);
@@ -32,8 +33,10 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
   const effectiveSeed = isDaily ? dailySeed() : seed;
 
   const start = () => {
-    newGame({ mode, drawCount, seed: effectiveSeed });
-    onClose();
+    requestLeave(() => {
+      newGame({ mode, drawCount, seed: effectiveSeed });
+      onClose();
+    });
   };
 
   const copyLink = async () => {

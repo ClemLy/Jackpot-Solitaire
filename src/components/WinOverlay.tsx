@@ -79,14 +79,14 @@ export function WinOverlay() {
                   Ouvrir le coffre mystère
                 </button>
               )}
-              <button className="btn btn--green btn--lg" onClick={cashOut}>
-                Encaisser {formatNumber(win.potAfter)} points
-              </button>
               <button
                 className="btn btn--red btn--lg"
                 onClick={doubleOrNothing}
               >
                 Quitte ou double
+              </button>
+              <button className="btn btn--green btn--lg" onClick={cashOut}>
+                Encaisser {formatNumber(win.potAfter)} points
               </button>
             </>
           ) : (
