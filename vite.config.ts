@@ -17,7 +17,7 @@ export default defineConfig({
         name: 'Jackpot Solitaire',
         short_name: 'Jackpot',
         description:
-          'Un solitaire fait main plein de caractère, avec une banque de points façon casino et un mode quitte ou double.',
+          'Un Klondike servi sur une table de casino: gagne des jetons, encaisse ou tente le quitte ou double.',
         lang: 'fr',
         theme_color: '#1f6b3b',
         background_color: '#123a24',

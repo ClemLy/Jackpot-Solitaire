@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Vault, ArrowRight, Home as HomeIcon, Coins } from 'lucide-react';
-import { useGameStore } from '../state/game';
+import { Vault, Home as HomeIcon } from 'lucide-react';
+import { useGameStore, MODE_LABEL } from '../state/game';
 import { findStakeTable } from '../state/catalog';
 import { useMetaStore } from '../state/meta';
 import { playSound } from '../audio/sfx';
@@ -139,123 +139,129 @@ export function WinOverlay() {
 
   return (
     <Stage
+      variant="ticket"
       label="Victoire"
       onPointerDown={() => {
         if (!done) setSkipped(true);
       }}
     >
-      <div className="stage__rays" aria-hidden="true" />
-      <p className="stage__eyebrow">
-        {formatDuration(finalTimeMs)} · {win.moves} coups
-      </p>
-      <h2 className="stage__title">Victoire</h2>
+      <div className="ticket">
+        <div className="ticket__head">
+          <span className="ticket__house">Jackpot Solitaire</span>
+          <span>
+            {MODE_LABEL[mode]} · {formatDuration(finalTimeMs)} · {win.moves}{' '}
+            coups
+          </span>
+        </div>
+        <h2 className="ticket__title">Victoire</h2>
 
-      {scoring ? (
-        <div className="tally">
-          <TallyLine
-            show={reached('base')}
-            label="Points de la manche"
-            value={
-              <Count
-                to={win.baseScore}
-                active={reached('base')}
-                instant={instant}
-              />
-            }
-          />
-          <TallyLine
-            show={reached('speed')}
-            label="Bonus de vitesse"
-            value={
-              <Count
-                to={win.bonuses.speed}
-                prefix="+"
-                active={reached('speed')}
-                instant={instant}
-              />
-            }
-          />
-          {win.bonuses.precision > 0 && (
+        {scoring ? (
+          <div className="tally">
             <TallyLine
-              show={reached('precision')}
-              label="Précision parfaite"
+              show={reached('base')}
+              label="Points de la manche"
               value={
                 <Count
-                  to={win.bonuses.precision}
-                  prefix="+"
-                  active={reached('precision')}
+                  to={win.baseScore}
+                  active={reached('base')}
                   instant={instant}
                 />
               }
             />
-          )}
-          <TallyLine
-            show={reached('total')}
-            total
-            label="Score de la manche"
-            value={formatNumber(win.roundScore)}
-          />
-          {gambling && (
-            <div className="tally__mults">
-              {win.multiplier !== 1 && reached('combo') && (
-                <span className="mult-stamp">
-                  ×{formatMultiplier(win.multiplier)} <small>série</small>
-                </span>
-              )}
-              {win.tableMultiplier !== 1 && reached('table') && (
-                <span className="mult-stamp mult-stamp--table">
-                  ×{formatMultiplier(win.tableMultiplier)}{' '}
-                  <small>{table.label}</small>
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      ) : (
-        <p className="stage__text">
-          Une partie tout en douceur. Rien à compter, juste le plaisir.
-        </p>
-      )}
-
-      {gambling && scoring && (
-        <div className={`jackpot-pot${reached('pot') ? ' is-in' : ''}`}>
-          <span className="jackpot-pot__label">
-            Magot en jeu
-            {combo > 1 && <span className="combo-badge">série {combo}</span>}
-          </span>
-          <span className="jackpot-pot__value">
-            <Chip size="0.8em" />
-            <Count
-              from={win.potBefore}
-              to={win.potAfter}
-              active={reached('pot')}
-              instant={instant}
-              duration={1000}
+            <TallyLine
+              show={reached('speed')}
+              label="Bonus de vitesse"
+              value={
+                <Count
+                  to={win.bonuses.speed}
+                  prefix="+"
+                  active={reached('speed')}
+                  instant={instant}
+                />
+              }
             />
-          </span>
-          {reached('pot') && (
-            <span className="jackpot-pot__gain">
-              +{formatNumber(win.gain)} cette manche
-            </span>
-          )}
-        </div>
-      )}
+            {win.bonuses.precision > 0 && (
+              <TallyLine
+                show={reached('precision')}
+                label="Sans faute"
+                value={
+                  <Count
+                    to={win.bonuses.precision}
+                    prefix="+"
+                    active={reached('precision')}
+                    instant={instant}
+                  />
+                }
+              />
+            )}
+            <TallyLine
+              show={reached('total')}
+              total
+              label="Score de la manche"
+              value={formatNumber(win.roundScore)}
+            />
+            {gambling && (
+              <div className="tally__mults">
+                {win.multiplier !== 1 && reached('combo') && (
+                  <span className="stamp">
+                    ×{formatMultiplier(win.multiplier)} <small>série</small>
+                  </span>
+                )}
+                {win.tableMultiplier !== 1 && reached('table') && (
+                  <span className="stamp stamp--blue">
+                    ×{formatMultiplier(win.tableMultiplier)}{' '}
+                    <small>{table.label}</small>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="ticket__text">
+            Une partie tout en douceur. Rien à compter, juste le plaisir.
+          </p>
+        )}
 
-      {!gambling && reward > 0 && (
-        <div className={`reward-line${reached('reward') ? ' is-in' : ''}`}>
-          <Coins size={18} />
-          <span>
-            <Count
-              to={reward}
-              prefix="+"
-              active={reached('reward')}
-              instant={instant}
-            />{' '}
-            jetons versés à ta banque
-            {win.dailyBonus > 0 && <small> dont la prime du défi</small>}
-          </span>
-        </div>
-      )}
+        {gambling && scoring && (
+          <div className={`ticket__pot${reached('pot') ? ' is-in' : ''}`}>
+            <span className="ticket__pot-label">
+              Magot en jeu
+              {combo > 1 && <span className="combo-badge">série {combo}</span>}
+            </span>
+            <span className="ticket__pot-value">
+              <Chip size="0.72em" />
+              <Count
+                from={win.potBefore}
+                to={win.potAfter}
+                active={reached('pot')}
+                instant={instant}
+                duration={1000}
+              />
+            </span>
+            <span className="ticket__pot-gain">
+              {reached('pot')
+                ? `+${formatNumber(win.gain)} sur cette manche`
+                : '\u00a0'}
+            </span>
+          </div>
+        )}
+
+        {!gambling && reward > 0 && (
+          <div className={`ticket__reward${reached('reward') ? ' is-in' : ''}`}>
+            <Chip size={18} />
+            <span>
+              <Count
+                to={reward}
+                prefix="+"
+                active={reached('reward')}
+                instant={instant}
+              />{' '}
+              jetons pour ta banque
+              {win.dailyBonus > 0 && <small>, prime du défi comprise</small>}
+            </span>
+          </div>
+        )}
+      </div>
 
       <div
         className={`stage__actions${done ? ' is-in' : ''}`}
@@ -298,7 +304,7 @@ export function WinOverlay() {
                 className="btn btn--emerald btn--lg"
                 onClick={() => newGame({ mode })}
               >
-                Nouvelle donne <ArrowRight size={18} />
+                Nouvelle donne
               </button>
               {scoring && (
                 <button
@@ -336,7 +342,8 @@ function TallyLine({
       className={`tally__line${total ? ' tally__line--total' : ''}${show ? ' is-in' : ''}`}
     >
       <span>{label}</span>
-      <span className="tally__value">{show ? value : ' '}</span>
+      <span className="tally__leader" aria-hidden="true" />
+      <span className="tally__value">{show ? value : '\u00a0'}</span>
     </div>
   );
 }

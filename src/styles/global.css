@@ -89,6 +89,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
@@ -321,7 +323,7 @@ input {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 -2px 0 rgba(122, 85, 23, 0.45),
-    0 10px 28px -10px rgba(227, 185, 90, 0.65);
+    0 4px 10px -4px rgba(0, 0, 0, 0.5);
 }
 
 /* Reflet qui balaie le lingot au survol. */
@@ -355,7 +357,7 @@ input {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
     inset 0 -2px 0 rgba(0, 0, 0, 0.25),
-    0 10px 28px -12px rgba(214, 60, 80, 0.7);
+    0 4px 10px -4px rgba(0, 0, 0, 0.5);
 }
 
 .btn--emerald {
@@ -364,7 +366,7 @@ input {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     inset 0 -2px 0 rgba(0, 0, 0, 0.25),
-    0 10px 28px -12px rgba(29, 149, 102, 0.7);
+    0 4px 10px -4px rgba(0, 0, 0, 0.5);
 }
 
 .btn--ghost {
@@ -446,6 +448,7 @@ input {
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
@@ -455,6 +458,7 @@ input {
 .app[data-motion='reduced'] *::before,
 .app[data-motion='reduced'] *::after {
   animation-duration: 0.001ms !important;
+  animation-delay: 0s !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
 }

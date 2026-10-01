@@ -1,10 +1,5 @@
-import {
-  ArrowRight,
-  Home as HomeIcon,
-  LifeBuoy,
-  ShieldCheck,
-} from 'lucide-react';
-import { useGameStore } from '../state/game';
+import { Home as HomeIcon, LifeBuoy, ShieldCheck } from 'lucide-react';
+import { useGameStore, MODE_LABEL } from '../state/game';
 import { useMetaStore } from '../state/meta';
 import { discountedPrice, findConsumable } from '../state/catalog';
 import { playSound } from '../audio/sfx';
@@ -29,40 +24,55 @@ export function LostOverlay() {
   const canBuyRedeal = redeals <= 0 && balance >= redealPrice;
 
   return (
-    <Stage label="Donne bloquée" tone="red">
-      <p className="stage__eyebrow">{formatDuration(lost.timeMs)} de jeu</p>
-      <h2 className="stage__title stage__title--red">Donne bloquée</h2>
-      <p className="stage__text">
-        Plus aucune carte ne pourra jamais bouger, quoi que tu fasses. Même les
-        meilleurs n&rsquo;auraient pas pu la terminer.
-      </p>
-
-      {scoring && (
-        <div className="tally">
-          <div className="tally__line is-in">
-            <span>Score final</span>
-            <span className="tally__value">
-              {formatNumber(lost.finalScore)}
-            </span>
-          </div>
-          {lost.wasGambling && (
-            <div className="tally__line tally__line--loss is-in">
-              <span>Magot en péril</span>
-              <span className="tally__value">
-                <Chip size={16} /> {formatNumber(lost.potLost)}
-              </span>
-            </div>
-          )}
-          {lost.refund > 0 && (
-            <div className="tally__line tally__line--gain is-in">
-              <span>
-                <ShieldCheck size={15} /> Remboursé par l&rsquo;assurance
-              </span>
-              <span className="tally__value">+{formatNumber(lost.refund)}</span>
-            </div>
-          )}
+    <Stage variant="ticket" label="Donne bloquée" tone="red">
+      <div className="ticket">
+        <div className="ticket__head">
+          <span className="ticket__house">Jackpot Solitaire</span>
+          <span>
+            {MODE_LABEL[mode]} · {formatDuration(lost.timeMs)}
+          </span>
         </div>
-      )}
+        <h2 className="ticket__title">Donne bloquée</h2>
+        <span className="stamp stamp--big" aria-hidden="true">
+          Bloquée
+        </span>
+        <p className="ticket__text">
+          Plus aucune carte ne pourra jamais bouger, quoi que tu fasses. Même
+          les meilleurs n&rsquo;auraient pas pu la terminer.
+        </p>
+
+        {scoring && (
+          <div className="tally">
+            <div className="tally__line is-in">
+              <span>Score final</span>
+              <span className="tally__leader" aria-hidden="true" />
+              <span className="tally__value">
+                {formatNumber(lost.finalScore)}
+              </span>
+            </div>
+            {lost.wasGambling && (
+              <div className="tally__line tally__line--loss is-in">
+                <span>Magot en péril</span>
+                <span className="tally__leader" aria-hidden="true" />
+                <span className="tally__value">
+                  <Chip size={15} /> {formatNumber(lost.potLost)}
+                </span>
+              </div>
+            )}
+            {lost.refund > 0 && (
+              <div className="tally__line tally__line--gain is-in">
+                <span>
+                  <ShieldCheck size={15} /> Assurance
+                </span>
+                <span className="tally__leader" aria-hidden="true" />
+                <span className="tally__value">
+                  +{formatNumber(lost.refund)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="stage__actions is-in">
         {lost.wasGambling && (redeals > 0 || canBuyRedeal) && (
@@ -92,7 +102,7 @@ export function LostOverlay() {
             className="btn btn--emerald btn--lg"
             onClick={() => newGame({ mode })}
           >
-            Nouvelle donne <ArrowRight size={18} />
+            Nouvelle donne
           </button>
           <button className="btn btn--ghost btn--lg" onClick={goHome}>
             <HomeIcon size={16} /> Accueil

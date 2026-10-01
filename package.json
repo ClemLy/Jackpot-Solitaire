@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Un solitaire fait main, plein de caractere, avec un systeme de banque de points facon casino.",
+  "description": "Un Klondike servi sur une table de casino, avec banque de jetons, boutique et mode quitte ou double.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

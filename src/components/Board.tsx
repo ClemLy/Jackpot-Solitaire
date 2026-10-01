@@ -55,6 +55,35 @@ const TAP_THRESHOLD = 7;
 // alignes sur --fan-down et --fan-up dans board.css.
 const FAN_DOWN = 0.17;
 const FAN_UP = 0.34;
+// Sur un ecran tres haut (telephone en portrait), l'eventail s'ouvre davantage.
+const FAN_UP_TALL = 0.42;
+// En dessous de ces ecarts, une carte ne se lit plus du tout.
+const FAN_DOWN_MIN = 0.04;
+const FAN_UP_MIN = 0.13;
+
+/**
+ * Ecarts d'une colonne (en fraction de largeur de carte) pour qu'elle tienne
+ * dans la hauteur disponible. On tasse d'abord les cartes cachees, dont on ne
+ * lit rien, et seulement ensuite les cartes visibles.
+ */
+function columnFan(
+  down: number,
+  up: number,
+  area: { h: number; w: number } | null,
+): { kd: number; ku: number; fits: boolean } {
+  if (!area || area.w <= 0) return { kd: FAN_DOWN, ku: FAN_UP, fits: true };
+  const baseUp = area.h > area.w * 8 ? FAN_UP_TALL : FAN_UP;
+  const room = (area.h - area.w * 1.4 - 6) / area.w;
+  if (down * FAN_DOWN + up * baseUp <= room) {
+    return { kd: FAN_DOWN, ku: baseUp, fits: true };
+  }
+  if (down > 0 && down * FAN_DOWN_MIN + up * baseUp <= room) {
+    return { kd: (room - up * baseUp) / down, ku: baseUp, fits: true };
+  }
+  const ideal = up > 0 ? (room - down * FAN_DOWN_MIN) / up : baseUp;
+  const ku = Math.max(FAN_UP_MIN, Math.min(baseUp, ideal));
+  return { kd: FAN_DOWN_MIN, ku, fits: ku <= ideal + 1e-6 };
+}
 
 const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const EASE_LAND = 'cubic-bezier(0.25, 1.15, 0.5, 1)';
@@ -636,6 +665,18 @@ export function Board() {
 
   const stockEmpty = board.stock.length === 0;
 
+  /** Ecarts d'une colonne selon le nombre de cartes cachees et visibles. */
+  const fanFor = (column: Card[]) => {
+    let dPrefix = 0;
+    let uPrefix = 0;
+    column.forEach((card, i) => {
+      if (i === column.length - 1) return;
+      if (card.faceUp) uPrefix += 1;
+      else dPrefix += 1;
+    });
+    return { ...columnFan(dPrefix, uPrefix, area), dPrefix, uPrefix };
+  };
+
   return (
     <div className="board" ref={rootRef} data-shake-nonce={shake?.nonce}>
       <div className="board__piles">
@@ -728,38 +769,30 @@ export function Board() {
           ))}
         </div>
 
-        <div className="board__row board__tableau" ref={tableauRef}>
+        <div
+          className={`board__row board__tableau${
+            board.tableau.some((col) => !fanFor(col).fits)
+              ? ' is-overflowing'
+              : ''
+          }`}
+          ref={tableauRef}
+        >
           {board.tableau.map((column, c) => {
             // Hauteur naturelle de la colonne, puis resserrement eventuel
             // pour tenir dans la zone visible.
-            let dPrefix = 0;
-            let uPrefix = 0;
-            column.forEach((card, i) => {
-              if (i === column.length - 1) return;
-              if (card.faceUp) uPrefix += 1;
-              else dPrefix += 1;
-            });
-            let squeeze = 1;
-            if (area && area.w > 0) {
-              const cardH = area.w * 1.4;
-              const natural = (dPrefix * FAN_DOWN + uPrefix * FAN_UP) * area.w;
-              const room = area.h - cardH - 6;
-              if (natural > room && natural > 0) {
-                squeeze = Math.max(0.35, room / natural);
-              }
-            }
+            const { kd, ku, dPrefix, uPrefix } = fanFor(column);
             let downBefore = 0;
             let upBefore = 0;
             const positions = column.map((card, i) => {
               const style: CSSProperties = {
-                top: `calc((var(--fan-down) * ${downBefore} + var(--fan-up) * ${upBefore}) * ${squeeze})`,
+                top: `calc(var(--card-w) * ${(downBefore * kd + upBefore * ku).toFixed(4)})`,
                 zIndex: i,
               };
               if (card.faceUp) upBefore += 1;
               else downBefore += 1;
               return style;
             });
-            const height = `calc(var(--card-h) + (var(--fan-down) * ${dPrefix} + var(--fan-up) * ${uPrefix}) * ${squeeze})`;
+            const height = `calc(var(--card-h) + var(--card-w) * ${(dPrefix * kd + uPrefix * ku).toFixed(4)})`;
             return (
               <div
                 key={`tableau-${c}`}

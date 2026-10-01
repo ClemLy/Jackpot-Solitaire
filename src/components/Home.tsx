@@ -2,14 +2,9 @@ import type { CSSProperties, ReactNode } from 'react';
 import {
   BarChart3,
   BookOpen,
-  CalendarCheck2,
-  CalendarDays,
   Crown,
-  Leaf,
   Settings,
   ShoppingBag,
-  Timer,
-  ArrowRight,
 } from 'lucide-react';
 import { useGameStore, type GameMode } from '../state/game';
 import { useMetaStore } from '../state/meta';
@@ -20,41 +15,45 @@ import type { Card } from '../engine';
 import { CardView } from './CardView';
 import { Balance, Chip } from './ui';
 import { Logo } from './Logo';
-import { SuitIcon } from './Suits';
+import { ModeDeck, type ModeCardData } from './ModeDeck';
 
-interface ModeTile {
-  mode: GameMode;
-  title: string;
-  desc: string;
-  icon: ReactNode;
+type ModeCard = Omit<ModeCardData, 'meta'>;
+
+// Les modes sont presentes comme des cartes posees sur le tapis. Le coin de
+// chaque carte porte un petit clin d'oeil: le jour du mois pour le defi,
+// trois minutes pour le chrono, zero pression pour le zen.
+function modeCards(today: Date): ModeCard[] {
+  return [
+    {
+      mode: 'classic',
+      title: 'Classique',
+      desc: 'Le Klondike de toujours, avec indices et annuler illimité.',
+      suit: 'spades',
+      index: 'A',
+    },
+    {
+      mode: 'daily',
+      title: 'Défi du jour',
+      desc: 'La même donne pour tout le monde aujourd’hui.',
+      suit: 'diamonds',
+      index: String(today.getDate()),
+    },
+    {
+      mode: 'chrono',
+      title: 'Chrono',
+      desc: 'Chaque seconde grignote ton bonus de vitesse.',
+      suit: 'clubs',
+      index: '3',
+    },
+    {
+      mode: 'zen',
+      title: 'Zen',
+      desc: 'Ni score, ni chrono. On pose, on savoure.',
+      suit: 'hearts',
+      index: '0',
+    },
+  ];
 }
-
-const TILES: ModeTile[] = [
-  {
-    mode: 'classic',
-    title: 'Classique',
-    desc: 'Le Klondike de toujours, indices et annuler illimité.',
-    icon: <SuitIcon suit="spades" className="mode-tile__suit" />,
-  },
-  {
-    mode: 'daily',
-    title: 'Défi du jour',
-    desc: 'La même donne pour tout le monde, une prime à la clé.',
-    icon: <CalendarDays size={20} />,
-  },
-  {
-    mode: 'chrono',
-    title: 'Chrono',
-    desc: 'Chaque seconde grignote ton bonus de vitesse.',
-    icon: <Timer size={20} />,
-  },
-  {
-    mode: 'zen',
-    title: 'Zen',
-    desc: 'Ni score, ni chrono. On pose, on savoure.',
-    icon: <Leaf size={20} />,
-  },
-];
 
 // Eventail de la vitrine: de vraies cartes du jeu, pas une image.
 const HERO_CARDS: Card[] = [
@@ -68,7 +67,6 @@ const HERO_CARDS: Card[] = [
 function HeroFan() {
   return (
     <div className="hero-fan" aria-hidden="true">
-      <div className="hero-fan__glow" />
       {HERO_CARDS.map((card, i) => (
         <div
           key={card.id}
@@ -97,6 +95,37 @@ function HeroFan() {
   );
 }
 
+/**
+ * Inscription imprimee sur le tapis, comme la ligne courbe des tables de
+ * blackjack ("Insurance pays 2 to 1"). Elle separe la vitrine des modes.
+ */
+function FeltPrint() {
+  return (
+    <svg className="felt-print" viewBox="0 0 1000 110" aria-hidden="true">
+      <defs>
+        <path id="felt-arc" d="M90 30 Q500 136 910 30" />
+      </defs>
+      <path
+        d="M20 6 Q500 134 980 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M70 52 Q500 160 930 52"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="0.9"
+      />
+      <text className="felt-print__text">
+        <textPath href="#felt-arc" startOffset="50%" textAnchor="middle">
+          Le magot paie double · La banque ne pardonne pas
+        </textPath>
+      </text>
+    </svg>
+  );
+}
+
 export function Home() {
   const newGame = useGameStore((s) => s.newGame);
   const openModal = useGameStore((s) => s.openModal);
@@ -109,8 +138,9 @@ export function Home() {
   const tier = vipTierFor(lifetime);
   const next = nextVipTier(lifetime);
   const dailyDone = daily.completedDates.includes(todayISO());
+  const today = new Date();
 
-  const tileMeta = (mode: GameMode): ReactNode => {
+  const meta = (mode: GameMode): ReactNode => {
     switch (mode) {
       case 'classic':
         return stats.gamesPlayed > 0
@@ -118,12 +148,10 @@ export function Home() {
           : 'Pour se faire la main';
       case 'daily':
         return dailyDone ? (
-          <span className="tile-done">
-            <CalendarCheck2 size={14} /> Terminé aujourd&rsquo;hui
-          </span>
+          <span data-tone="done">Réussi aujourd&rsquo;hui</span>
         ) : (
-          <span className="tile-prize">
-            <Chip size={14} /> +500 à gagner
+          <span className="with-chip">
+            <Chip size={13} /> 500 jetons à gagner
           </span>
         );
       case 'chrono':
@@ -135,11 +163,21 @@ export function Home() {
     }
   };
 
+  const records: string[] = [];
+  if (gambling.bestSecuredRun > 0)
+    records.push(`record ${formatNumber(gambling.bestSecuredRun)} jetons`);
+  if (gambling.longestStreak > 0)
+    records.push(`série de ${gambling.longestStreak}`);
+  if (gambling.vaultsOpened > 0)
+    records.push(
+      `${gambling.vaultsOpened} coffre${gambling.vaultsOpened > 1 ? 's' : ''} ouvert${gambling.vaultsOpened > 1 ? 's' : ''}`,
+    );
+
   return (
     <div className="home scroll">
       <header className="topbar">
         <div className="topbar__brand">
-          <Logo size={34} />
+          <Logo size={32} />
           <span className="topbar__name">Jackpot Solitaire</span>
         </div>
         <div className="topbar__right">
@@ -177,37 +215,20 @@ export function Home() {
       <main className="home__main">
         <section className="hero">
           <div className="hero__copy">
-            <h1 className="hero__title">
-              <span className="hero__title-gold">Jackpot</span>
-              <span className="hero__title-rest">Solitaire</span>
+            <h1 className="brand">
+              <span className="brand__jackpot">Jackpot</span>
+              <span className="brand__solitaire">Solitaire</span>
             </h1>
             <p className="hero__tag">
-              Le solitaire où l&rsquo;on mise son sang-froid. Gagne, encaisse,
-              ou tente le quitte ou double.
+              Gagne une manche, puis choisis: encaisser tes jetons, ou tout
+              remettre en jeu sur la suivante.
             </p>
-            <div className="hero__stats">
-              <div>
-                <span className="k">Record de magot</span>
-                <span className="v">
-                  {formatNumber(gambling.bestSecuredRun)}
-                </span>
-              </div>
-              <div>
-                <span className="k">Plus longue série</span>
-                <span className="v">{gambling.longestStreak}</span>
-              </div>
-              <div>
-                <span className="k">Coffres ouverts</span>
-                <span className="v">{gambling.vaultsOpened}</span>
-              </div>
-            </div>
             <div className="hero__cta">
               <button
                 className="btn btn--gold btn--lg"
                 onClick={() => openModal('tables')}
               >
                 Jouer au Jackpot
-                <ArrowRight size={18} />
               </button>
               <button
                 className={`btn btn--ghost btn--lg wheel-btn${canSpin ? ' is-ready' : ''}`}
@@ -217,30 +238,26 @@ export function Home() {
                 {canSpin ? 'Roue du jour' : 'Roue demain'}
               </button>
             </div>
+            {records.length > 0 && (
+              <p className="hero__records">
+                Ton meilleur: {records.join(', ')}.
+              </p>
+            )}
           </div>
           <HeroFan />
         </section>
 
-        <section className="modes" aria-label="Autres modes de jeu">
-          {TILES.map((tile) => (
-            <button
-              key={tile.mode}
-              className="mode-tile"
-              data-mode={tile.mode}
-              onClick={() =>
-                newGame({
-                  mode: tile.mode,
-                  seed: tile.mode === 'daily' ? dailySeed() : undefined,
-                })
-              }
-            >
-              <span className="mode-tile__icon">{tile.icon}</span>
-              <span className="mode-tile__title">{tile.title}</span>
-              <span className="mode-tile__desc">{tile.desc}</span>
-              <span className="mode-tile__meta">{tileMeta(tile.mode)}</span>
-            </button>
-          ))}
-        </section>
+        <FeltPrint />
+
+        <ModeDeck
+          cards={modeCards(today).map((m) => ({ ...m, meta: meta(m.mode) }))}
+          onPick={(mode) =>
+            newGame({
+              mode,
+              seed: mode === 'daily' ? dailySeed() : undefined,
+            })
+          }
+        />
 
         <nav className="home__links" aria-label="Menu">
           <button className="link-btn" onClick={() => openModal('shop')}>
