@@ -37,6 +37,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Les polices sont decoupees par alphabet: seul le latin sert au jeu.
+        globIgnores: ['**/*-{vietnamese,cyrillic,cyrillic-ext,greek}-*.woff2'],
         cleanupOutdatedCaches: true,
       },
     }),

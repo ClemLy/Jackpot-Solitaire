@@ -49,7 +49,9 @@ const richMeta = {
     sumWinTimeMs: 84 * 205000,
     sumWinMoves: 84 * 148,
   },
-  gambling: { secured: 12480, bestSecuredRun: 3120, longestStreak: 6, vaultsOpened: 3 },
+  gambling: { secured: 24480, bestSecuredRun: 6120, longestStreak: 6, vaultsOpened: 3 },
+  wallet: { balance: 8640, lifetimeEarned: 24480, spent: 16840 },
+  inventory: { owned: ['emerald', 'burgundy', 'confetti'], consumables: { insurance: 1, hint: 2, redeal: 0 } },
   daily: {
     completedDates: Array.from({ length: 12 }, (_, i) => `2026-07-${String(i + 1).padStart(2, '0')}`),
     lastPlayed: null,
@@ -61,6 +63,8 @@ const richMeta = {
     'hot-streak': 1,
     'high-roller': 1,
     daredevil: 1,
+    collector: 1,
+    regular: 1,
   },
 };
 
@@ -87,8 +91,8 @@ async function generateIcons(browser) {
   await shoot(192, 'icon-192.png');
   await shoot(512, 'icon-512.png');
   // Maskable: fond plein vert et marge de securite.
-  await shoot(512, 'icon-512-maskable.png', { bg: '#1f6b3b', pad: 64 });
-  await shoot(180, 'apple-touch-icon.png', { bg: '#1f6b3b', pad: 22 });
+  await shoot(512, 'icon-512-maskable.png', { bg: '#0b2a1e', pad: 64 });
+  await shoot(180, 'apple-touch-icon.png', { bg: '#0b2a1e', pad: 22 });
   await page.close();
   console.log('Icones generees dans public/.');
 }
@@ -120,8 +124,9 @@ async function main() {
       window.__jackpot.meta.setState(meta);
     }, richMeta);
 
-    // Accueil.
+    // Accueil (on laisse les animations d'entree se terminer).
     await driveStore(page, () => window.__jackpot.game.getState().goHome());
+    await sleep(1400);
     await page.screenshot({ path: resolve(shotsDir, 'accueil.png') });
 
     // Partie classique en cours (avec quelques cartes au talon).
@@ -129,6 +134,7 @@ async function main() {
       const g = window.__jackpot.game.getState();
       g.newGame({ mode: 'classic', drawCount: 3, seed: 'demo-jackpot' });
     });
+    await sleep(1800);
     await driveStore(page, () => {
       window.__jackpot.game.getState().clickStock();
     });
@@ -142,16 +148,14 @@ async function main() {
     await driveStore(page, () => window.__jackpot.game.getState().openModal('stats'));
     await page.screenshot({ path: resolve(shotsDir, 'stats.png') });
 
-    // Personnalisation avec tapis neon.
-    await driveStore(page, () => {
-      window.__jackpot.meta.getState().updateSettings({ table: 'neon', cardBack: 'modern' });
-      window.__jackpot.game.getState().openModal('themes');
-    });
-    await page.screenshot({ path: resolve(shotsDir, 'themes.png') });
-    await driveStore(page, () => {
-      window.__jackpot.meta.getState().updateSettings({ table: 'felt', cardBack: 'retro' });
-      window.__jackpot.game.getState().closeModal();
-    });
+    // Boutique (dos de cartes), puis choix de la table a mise.
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('shop'));
+    await page.screenshot({ path: resolve(shotsDir, 'boutique.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('tables'));
+    await page.screenshot({ path: resolve(shotsDir, 'tables.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('wheel'));
+    await page.screenshot({ path: resolve(shotsDir, 'roue.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().closeModal());
 
     // Fin de partie facon casino (mode Jackpot).
     await driveStore(page, () => {
@@ -160,21 +164,27 @@ async function main() {
         mode: 'gambling',
         phase: 'won',
         overlay: 'win',
-        pot: 2850,
+        pot: 9860,
         combo: 2,
+        stakeTable: 'gold',
         finalTimeMs: 168000,
         win: {
           roundScore: 1300,
           bonuses: { speed: 660, precision: 100, total: 760 },
           baseScore: 540,
           multiplier: 1.5,
-          gain: 1950,
-          potBefore: 900,
-          potAfter: 2850,
+          tableMultiplier: 2,
+          gain: 3900,
+          potBefore: 5960,
+          potAfter: 9860,
           vaultEligible: false,
+          tip: 0,
+          dailyBonus: 0,
+          moves: 131,
         },
       });
     });
+    await sleep(600);
     await page.screenshot({ path: resolve(shotsDir, 'jackpot.png') });
 
     // Vue mobile de l'accueil.

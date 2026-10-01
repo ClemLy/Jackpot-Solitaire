@@ -18,10 +18,27 @@ import {
 } from '../engine';
 import { comboMultiplier, drawVaultOutcome, vaultUnlocked } from './gambling';
 import { useMetaStore } from './meta';
+import {
+  DAILY_BONUS,
+  INSURANCE_REFUND,
+  findStakeTable,
+  meetsTier,
+  tipForWin,
+  type StakeTableId,
+} from './catalog';
 import { playSound } from '../audio/sfx';
 import { dailySeed, randomSeed, todayISO } from '../utils/seed';
+import { formatNumber } from '../utils/format';
 
 export type GameMode = 'classic' | 'gambling' | 'zen' | 'chrono' | 'daily';
+
+export const MODE_LABEL: Record<GameMode, string> = {
+  classic: 'Classique',
+  gambling: 'Jackpot',
+  daily: 'Défi du jour',
+  chrono: 'Chrono',
+  zen: 'Zen',
+};
 export type Route = 'home' | 'game';
 export type Modal =
   | 'none'
@@ -29,7 +46,9 @@ export type Modal =
   | 'stats'
   | 'settings'
   | 'newgame'
-  | 'themes'
+  | 'shop'
+  | 'tables'
+  | 'wheel'
   | 'confirmLeave';
 export type Overlay = 'none' | 'win' | 'vault' | 'lost';
 
@@ -43,11 +62,18 @@ export interface WinSummary {
   roundScore: number;
   bonuses: EndBonuses;
   baseScore: number;
+  /** Multiplicateur de serie (quitte ou double). */
   multiplier: number;
+  /** Multiplicateur de la table a mise. */
+  tableMultiplier: number;
   gain: number;
   potBefore: number;
   potAfter: number;
   vaultEligible: boolean;
+  /** Jetons verses directement a la banque (hors Jackpot). */
+  tip: number;
+  dailyBonus: number;
+  moves: number;
 }
 
 export interface LostSummary {
@@ -55,12 +81,15 @@ export interface LostSummary {
   timeMs: number;
   wasGambling: boolean;
   potLost: number;
+  /** Jetons rendus par l'assurance si la perte est confirmee. */
+  refund: number;
 }
 
 export interface NewGameOptions {
   mode?: GameMode;
   drawCount?: 1 | 3;
   seed?: string;
+  table?: StakeTableId;
 }
 
 interface GameStore {
@@ -88,6 +117,12 @@ interface GameStore {
 
   pot: number;
   combo: number;
+  stakeTable: StakeTableId;
+  insured: boolean;
+  /** Incremente a chaque distribution: declenche l'animation de donne. */
+  dealId: number;
+  /** Vrai si le dernier indice a ete offert par un Oeil du croupier. */
+  freeHint: boolean;
   win: WinSummary | null;
   lost: LostSummary | null;
   vaultResult: {
@@ -133,7 +168,8 @@ interface GameStore {
 
   // Gambling.
   cashOut: () => void;
-  doubleOrNothing: () => void;
+  doubleOrNothing: (insure?: boolean) => void;
+  secondChance: () => void;
   gambleFromScore: () => void;
   enterVault: () => void;
   openVault: () => void;
@@ -155,6 +191,10 @@ function isRiskingPot(state: GameStore): boolean {
   return state.mode === 'gambling' && state.pot > 0;
 }
 
+function insuranceRefund(state: GameStore): number {
+  return state.insured ? Math.round(state.pot * INSURANCE_REFUND) : 0;
+}
+
 export function computeElapsed(state: {
   phase: string;
   startedAt: number | null;
@@ -168,12 +208,28 @@ export function computeElapsed(state: {
 const firstBoard = deal('bienvenue', 3);
 
 export const useGameStore = create<GameStore>()((set, get) => {
-  /** Enregistre la perte du magot en cours (abandon d'une serie gambling). */
+  /**
+   * Enregistre la perte du magot en cours (abandon d'une serie gambling, ou
+   * defaite confirmee). L'assurance eventuelle rend sa part a la banque.
+   */
   function settleBust(): void {
     const state = get();
     if (isRiskingPot(state)) {
-      useMetaStore.getState().secureBank(0, state.combo);
-      playSound('whoosh');
+      const meta = useMetaStore.getState();
+      meta.secureBank(0, state.combo);
+      const refund = insuranceRefund(state);
+      if (refund > 0) {
+        meta.credit(refund);
+        meta.notify({
+          kind: 'reward',
+          title: 'L’assurance a payé',
+          text: `${formatNumber(refund)} jetons sauvés du naufrage.`,
+        });
+        playSound('coins');
+      } else {
+        playSound('whoosh');
+      }
+      set({ pot: 0, combo: 0, insured: false });
     }
   }
 
@@ -183,6 +239,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     drawCount: 1 | 3,
     seed: string,
     keepPot: boolean,
+    extra: Partial<GameStore> = {},
   ): void {
     stopAutoTimer();
     const board = deal(seed, drawCount);
@@ -210,12 +267,16 @@ export const useGameStore = create<GameStore>()((set, get) => {
       autoCompleting: false,
       pot: keepPot ? state.pot : 0,
       combo: keepPot ? state.combo : 0,
+      insured: keepPot ? state.insured : false,
+      dealId: state.dealId + 1,
+      freeHint: false,
       win: null,
       lost: null,
       vaultResult: null,
       bust: null,
       hint: null,
       shake: null,
+      ...extra,
     }));
   }
 
@@ -234,8 +295,12 @@ export const useGameStore = create<GameStore>()((set, get) => {
       : { speed: 0, precision: 0, total: 0 };
     const baseScore = state.score;
     const roundScore = baseScore + bonuses.total;
+    const meta = useMetaStore.getState();
+    const today = todayISO();
+    const firstDailyWin =
+      state.mode === 'daily' && !meta.daily.completedDates.includes(today);
 
-    useMetaStore.getState().resolveGame({
+    meta.resolveGame({
       won: true,
       timeMs,
       moves: state.moves,
@@ -251,17 +316,25 @@ export const useGameStore = create<GameStore>()((set, get) => {
     let pot = state.pot;
     let combo = state.combo;
     let multiplier = 1;
+    const table = findStakeTable(state.stakeTable);
+    const tableMultiplier = state.mode === 'gambling' ? table.multiplier : 1;
     let gain = roundScore;
     const potBefore = pot;
 
     if (state.mode === 'gambling') {
       multiplier = comboMultiplier(combo);
-      gain = Math.round(roundScore * multiplier);
+      gain = Math.round(roundScore * multiplier * tableMultiplier);
       // Le magot lui-meme ne descend jamais sous zero: un score negatif
       // rogne la mise mais ne rend jamais la banque debitrice.
       pot = Math.max(0, pot + gain);
       combo = combo + 1;
+      if (table.id === 'diamond') meta.unlock('high-stakes');
     }
+
+    // Hors Jackpot, une victoire verse un pourboire direct a la banque.
+    const tip = tipForWin(state.mode, roundScore);
+    const dailyBonus = firstDailyWin ? DAILY_BONUS : 0;
+    meta.credit(tip + dailyBonus);
 
     const vaultEligible = state.mode === 'gambling' && vaultUnlocked(combo);
 
@@ -281,10 +354,14 @@ export const useGameStore = create<GameStore>()((set, get) => {
         bonuses,
         baseScore,
         multiplier,
+        tableMultiplier,
         gain,
         potBefore,
         potAfter: pot,
         vaultEligible,
+        tip,
+        dailyBonus,
+        moves: state.moves,
       },
     });
   }
@@ -308,11 +385,11 @@ export const useGameStore = create<GameStore>()((set, get) => {
       dailyDate: state.mode === 'daily' ? todayISO() : undefined,
     });
 
-    const wasGambling = state.mode === 'gambling' && state.pot > 0;
+    // Le magot reste en suspens tant que le joueur n'a pas choisi: une
+    // seconde chance peut encore le sauver. Il n'est solde (et l'assurance
+    // versee) qu'au moment de quitter ou de relancer, via settleBust.
+    const wasGambling = isRiskingPot(state);
     const potLost = wasGambling ? state.pot : 0;
-    if (wasGambling) {
-      useMetaStore.getState().secureBank(0, state.combo);
-    }
 
     playSound('penalty');
     set({
@@ -322,9 +399,13 @@ export const useGameStore = create<GameStore>()((set, get) => {
       autoAvailable: false,
       autoCompleting: false,
       hint: null,
-      pot: wasGambling ? 0 : state.pot,
-      combo: wasGambling ? 0 : state.combo,
-      lost: { finalScore: state.score, timeMs, wasGambling, potLost },
+      lost: {
+        finalScore: state.score,
+        timeMs,
+        wasGambling,
+        potLost,
+        refund: wasGambling ? insuranceRefund(state) : 0,
+      },
     });
   }
 
@@ -436,6 +517,10 @@ export const useGameStore = create<GameStore>()((set, get) => {
 
     pot: 0,
     combo: 0,
+    stakeTable: 'free',
+    insured: false,
+    dealId: 0,
+    freeHint: false,
     win: null,
     lost: null,
     vaultResult: null,
@@ -472,7 +557,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     goHome: () => {
       settleBust();
       stopAutoTimer();
-      set((state) => ({
+      set({
         route: 'home',
         overlay: 'none',
         modal: 'none',
@@ -483,9 +568,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         autoCompleting: false,
         win: null,
         lost: null,
-        pot: isRiskingPot(state) ? 0 : state.pot,
-        combo: isRiskingPot(state) ? 0 : state.combo,
-      }));
+      });
     },
 
     newGame: (options) => {
@@ -498,7 +581,29 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (!seed) {
         seed = mode === 'daily' ? dailySeed() : randomSeed();
       }
-      dealRound(mode, drawCount, seed, false);
+      if (mode !== 'gambling') {
+        dealRound(mode, drawCount, seed, false);
+        return;
+      }
+      // Mode Jackpot: on s'assoit a une table. La mise quitte la banque et
+      // entre dans le magot. Si la table n'est plus abordable (solde ou rang),
+      // on se rabat sur la table libre plutot que de bloquer le joueur.
+      let table = findStakeTable(options?.table ?? state.stakeTable);
+      const wallet = useMetaStore.getState().wallet;
+      if (
+        table.stake > wallet.balance ||
+        !meetsTier(wallet.lifetimeEarned, table.minTier)
+      ) {
+        table = findStakeTable('free');
+      }
+      if (table.stake > 0 && !useMetaStore.getState().spend(table.stake)) {
+        table = findStakeTable('free');
+      }
+      if (table.stake > 0) playSound('chip');
+      dealRound(mode, drawCount, seed, false, {
+        stakeTable: table.id,
+        pot: table.stake,
+      });
     },
 
     restartSameSeed: () => {
@@ -593,13 +698,16 @@ export const useGameStore = create<GameStore>()((set, get) => {
         return;
       }
       const scoring = state.mode !== 'zen';
+      // Un Oeil du croupier en reserve offre l'indice sans penalite.
+      const free = scoring && useMetaStore.getState().useConsumable('hint');
       playSound('button');
       set({
         hint: move,
         hintNonce: state.hintNonce + 1,
         hintCount: state.hintCount + 1,
         usedHint: true,
-        score: scoring ? state.score + SCORE.hintPenalty : state.score,
+        freeHint: free,
+        score: scoring && !free ? state.score + SCORE.hintPenalty : state.score,
       });
     },
 
@@ -621,6 +729,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       set({
         pot: 0,
         combo: 0,
+        insured: false,
         overlay: 'none',
         route: 'home',
         // Meme raison que dans goHome: sans cette remise a zero, la phase
@@ -633,8 +742,20 @@ export const useGameStore = create<GameStore>()((set, get) => {
       });
     },
 
-    doubleOrNothing: () => {
+    doubleOrNothing: (insure = false) => {
       const state = get();
+      // L'assurance couvre uniquement la manche qui s'ouvre.
+      const insured =
+        insure && useMetaStore.getState().useConsumable('insurance');
+      dealRound('gambling', state.drawCount, randomSeed(), true, { insured });
+    },
+
+    secondChance: () => {
+      const state = get();
+      if (state.phase !== 'lost' || !isRiskingPot(state)) return;
+      if (!useMetaStore.getState().useConsumable('redeal')) return;
+      // Le magot et la serie sont conserves tels quels: la manche bloquee
+      // est simplement effacee et remplacee par une donne neuve.
       dealRound('gambling', state.drawCount, randomSeed(), true);
     },
 
@@ -643,7 +764,10 @@ export const useGameStore = create<GameStore>()((set, get) => {
       const seed = randomSeed();
       // On transforme la victoire actuelle en premiere manche d'une serie.
       set({ mode: 'gambling', pot: state.score, combo: 1 });
-      dealRound('gambling', state.drawCount, seed, true);
+      dealRound('gambling', state.drawCount, seed, true, {
+        stakeTable: 'free',
+        insured: false,
+      });
     },
 
     enterVault: () => {

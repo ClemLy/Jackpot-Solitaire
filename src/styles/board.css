@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------
-   Disposition du plateau: pioche, talon, fondations et sept colonnes.
+   Ecran de jeu: bandeau d'informations, plateau, dock d'actions.
 --------------------------------------------------------------------------- */
 
 .game {
@@ -7,23 +7,219 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  --pad: clamp(8px, 2vw, 28px);
 }
+
+/* ---- Bandeau ---- */
+
+.hud {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: max(10px, env(safe-area-inset-top)) var(--pad) 6px;
+}
+
+.hud__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hud__right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hud-btn--icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  backdrop-filter: blur(10px);
+  transition: background-color 160ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hud-btn--icon:hover {
+    background: rgba(30, 38, 34, 0.85);
+  }
+}
+
+.hud__mode {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--on-felt);
+}
+.hud__mode-name {
+  font-family: var(--font-display);
+  font-weight: 620;
+  font-size: 1.12rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.hud__mode-sub {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-felt-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud__center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hud__stats {
+  display: flex;
+  padding: 6px 4px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  backdrop-filter: blur(10px);
+}
+
+.hud__stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+  padding: 0 14px;
+}
+.hud__stat + .hud__stat {
+  box-shadow: -1px 0 0 var(--line);
+}
+.hud__stat .label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.hud__stat .value {
+  font-weight: 800;
+  font-size: 1.12rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.hud__stat[data-chrono='true'] .value {
+  color: var(--gold-200);
+}
+.hud__stat .float-score {
+  top: -6px;
+  left: 50%;
+  translate: -50% 0;
+}
+
+/* Magot du mode Jackpot. */
+.pot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(227, 185, 90, 0.2),
+    rgba(227, 185, 90, 0.06)
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--line-gold),
+    0 8px 24px -14px rgba(227, 185, 90, 0.7);
+  backdrop-filter: blur(10px);
+  color: var(--gold-100);
+}
+.pot__body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.pot__label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 241, 191, 0.65);
+}
+.pot__value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.22rem;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.pot__combo,
+.pot__mult {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pot__combo {
+  background: var(--crimson);
+  color: var(--ivory);
+}
+.pot__mult {
+  background: var(--metal);
+  color: var(--on-gold);
+}
+.pot__shield {
+  color: var(--pos);
+}
+.pot.is-risk {
+  animation: potGlow 2.4s ease-in-out infinite;
+}
+@keyframes potGlow {
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgba(243, 210, 124, 0.7),
+      0 0 26px -2px rgba(227, 185, 90, 0.55);
+  }
+}
+
+/* ---- Plateau ---- */
 
 .board {
   flex: 1;
   min-height: 0;
-  padding: clamp(6px, 1.4vw, 16px);
   display: flex;
-  flex-direction: column;
-  gap: clamp(8px, 1.8vh, 22px);
-  --gap: clamp(4px, 1.1vw, 13px);
+  padding: 0 var(--pad);
+  --gap: clamp(5px, 1.3vw, 16px);
   --card-w: min(
-    calc((100vw - 2 * clamp(6px, 1.4vw, 16px) - 6 * var(--gap)) / 7),
-    94px
+    calc((100vw - 2 * var(--pad) - 6 * var(--gap)) / 7),
+    calc((100vh - 190px) / 4.25),
+    118px
+  );
+  --card-w: min(
+    calc((100vw - 2 * var(--pad) - 6 * var(--gap)) / 7),
+    calc((100dvh - 190px) / 4.25),
+    118px
   );
   --card-h: calc(var(--card-w) * 1.4);
-  --fan-down: calc(var(--card-w) * 0.28);
-  --fan-up: calc(var(--card-w) * 0.42);
+  /* Doivent rester alignes sur FAN_DOWN et FAN_UP dans Board.tsx. */
+  --fan-down: calc(var(--card-w) * 0.17);
+  --fan-up: calc(var(--card-w) * 0.34);
+}
+
+.board__piles {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2.6vh, 28px);
+  padding-top: clamp(6px, 1.6vh, 18px);
 }
 
 .board__row {
@@ -39,70 +235,172 @@
   align-items: start;
 }
 
-/* Emplacement d'une pile (reference de positionnement pour les cartes). */
 .pile {
   position: relative;
   width: var(--card-w);
   height: var(--card-h);
 }
 
-.pile__slot {
-  position: absolute;
-  inset: 0;
-  border-radius: 10px 8px 11px 7px;
-  box-shadow: inset 0 0 0 2px rgba(246, 239, 220, 0.28);
-  background: rgba(0, 0, 0, 0.16);
-  display: grid;
-  place-items: center;
-  color: rgba(246, 239, 220, 0.4);
-  font-size: calc(var(--card-w) * 0.5);
-}
-
-.pile__slot .ghost-suit[data-color='red'] {
-  color: rgba(224, 120, 100, 0.42);
-}
-
-.pile.is-target .pile__slot {
-  box-shadow: inset 0 0 0 3px var(--gold);
-  background: rgba(242, 193, 78, 0.16);
-}
-.pile.is-drop-ok .pile__slot {
-  box-shadow: inset 0 0 0 3px var(--green);
-  background: rgba(75, 191, 123, 0.22);
-}
-
-/* Pioche mise en avant quand l'indice demande de piocher ou de recycler. */
-.pile.is-hint .pile__slot {
-  animation: stockHint 0.9s ease-in-out 2;
-}
-@keyframes stockHint {
-  0%,
-  100% {
-    box-shadow: inset 0 0 0 2px rgba(246, 239, 220, 0.28);
-  }
-  50% {
-    box-shadow:
-      inset 0 0 0 3px var(--gold),
-      0 0 18px 4px rgba(242, 193, 78, 0.55);
-  }
-}
-
-/* Colonne du tableau: hauteur libre, cartes en eventail vertical. */
 .pile--column {
   height: auto;
   min-height: var(--card-h);
 }
 .pile--column .card {
-  position: absolute;
   left: 0;
 }
-
-.stock-empty-icon {
-  font-size: calc(var(--card-w) * 0.44);
-  transform: rotate(-8deg);
+.pile--column .pile__slot {
+  bottom: auto;
+  height: var(--card-h);
 }
 
-/* Couche de glissement: la pile fantome suit le doigt ou la souris. */
+.pile--stock {
+  cursor: pointer;
+}
+
+.pile__slot {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--card-w) * 0.085);
+  background: var(--slot-fill);
+  box-shadow: inset 0 0 0 1px var(--slot-line);
+  display: grid;
+  place-items: center;
+  color: var(--slot-mark);
+}
+.pile__slot--quiet {
+  background: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.pile__mark {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: calc(var(--card-w) * 0.46);
+  line-height: 1;
+  font-variation-settings: 'SOFT' 100;
+}
+.pile__mark-icon {
+  width: calc(var(--card-w) * 0.38);
+  height: calc(var(--card-w) * 0.38);
+  color: var(--gold-300);
+  opacity: 0.8;
+}
+
+.pile__count {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--card-w) * -0.13);
+  translate: -50% 0;
+  z-index: 20;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  background: rgba(8, 12, 10, 0.75);
+  box-shadow: inset 0 0 0 1px var(--line);
+  pointer-events: none;
+}
+
+/* Cibles: indice, depot autorise ou refuse pendant un glisser. */
+.pile.is-target .pile__slot {
+  box-shadow:
+    inset 0 0 0 2px var(--gold-300),
+    0 0 22px rgba(227, 185, 90, 0.45);
+}
+.pile.is-drop-ok::after,
+.pile.is-drop-bad::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: calc(var(--card-w) * 0.11);
+  pointer-events: none;
+  z-index: 100;
+}
+.pile.is-drop-ok::after {
+  box-shadow:
+    0 0 0 2px var(--gold-200),
+    0 0 26px 2px rgba(227, 185, 90, 0.5);
+}
+.pile.is-drop-bad::after {
+  box-shadow: 0 0 0 1.5px rgba(255, 143, 143, 0.55);
+}
+
+.pile.is-hint::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: calc(var(--card-w) * 0.11);
+  pointer-events: none;
+  z-index: 100;
+  animation: stockHint 0.9s ease-in-out 3;
+}
+@keyframes stockHint {
+  50% {
+    box-shadow:
+      0 0 0 2px var(--gold-200),
+      0 0 26px 4px rgba(227, 185, 90, 0.55);
+  }
+}
+
+/* Eclat dore sur une fondation qui recoit une carte. */
+.burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+}
+.burst::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: calc(var(--card-w) * 0.1);
+  box-shadow:
+    0 0 0 2px var(--gold-200),
+    0 0 24px 6px rgba(243, 210, 124, 0.6);
+  animation: burstRing 0.6s var(--ease-out) forwards;
+}
+.burst i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px;
+  border-radius: 50%;
+  background: var(--gold-100);
+  box-shadow: 0 0 8px 1px var(--gold-300);
+  transform: rotate(var(--a)) translateY(calc(var(--card-w) * -0.35));
+  animation: burstSpark 0.7s var(--ease-out) forwards;
+}
+.burst--big::before {
+  animation-duration: 1s;
+}
+.burst--big i {
+  width: 7px;
+  height: 7px;
+  animation-duration: 1s;
+}
+@keyframes burstRing {
+  from {
+    opacity: 1;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+@keyframes burstSpark {
+  to {
+    transform: rotate(var(--a)) translateY(calc(var(--card-w) * -0.95))
+      scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* Pile fantome qui suit le doigt ou la souris. */
 .drag-layer {
   position: fixed;
   inset: 0;
@@ -111,52 +409,209 @@
 }
 .drag-ghost {
   position: absolute;
+  top: 0;
+  left: 0;
   width: var(--card-w);
-  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.4));
-  transform: rotate(2deg);
+  transform-origin: 50% 15%;
+  filter: drop-shadow(0 22px 22px rgba(0, 0, 0, 0.45));
 }
 .drag-ghost .card {
-  position: absolute;
   left: 0;
 }
 
-/* Nombre flottant de points au dessus du score. */
+/* Gain ou malus flottant. */
 .float-score {
   position: absolute;
-  font-family: var(--font-hand);
+  left: 0;
+  right: 0;
+  top: -6px;
+  text-align: center;
   font-weight: 800;
-  font-size: 1.3rem;
+  font-size: 1rem;
   pointer-events: none;
-  animation: floatUp 0.9s ease forwards;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  animation: floatUp 0.9s var(--ease-out) forwards;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   z-index: 40;
+  font-variant-numeric: tabular-nums;
 }
 .float-score[data-kind='gain'] {
-  color: #7be6a1;
+  color: var(--pos);
 }
 .float-score[data-kind='loss'] {
-  color: #ff8a7a;
+  color: var(--neg);
 }
 @keyframes floatUp {
   0% {
-    transform: translateY(4px) scale(0.8);
+    transform: translateY(6px);
     opacity: 0;
   }
   25% {
-    transform: translateY(-6px) scale(1.1);
     opacity: 1;
   }
   100% {
-    transform: translateY(-38px) scale(1);
+    transform: translateY(-34px);
     opacity: 0;
   }
 }
 
-/* Feux d'artifice de cartes qui rebondissent a la victoire. */
+/* ---- Dock d'actions ---- */
+
+.dock {
+  align-self: center;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  margin: 6px auto max(12px, env(safe-area-inset-bottom));
+  padding: 6px;
+  border-radius: 22px;
+  background: rgba(10, 14, 12, 0.78);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    var(--shadow-2);
+  backdrop-filter: blur(16px) saturate(130%);
+  position: relative;
+  z-index: 5;
+}
+
+.dock__btn {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  min-width: 70px;
+  padding: 9px 12px 7px;
+  border-radius: 16px;
+  color: var(--text);
+  transition:
+    background-color 160ms ease,
+    transform 140ms var(--ease-out);
+}
+.dock__btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.dock__btn:disabled {
+  opacity: 0.35;
+}
+@media (hover: hover) and (pointer: fine) {
+  .dock__btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+.dock__label {
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+}
+.dock__cost {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: var(--neg);
+  font-variant-numeric: tabular-nums;
+}
+.dock__cost[data-free='true'] {
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  color: var(--on-gold);
+  background: var(--metal);
+}
+.dock__btn--gold {
+  background: var(--metal);
+  color: var(--on-gold);
+  box-shadow: 0 8px 22px -10px rgba(227, 185, 90, 0.8);
+  animation: dockIn 380ms var(--ease-spring);
+}
+.dock__btn--gold .dock__label {
+  color: var(--on-gold);
+}
+@keyframes dockIn {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+.dock__sep {
+  width: 1px;
+  margin: 10px 4px;
+  background: var(--line);
+}
+
+/* ---- Effets de victoire ---- */
+
 .victory-layer {
   position: fixed;
   inset: 0;
-  z-index: 150;
+  z-index: 299;
   pointer-events: none;
-  overflow: hidden;
+}
+.victory-layer--preview {
+  z-index: 500;
+}
+
+/* ---- Petits ecrans ---- */
+
+@media (max-width: 640px) {
+  .hud {
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+  }
+  .hud__right {
+    display: none;
+  }
+  .hud__center {
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .hud__mode-sub {
+    display: none;
+  }
+  .hud:has(.pot) .hud__mode {
+    display: none;
+  }
+  .hud__stat {
+    min-width: 0;
+    padding: 0 9px;
+  }
+  .hud__stat .value {
+    font-size: 0.98rem;
+  }
+  .pot {
+    padding: 5px 10px 5px 6px;
+    gap: 6px;
+  }
+  .pot__label,
+  .pot__combo {
+    display: none;
+  }
+  .pot__value {
+    font-size: 1.05rem;
+  }
+  .dock {
+    gap: 0;
+    padding: 5px;
+    border-radius: 20px;
+  }
+  .dock__btn {
+    min-width: 58px;
+    padding: 8px 6px 6px;
+  }
+}
+
+@media (max-width: 380px) {
+  .hud__stat:nth-child(3) {
+    display: none;
+  }
+  .dock__btn {
+    min-width: 52px;
+  }
 }

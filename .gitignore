@@ -80,3 +80,16 @@ desktop.ini
 *.pem
 tmp/
 temp/
+
+# Agents IA, skills et configuration locale Claude
+.agents/
+.claude/
+.cursor/
+.codex/
+.gemini/
+.windsurf/
+.tastemaker/
+.21st/
+skills-lock.json
+CLAUDE.local.md
+design/assets/

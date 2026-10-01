@@ -1,6 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import { Modal } from './Modal';
 import { SCORE } from '../engine';
+import {
+  CONSUMABLES,
+  DAILY_BONUS,
+  STAKE_TABLES,
+  VIP_TIERS,
+} from '../state/catalog';
+import { formatMultiplier, formatNumber } from '../utils/format';
 
 interface Item {
   tone?: 'plus' | 'minus' | 'gold' | 'neutral';
@@ -14,7 +21,7 @@ function RuleList({ items }: { items: Item[] }) {
       {items.map((it, i) => (
         <li key={i}>
           <span className="bullet" data-tone={it.tone ?? 'neutral'}>
-            {it.mark ?? '.'}
+            {it.mark}
           </span>
           <span>{it.text}</span>
         </li>
@@ -226,6 +233,29 @@ const SECTIONS: Section[] = [
             },
           ]}
         />
+        <h3>Les tables à mise</h3>
+        <p>
+          Avant chaque série, tu choisis ta table. La mise quitte ta banque et
+          entre dans le magot: encaisse pour la récupérer avec tes gains, perds
+          la série et elle s&rsquo;envole. En échange, chaque manche gagnée
+          rapporte plus.
+        </p>
+        <RuleList
+          items={STAKE_TABLES.map((t) => ({
+            tone: 'gold' as const,
+            mark: `×${formatMultiplier(t.multiplier)}`,
+            text: (
+              <>
+                {t.label}:{' '}
+                {t.stake > 0
+                  ? `mise de ${formatNumber(t.stake)} jetons`
+                  : 'sans mise'}
+                , gains multipliés par {formatMultiplier(t.multiplier)}
+                {t.minTier ? ' (rang VIP Or requis).' : '.'}
+              </>
+            ),
+          }))}
+        />
         <h3>Le coffre-fort mystère</h3>
         <p>
           Trois victoires de suite en quitte ou double débloquent le coffre.
@@ -233,6 +263,72 @@ const SECTIONS: Section[] = [
           souvent un joli gain, mais parfois le coffre est piégé. C&rsquo;est
           ça, le frisson.
         </p>
+      </div>
+    ),
+  },
+  {
+    id: 'banque',
+    label: 'Banque et boutique',
+    content: (
+      <div className="rule-panel">
+        <h3>D&rsquo;où viennent les jetons</h3>
+        <RuleList
+          items={[
+            {
+              tone: 'gold',
+              mark: 'J',
+              text: 'Encaisser un magot du mode Jackpot: la source principale, et de loin.',
+            },
+            {
+              tone: 'plus',
+              mark: '+',
+              text: 'Toute autre victoire verse un pourboire égal à 10 % du score de la manche.',
+            },
+            {
+              tone: 'plus',
+              mark: '+',
+              text: `Première victoire du défi du jour: prime de ${formatNumber(DAILY_BONUS)} jetons.`,
+            },
+            {
+              tone: 'plus',
+              mark: '+',
+              text: 'La roue du jour: un tour gratuit chaque jour, pour des jetons ou un bonus.',
+            },
+          ]}
+        />
+        <h3>À quoi ils servent</h3>
+        <RuleList
+          items={[
+            {
+              text: 'La boutique: dos de cartes, tapis et effets de victoire à collectionner.',
+            },
+            {
+              text: 'Les tables à mise du Jackpot, pour faire fructifier ta banque.',
+            },
+            ...CONSUMABLES.map((c) => ({
+              tone: 'gold' as const,
+              mark: '*',
+              text: (
+                <>
+                  {c.label} ({formatNumber(c.price)} jetons): {c.hint}
+                </>
+              ),
+            })),
+          ]}
+        />
+        <h3>Les rangs VIP</h3>
+        <p>
+          Ton rang dépend du total de jetons gagnés depuis le début (les achats
+          ne le font jamais baisser). Chaque rang offre une remise en boutique
+          et ouvre de nouveaux objets.
+        </p>
+        <RuleList
+          items={VIP_TIERS.map((t) => ({
+            tone: 'gold' as const,
+            mark: t.label[0],
+            text: `${t.label}: dès ${formatNumber(t.threshold)} jetons gagnés${t.discount > 0 ? `, ${Math.round(t.discount * 100)} % de remise` : ''}.`,
+          }))}
+        />
       </div>
     ),
   },
@@ -279,8 +375,8 @@ export function RulesModal({ onClose }: { onClose: () => void }) {
   const section = SECTIONS.find((s) => s.id === active) ?? SECTIONS[0];
 
   return (
-    <Modal title="Règles du jeu" onClose={onClose}>
-      <div className="rules-nav" role="tablist">
+    <Modal title="Règles du jeu" onClose={onClose} size="lg">
+      <div className="tabs" role="tablist">
         {SECTIONS.map((s) => (
           <button
             key={s.id}

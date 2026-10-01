@@ -2,32 +2,30 @@ import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
 import { playSound, unlockAudio } from '../audio/sfx';
 
-function Toggle({
+function Switch({
   label,
+  hint,
   value,
   onChange,
-  hint,
 }: {
   label: string;
+  hint?: string;
   value: boolean;
   onChange: (v: boolean) => void;
-  hint?: string;
 }) {
   return (
-    <div className="row" style={{ justifyContent: 'space-between' }}>
-      <div>
-        <strong>{label}</strong>
-        {hint && <div className="muted">{hint}</div>}
-      </div>
-      <div className="segmented" role="group" aria-label={label}>
-        <button aria-pressed={value} onClick={() => onChange(true)}>
-          Oui
-        </button>
-        <button aria-pressed={!value} onClick={() => onChange(false)}>
-          Non
-        </button>
-      </div>
-    </div>
+    <button
+      className="setting"
+      role="switch"
+      aria-checked={value}
+      onClick={() => onChange(!value)}
+    >
+      <span className="setting__text">
+        <span className="setting__label">{label}</span>
+        {hint && <span className="setting__hint">{hint}</span>}
+      </span>
+      <span className="switch" data-on={value} aria-hidden="true" />
+    </button>
   );
 }
 
@@ -37,50 +35,54 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal title="Réglages" onClose={onClose}>
-      <div className="stack">
-        <Toggle
+      <div className="settings">
+        <Switch
           label="Sons du jeu"
+          hint="Bruitages synthétisés à la volée, sans aucun fichier audio."
           value={settings.soundEnabled}
-          hint="Bruitages faits maison, synthétisés à la volée."
           onChange={(v) => {
             update({ soundEnabled: v });
             if (v) {
               unlockAudio();
-              playSound('button');
+              playSound('chip');
             }
           }}
         />
 
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <div>
-            <strong>Volume</strong>
-          </div>
+        <label className="setting setting--static">
+          <span className="setting__text">
+            <span className="setting__label">Volume</span>
+            <span className="setting__hint">
+              {Math.round(settings.volume * 100)} %
+            </span>
+          </span>
           <input
+            className="range"
             type="range"
             min={0}
             max={100}
             value={Math.round(settings.volume * 100)}
+            disabled={!settings.soundEnabled}
             onChange={(e) => update({ volume: Number(e.target.value) / 100 })}
             onPointerUp={() => settings.soundEnabled && playSound('coins')}
-            style={{ width: '55%' }}
             aria-label="Volume des sons"
           />
-        </div>
+        </label>
 
-        <Toggle
+        <Switch
           label="Animations réduites"
+          hint="Coupe les vols de cartes et les effets, pour un rendu plus calme."
           value={settings.reducedMotion}
-          hint="Pour un rendu plus calme, ou si le mouvement te gêne."
           onChange={(v) => update({ reducedMotion: v })}
         />
 
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <div>
-            <strong>Pioche par défaut</strong>
-            <div className="muted">
+        <div className="setting setting--static">
+          <span className="setting__text">
+            <span className="setting__label">Pioche par défaut</span>
+            <span className="setting__hint">
               Pioche 1 est plus facile, Pioche 3 plus corsée.
-            </div>
-          </div>
+            </span>
+          </span>
           <div
             className="segmented"
             role="group"
@@ -90,21 +92,21 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               aria-pressed={settings.defaultDraw === 1}
               onClick={() => update({ defaultDraw: 1 })}
             >
-              Pioche 1
+              1 carte
             </button>
             <button
               aria-pressed={settings.defaultDraw === 3}
               onClick={() => update({ defaultDraw: 3 })}
             >
-              Pioche 3
+              3 cartes
             </button>
           </div>
         </div>
 
-        <div className="callout">
-          Tes réglages, tes statistiques et ta banque restent stockés uniquement
-          dans ce navigateur.
-        </div>
+        <p className="fineprint">
+          Réglages, statistiques, banque et achats restent stockés uniquement
+          dans ce navigateur. Rien ne quitte ton appareil.
+        </p>
       </div>
     </Modal>
   );

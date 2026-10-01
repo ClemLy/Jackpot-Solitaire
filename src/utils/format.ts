@@ -22,3 +22,8 @@ export function percent(part: number, whole: number): number {
   if (whole <= 0) return 0;
   return Math.round((part / whole) * 100);
 }
+
+/** Multiplicateur lisible a la francaise: 1,5 et non 2 (pas d'arrondi entier). */
+export function formatMultiplier(value: number): string {
+  return value.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+}

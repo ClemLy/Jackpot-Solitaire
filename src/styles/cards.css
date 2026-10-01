@@ -1,25 +1,25 @@
 /* ---------------------------------------------------------------------------
-   Les cartes: papier creme aux bords irreguliers, pips et figures dessinees.
+   Cartes: papier ivoire, index serif lisibles meme en eventail serre,
+   enseignes vectorielles, figures illustrees. Tailles en fraction de
+   --card-w pour rester nettes de 48 a 120 pixels de large.
 --------------------------------------------------------------------------- */
 
 .card {
   position: absolute;
   width: var(--card-w);
   height: var(--card-h);
-  perspective: 900px;
-  will-change: transform;
+  perspective: 1100px;
+  touch-action: none;
+  --r: calc(var(--card-w) * 0.085);
 }
 
 .card__inner {
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  transition: transform 0.3s ease;
+  transition: transform 380ms var(--ease-out);
 }
 
-.card[data-face-up='true'] .card__inner {
-  transform: rotateY(0deg);
-}
 .card[data-face-up='false'] .card__inner {
   transform: rotateY(180deg);
 }
@@ -28,313 +28,354 @@
 .card__back {
   position: absolute;
   inset: 0;
+  border-radius: var(--r);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  border-radius: 9px 8px 10px 7px;
-  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
-/* Recto: papier avec double liseret dessine a la main. */
 .card__front {
-  background:
-    radial-gradient(140% 120% at 20% 8%, #fffdf3, transparent 55%),
-    linear-gradient(160deg, var(--paper), var(--paper-shade));
-  box-shadow:
-    var(--shadow-card),
-    inset 0 0 0 1.6px rgba(42, 35, 32, 0.8),
-    inset 0 0 0 4px rgba(42, 35, 32, 0.08);
-}
-
-.card[data-color='red'] .card__front {
-  --suit-ink: var(--red);
-}
-.card[data-color='black'] .card__front {
-  --suit-ink: #241f1c;
-}
-
-/* Coins: rang et enseigne, en haut a gauche et repris en bas a droite. */
-.card__corner {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 0.82;
   color: var(--suit-ink);
-  font-family: var(--font-hand);
-  font-weight: 700;
+  background:
+    radial-gradient(130% 80% at 25% 0%, #fffdf6 0%, transparent 60%),
+    linear-gradient(180deg, var(--ivory), var(--ivory-2));
+  box-shadow:
+    0 0 0 0.5px rgba(23, 25, 31, 0.4),
+    0 1px 1px rgba(0, 0, 0, 0.16),
+    0 3px 8px -2px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+  transition: box-shadow 160ms ease;
 }
-.card__corner .rank {
-  font-size: calc(var(--card-w) * 0.24);
+
+.card[data-color='red'] {
+  --suit-ink: var(--crimson);
 }
-.card__corner .suit {
-  font-size: calc(var(--card-w) * 0.2);
-  margin-top: 1px;
+.card[data-color='black'] {
+  --suit-ink: var(--ink);
 }
-.card__corner--tl {
-  top: calc(var(--card-w) * 0.06);
-  left: calc(var(--card-w) * 0.08);
+
+/* Index: rang a gauche, enseigne a droite, sur une bande assez fine pour
+   rester visible quand les cartes se chevauchent dans une colonne. */
+.card__index {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  height: calc(var(--card-w) * 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.card__corner--br {
-  bottom: calc(var(--card-w) * 0.06);
-  right: calc(var(--card-w) * 0.08);
+.card__index--top {
+  top: calc(var(--card-w) * 0.035);
+}
+.card__index--bottom {
+  bottom: calc(var(--card-w) * 0.035);
   transform: rotate(180deg);
 }
 
-/* Pips au centre. */
+.card__rank {
+  font-family: var(--font-display);
+  font-weight: 640;
+  font-size: calc(var(--card-w) * 0.3);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variation-settings:
+    'opsz' 72,
+    'SOFT' 30;
+  font-variant-numeric: lining-nums;
+}
+.card__rank[data-wide='true'] {
+  font-size: calc(var(--card-w) * 0.27);
+  letter-spacing: -0.09em;
+}
+
+.card__corner-suit {
+  width: calc(var(--card-w) * 0.2);
+  height: calc(var(--card-w) * 0.2);
+}
+
+/* Pips des cartes 2 a 10. */
 .card__pips {
   position: absolute;
-  inset: calc(var(--card-w) * 0.2) calc(var(--card-w) * 0.16);
+  left: 22%;
+  right: 22%;
+  top: calc(var(--card-w) * 0.4);
+  bottom: calc(var(--card-w) * 0.4);
 }
 .card__pip {
   position: absolute;
-  transform: translate(-50%, -50%);
-  font-size: calc(var(--card-w) * 0.28);
-  line-height: 1;
-  color: var(--suit-ink);
+  width: calc(var(--card-w) * 0.18);
+  height: calc(var(--card-w) * 0.18);
 }
-.card__pip[data-flip='true'] {
-  transform: translate(-50%, -50%) rotate(180deg);
+.card[data-rank='7'] .card__pip,
+.card[data-rank='8'] .card__pip {
+  width: calc(var(--card-w) * 0.165);
+  height: calc(var(--card-w) * 0.165);
+}
+.card[data-rank='9'] .card__pip,
+.card[data-rank='10'] .card__pip {
+  width: calc(var(--card-w) * 0.15);
+  height: calc(var(--card-w) * 0.15);
 }
 
-/* As: une grande enseigne bien centree. */
+/* As: une grande enseigne, et un medaillon dore pour l'as de pique. */
 .card__ace {
   position: absolute;
-  inset: 0;
+  inset: calc(var(--card-w) * 0.36) 14%;
   display: grid;
   place-items: center;
-  font-size: calc(var(--card-w) * 0.62);
-  color: var(--suit-ink);
-  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.1));
+}
+.card__ace svg {
+  width: 72%;
+  height: 72%;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.12));
+}
+.card__ace[data-ornate='true'] {
+  border-radius: 50%;
+  aspect-ratio: 1;
+  margin: auto;
+  inset: 0;
+  width: calc(var(--card-w) * 0.74);
+  height: calc(var(--card-w) * 0.74);
+  box-shadow:
+    inset 0 0 0 1.5px var(--gold-300),
+    inset 0 0 0 calc(var(--card-w) * 0.035) rgba(227, 185, 90, 0.16);
+}
+.card__ace[data-ornate='true'] svg {
+  width: 62%;
+  height: 62%;
 }
 
-/* Figures: un cartouche colore et un petit portrait dessine. */
+/* Figures: cartouche encadre d'or, portrait illustre. */
 .card__court {
   position: absolute;
-  inset: calc(var(--card-w) * 0.16);
-  border-radius: 8px 7px 9px 6px;
-  display: grid;
-  place-items: center;
-  box-shadow: inset 0 0 0 2px rgba(42, 35, 32, 0.55);
-  background: repeating-linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0.35) 0 6px,
-    rgba(255, 255, 255, 0.12) 6px 12px
-  );
+  left: 12%;
+  right: 12%;
+  top: calc(var(--card-w) * 0.37);
+  bottom: calc(var(--card-w) * 0.37);
+  border-radius: calc(var(--card-w) * 0.05);
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px var(--gold-300),
+    inset 0 0 0 calc(var(--card-w) * 0.025) rgba(255, 255, 255, 0.7),
+    inset 0 0 0 calc(var(--card-w) * 0.035) rgba(227, 185, 90, 0.35);
 }
 .card[data-color='red'] .card__court {
-  background-color: rgba(192, 57, 43, 0.14);
+  background: radial-gradient(ellipse at 50% 30%, #fff6ef, #f6dcd3);
 }
 .card[data-color='black'] .card__court {
-  background-color: rgba(36, 31, 28, 0.1);
+  background: radial-gradient(ellipse at 50% 30%, #f8f9fb, #dde2ea);
 }
 .card__court svg {
-  width: 78%;
-  height: 78%;
+  position: absolute;
+  inset: 4% 2% 0;
+  width: 96%;
+  height: 96%;
 }
 
-/*
- * Verso: quatre dos au choix, pilotes par variables CSS plutot que par des
- * selecteurs par attribut concurrents. Deux contextes en definissent la
- * valeur: le plateau reel (.app) et l'apercu de la fenetre Personnaliser
- * (data-back-preview, pose directement sur la vignette). Une variable CSS
- * est resolue par proximite dans l'arbre du DOM, jamais par specificite: la
- * vignette (plus proche de sa carte) l'emporte donc toujours sur le theme
- * ambiant de .app, meme si celui-ci est different. Un selecteur classique
- * n'aurait pas cette garantie, d'ou ce choix.
- */
+/* ---- Dos de cartes ------------------------------------------------------
+   Pilotes par variables CSS. Deux contextes en definissent la valeur: le
+   plateau (.app[data-back]) et les apercus de la boutique
+   (data-back-preview). Une variable se resout par proximite dans le DOM: la
+   vignette l'emporte donc toujours sur le theme ambiant.
+--------------------------------------------------------------------------- */
+
 .card__back {
   transform: rotateY(180deg);
-  background: var(--back-bg, linear-gradient(160deg, #b8342b, #7d1f18));
+  background: var(--back-bg);
   box-shadow:
-    var(--shadow-card),
-    inset 0 0 0 2px rgba(246, 239, 220, 0.9),
-    inset 0 0 0 6px rgba(0, 0, 0, 0.12);
+    0 0 0 0.5px rgba(0, 0, 0, 0.6),
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    0 3px 8px -2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 calc(var(--card-w) * 0.035) var(--back-border);
+}
+.card__back::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--card-w) * 0.07);
+  border-radius: calc(var(--r) * 0.55);
+  background-image: var(--back-pattern);
+  background-size: var(--back-size);
+  background-position: center;
+  box-shadow: inset 0 0 0 1px var(--back-line);
+  image-rendering: var(--back-rendering, auto);
 }
 .card__back::after {
   content: '';
   position: absolute;
-  inset: var(--back-pattern-inset, 7px);
-  border-radius: var(--back-pattern-radius, 6px);
-  border: var(--back-pattern-border, none);
-  background-size: var(--back-pattern-size, 16px 16px);
-  background-image: var(
-    --back-pattern-image,
-    repeating-linear-gradient(
-      45deg,
-      rgba(246, 239, 220, 0.5) 0 2px,
-      transparent 2px 8px
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      rgba(246, 239, 220, 0.5) 0 2px,
-      transparent 2px 8px
-    )
-  );
-  opacity: var(--back-pattern-opacity, 0.6);
-  image-rendering: var(--back-image-rendering, auto);
+  left: 50%;
+  top: 50%;
+  width: calc(var(--card-w) * 0.44);
+  height: calc(var(--card-w) * 0.44);
+  transform: translate(-50%, -50%);
+  background: var(--back-medal) center / contain no-repeat;
 }
 
-/*
- * Base des vignettes d'apercu: comme elles vivent a l'interieur de .app,
- * elles heriteraient sinon des variables --back-* du theme actuellement
- * selectionne. On repart donc d'une ardoise propre (valeurs "retro" par
- * defaut) sur CHAQUE vignette, quelle que soit sa valeur, avant que les
- * variantes ci-dessous n'appliquent leurs seuls deltas. C'etait le vrai bug:
- * les vignettes non entierement redefinies (retro, et partiellement les
- * autres) prenaient l'apparence du dos ambiant.
- * Meme specificite que les selecteurs de variante: cette regle doit rester
- * declaree avant elles pour etre surchargee.
- */
+.app,
 [data-back-preview] {
-  --back-bg: linear-gradient(160deg, #b8342b, #7d1f18);
-  --back-pattern-inset: 7px;
-  --back-pattern-radius: 6px;
-  --back-pattern-border: none;
-  --back-pattern-size: 16px 16px;
-  --back-pattern-image:
-    repeating-linear-gradient(
-      45deg,
-      rgba(246, 239, 220, 0.5) 0 2px,
-      transparent 2px 8px
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      rgba(246, 239, 220, 0.5) 0 2px,
-      transparent 2px 8px
-    );
-  --back-pattern-opacity: 0.6;
-  --back-image-rendering: auto;
+  --back-border: #f4ead4;
+  --back-line: rgba(227, 185, 90, 0.6);
+  --back-rendering: auto;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23000' fill-opacity='.38' stroke='%23E3B95A' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='37' fill='none' stroke='%23E3B95A' stroke-opacity='.55' stroke-width='1.2'/%3E%3Cpath d='M50 17L57 43L83 50L57 57L50 83L43 57L17 50L43 43Z' fill='%23E3B95A'/%3E%3C/svg%3E");
+}
+
+.app[data-back='retro'],
+[data-back-preview='retro'] {
+  --back-bg: linear-gradient(160deg, #a11d31, #5a0c1a);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cpath d='M0 5L5 0L10 5L5 10Z' fill='none' stroke='%23E3B95A' stroke-opacity='.5' stroke-width='.8'/%3E%3C/svg%3E");
+  --back-size: 9px 9px;
 }
 
 .app[data-back='modern'],
 [data-back-preview='modern'] {
-  --back-bg: linear-gradient(160deg, #2d6ca8, #1b466f);
-  --back-pattern-image: radial-gradient(
-    circle,
-    rgba(246, 239, 220, 0.85) 22%,
-    transparent 24%
-  );
-  --back-pattern-size: 18px 18px;
-  --back-pattern-opacity: 0.5;
+  --back-bg: linear-gradient(160deg, #1d2d58, #0a1330);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cg fill='none' stroke='%23E3B95A' stroke-opacity='.5' stroke-width='.8'%3E%3Cpath d='M0 10a10 10 0 0 1 20 0M4 10a6 6 0 0 1 12 0M8 10a2 2 0 0 1 4 0M-10 0a10 10 0 0 1 20 0M10 0a10 10 0 0 1 20 0M-6 0a6 6 0 0 1 12 0M14 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
+  --back-size: 14px 7px;
 }
 
 .app[data-back='minimal'],
 [data-back-preview='minimal'] {
-  --back-bg: linear-gradient(160deg, #34302b, #23201c);
-  --back-pattern-inset: 12px;
-  --back-pattern-image: none;
-  --back-pattern-border: 2px solid rgba(246, 239, 220, 0.75);
-  --back-pattern-radius: 8px;
-  --back-pattern-opacity: 0.9;
+  --back-bg: linear-gradient(160deg, #1d1d20, #0b0b0c);
+  --back-border: #121214;
+  --back-pattern: linear-gradient(transparent, transparent);
+  --back-size: auto;
+  --back-line: var(--gold-300);
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='14' y='14' width='72' height='72' fill='none' stroke='%23E3B95A' stroke-opacity='.5' stroke-width='1.5' transform='rotate(45 50 50)'/%3E%3Cpath d='M50 26L58 50L50 74L42 50Z' fill='%23E3B95A'/%3E%3C/svg%3E");
+}
+.app[data-back='minimal'] .card__back::before,
+[data-back-preview='minimal'] .card__back::before {
+  box-shadow:
+    inset 0 0 0 1px var(--gold-300),
+    inset 0 0 0 4px #141416,
+    inset 0 0 0 5px rgba(227, 185, 90, 0.4);
 }
 
 .app[data-back='pixel'],
 [data-back-preview='pixel'] {
   --back-bg: #4a2f6b;
-  --back-image-rendering: pixelated;
-  --back-pattern-size: 10px 10px;
-  --back-pattern-image:
-    linear-gradient(45deg, rgba(246, 239, 220, 0.55) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(246, 239, 220, 0.55) 25%, transparent 25%);
-  --back-pattern-opacity: 0.55;
+  --back-border: #f2eafa;
+  --back-rendering: pixelated;
+  --back-size: 10px 10px;
+  --back-line: rgba(242, 234, 250, 0.6);
+  --back-pattern:
+    linear-gradient(45deg, rgba(242, 234, 250, 0.3) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(242, 234, 250, 0.3) 25%, transparent 25%);
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath d='M1 2h2v1h1V2h1v1h1V2h2v3H7v1H6v1H5v1H4V7H3V6H2V5H1Z' fill='%23FF6B9A'/%3E%3Cpath d='M1 2h2v1H1z' fill='%23FFC2D6'/%3E%3C/svg%3E");
 }
 
-/* Etats interactifs. */
+.app[data-back='emerald'],
+[data-back-preview='emerald'] {
+  --back-bg: linear-gradient(160deg, #10624a, #05281d);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cg fill='none' stroke='%23E3B95A' stroke-opacity='.45' stroke-width='.8'%3E%3Ccircle cx='0' cy='0' r='7'/%3E%3Ccircle cx='14' cy='0' r='7'/%3E%3Ccircle cx='0' cy='14' r='7'/%3E%3Ccircle cx='14' cy='14' r='7'/%3E%3Ccircle cx='7' cy='7' r='2.4'/%3E%3C/g%3E%3C/svg%3E");
+  --back-size: 11px 11px;
+}
+
+.app[data-back='sunburst'],
+[data-back-preview='sunburst'] {
+  --back-bg: radial-gradient(circle at 50% 50%, #2a2216, #0d0b08 70%);
+  --back-border: #e9d7a8;
+  --back-pattern: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(227, 185, 90, 0.55) 0deg 2.5deg,
+    transparent 2.5deg 10deg
+  );
+  --back-size: auto;
+}
+
+.app[data-back='chips'],
+[data-back-preview='chips'] {
+  --back-bg: linear-gradient(160deg, #8a1628, #4a0814);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='11' cy='11' r='7.4' fill='%23fff' fill-opacity='.07' stroke='%23F8EEE2' stroke-opacity='.55' stroke-width='2.2' stroke-dasharray='3 2.85'/%3E%3Ccircle cx='11' cy='11' r='3.6' fill='none' stroke='%23E3B95A' stroke-opacity='.7' stroke-width='.9'/%3E%3C/svg%3E");
+  --back-size: 15px 15px;
+}
+
+.app[data-back='foil'],
+[data-back-preview='foil'] {
+  --back-bg: linear-gradient(
+    125deg,
+    #8a6cff,
+    #3cc6d6,
+    #f3d27c,
+    #ff6b9a,
+    #8a6cff,
+    #3cc6d6
+  );
+  --back-border: #fbf6ea;
+  --back-line: rgba(255, 255, 255, 0.7);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cpath d='M0 5L5 0L10 5L5 10Z' fill='none' stroke='%23fff' stroke-opacity='.45' stroke-width='.8'/%3E%3C/svg%3E");
+  --back-size: 8px 8px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23fff' fill-opacity='.25' stroke='%23fff' stroke-width='3'/%3E%3Cpath d='M50 17L57 43L83 50L57 57L50 83L43 57L17 50L43 43Z' fill='%23fff'/%3E%3C/svg%3E");
+}
+.app[data-back='foil'] .card__back,
+[data-back-preview='foil'] .card__back {
+  background-size: 300% 300%;
+  animation: foil 7s ease-in-out infinite alternate;
+}
+@keyframes foil {
+  from {
+    background-position: 0% 30%;
+  }
+  to {
+    background-position: 100% 70%;
+  }
+}
+
+/* ---- Etats interactifs ---- */
+
 .card.is-playable .card__front {
   cursor: grab;
 }
+@media (hover: hover) and (pointer: fine) {
+  .card.is-playable:hover .card__front {
+    box-shadow:
+      0 0 0 0.5px rgba(23, 25, 31, 0.4),
+      0 3px 8px -2px rgba(0, 0, 0, 0.4),
+      0 0 0 2px rgba(227, 185, 90, 0.75),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+  }
+}
+
 .card.is-dragging {
   opacity: 0;
 }
+
 .card.is-hint .card__front {
-  animation: hintGlow 0.9s ease-in-out 2;
+  animation: hintPulse 0.9s ease-in-out 3;
   box-shadow:
-    var(--shadow-card),
-    inset 0 0 0 1.6px rgba(42, 35, 32, 0.8),
-    0 0 0 3px var(--gold),
-    0 0 18px 4px rgba(242, 193, 78, 0.7);
+    0 0 0 2px var(--gold-200),
+    0 0 22px 6px rgba(227, 185, 90, 0.65),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
 }
 .card.is-hint-target .card__front {
-  animation: hintTarget 0.9s ease-in-out 2;
+  animation: hintTarget 0.9s ease-in-out 3;
 }
-.card.is-shake {
-  /* Pas d'elevation de z-index: sinon une carte du milieu qui tremble
-     passerait au-dessus des cartes du dessous et les masquerait. La secousse
-     reste bien visible via le liseret de la carte qui glisse lateralement. */
-  animation: shake 0.4s ease;
-}
-
-@keyframes hintGlow {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
+@keyframes hintPulse {
   50% {
-    filter: brightness(1.15);
+    filter: brightness(1.08);
   }
 }
 @keyframes hintTarget {
-  0%,
-  100% {
-    box-shadow: var(--shadow-card);
-  }
   50% {
     box-shadow:
-      var(--shadow-card),
-      0 0 0 3px var(--green),
-      0 0 16px 3px rgba(75, 191, 123, 0.6);
+      0 0 0 2px var(--pos),
+      0 0 20px 4px rgba(116, 224, 169, 0.55);
   }
 }
+
+.card.is-shake .card__inner {
+  animation: shake 0.42s var(--ease-out);
+}
 @keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0) rotate(var(--tilt, 0deg));
-  }
   20% {
     transform: translateX(-7px) rotate(-2deg);
   }
   40% {
-    transform: translateX(6px) rotate(2deg);
+    transform: translateX(6px) rotate(1.6deg);
   }
   60% {
-    transform: translateX(-5px) rotate(-1.5deg);
+    transform: translateX(-4px) rotate(-1deg);
   }
   80% {
-    transform: translateX(4px) rotate(1deg);
+    transform: translateX(2px);
   }
-}
-
-/* Apparition facon livre pop-up a la distribution. */
-@keyframes dealPop {
-  0% {
-    transform: translateY(14px) scale(0.7) rotate(-6deg);
-    opacity: 0;
-  }
-  70% {
-    transform: translateY(-3px) scale(1.04);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-.card.is-dealing .card__inner {
-  animation: dealPop 0.34s var(--ease-pop) backwards;
-}
-
-/* Petit rebond organique au retour d'un annuler. */
-@keyframes undoBounce {
-  0% {
-    transform: scale(0.92) rotate(-3deg);
-  }
-  60% {
-    transform: scale(1.03) rotate(1deg);
-  }
-  100% {
-    transform: scale(1) rotate(0);
-  }
-}
-.card.is-undo .card__inner {
-  animation: undoBounce 0.3s var(--ease-pop);
 }

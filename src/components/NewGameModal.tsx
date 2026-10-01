@@ -1,31 +1,32 @@
 import { useState } from 'react';
+import { Check, Dice5, Link as LinkIcon } from 'lucide-react';
 import { Modal } from './Modal';
-import { useGameStore, type GameMode } from '../state/game';
+import { useGameStore, MODE_LABEL, type GameMode } from '../state/game';
 import { useMetaStore } from '../state/meta';
+import { STAKE_TABLES, meetsTier, type StakeTableId } from '../state/catalog';
 import { dailySeed, randomSeed, shareUrl } from '../utils/seed';
+import { formatNumber } from '../utils/format';
 
-const MODES: { id: GameMode; label: string }[] = [
-  { id: 'classic', label: 'Classique' },
-  { id: 'gambling', label: 'Jackpot' },
-  { id: 'daily', label: 'Défi du jour' },
-  { id: 'chrono', label: 'Chrono' },
-  { id: 'zen', label: 'Zen' },
-];
+const MODES: GameMode[] = ['classic', 'gambling', 'daily', 'chrono', 'zen'];
 
 export function NewGameModal({ onClose }: { onClose: () => void }) {
   const current = useGameStore((s) => ({
     mode: s.mode,
     drawCount: s.drawCount,
     seed: s.seed,
+    table: s.stakeTable,
   }));
   const newGame = useGameStore((s) => s.newGame);
   const requestLeave = useGameStore((s) => s.requestLeave);
   const defaultDraw = useMetaStore((s) => s.settings.defaultDraw);
+  const balance = useMetaStore((s) => s.wallet.balance);
+  const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
 
   const [mode, setMode] = useState<GameMode>(current.mode);
   const [drawCount, setDrawCount] = useState<1 | 3>(
     current.drawCount ?? defaultDraw,
   );
+  const [table, setTable] = useState<StakeTableId>(current.table);
   const [seed, setSeed] = useState(current.seed);
   const [copied, setCopied] = useState(false);
 
@@ -34,7 +35,7 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
 
   const start = () => {
     requestLeave(() => {
-      newGame({ mode, drawCount, seed: effectiveSeed });
+      newGame({ mode, drawCount, seed: effectiveSeed, table });
       onClose();
     });
   };
@@ -58,30 +59,55 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
           <button className="btn btn--ghost" onClick={onClose}>
             Fermer
           </button>
-          <button className="btn btn--green" onClick={start}>
+          <button className="btn btn--gold" onClick={start}>
             Lancer la partie
           </button>
         </>
       }
     >
       <div className="stack">
-        <div>
-          <strong>Mode</strong>
-          <div className="rules-nav" style={{ marginTop: '0.4rem' }}>
+        <div className="field-block">
+          <span className="field-label">Mode</span>
+          <div className="pills" role="radiogroup" aria-label="Mode">
             {MODES.map((m) => (
               <button
-                key={m.id}
-                aria-selected={mode === m.id}
-                onClick={() => setMode(m.id)}
+                key={m}
+                role="radio"
+                aria-checked={mode === m}
+                onClick={() => setMode(m)}
               >
-                {m.label}
+                {MODE_LABEL[m]}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <strong>Difficulté de pioche</strong>
+        {mode === 'gambling' && (
+          <div className="field-block">
+            <span className="field-label">Table</span>
+            <div className="pills" role="radiogroup" aria-label="Table">
+              {STAKE_TABLES.map((t) => {
+                const off =
+                  t.stake > balance || !meetsTier(lifetime, t.minTier);
+                return (
+                  <button
+                    key={t.id}
+                    role="radio"
+                    aria-checked={table === t.id}
+                    disabled={off}
+                    onClick={() => setTable(t.id)}
+                  >
+                    {t.label}
+                    {t.stake > 0 && <small> · {formatNumber(t.stake)}</small>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="row row--between">
+          <span className="field-label">Difficulté de pioche</span>
           <div className="segmented" role="group" aria-label="Pioche">
             <button
               aria-pressed={drawCount === 1}
@@ -98,36 +124,42 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div>
-          <strong>Graine de partie</strong>
-          <div className="muted">
+        <div className="field-block">
+          <span className="field-label">Graine de partie</span>
+          <span className="field-hint">
             {isDaily
               ? 'Le défi du jour utilise une graine imposée, la même pour tout le monde.'
               : 'Note ou colle une graine pour rejouer une donne précise.'}
-          </div>
-          <div className="field" style={{ marginTop: '0.4rem' }}>
+          </span>
+          <div className="field">
             <input
               value={effectiveSeed}
               disabled={isDaily}
               onChange={(e) => setSeed(e.target.value)}
               aria-label="Graine de partie"
+              spellCheck={false}
+              autoComplete="off"
             />
             {!isDaily && (
-              <button className="btn" onClick={() => setSeed(randomSeed())}>
-                Au hasard
+              <button
+                className="btn btn--ghost btn--icon"
+                onClick={() => setSeed(randomSeed())}
+                aria-label="Graine au hasard"
+                title="Au hasard"
+              >
+                <Dice5 size={18} />
               </button>
             )}
-          </div>
-          <div className="row" style={{ marginTop: '0.5rem' }}>
-            <button className="btn btn--ghost" onClick={copyLink}>
-              {copied ? 'Lien copié' : 'Copier le lien à partager'}
+            <button
+              className="btn btn--ghost btn--icon"
+              onClick={copyLink}
+              aria-label="Copier le lien à partager"
+              title="Copier le lien"
+            >
+              {copied ? <Check size={18} /> : <LinkIcon size={18} />}
             </button>
           </div>
-        </div>
-
-        <div className="callout">
-          Le mode Jackpot démarre une nouvelle série: ton magot repart de zéro,
-          à toi de le faire gonfler.
+          {copied && <span className="field-hint">Lien copié.</span>}
         </div>
       </div>
     </Modal>

@@ -1,7 +1,8 @@
 /* ---------------------------------------------------------------------------
-   Jackpot Solitaire, feuille de style principale.
-   Parti pris: du fait main. Bords un peu de travers, ombres douces, une
-   typographie manuscrite. On evite le rendu lisse et impersonnel.
+   Jackpot Solitaire, fondations du style.
+   Direction: casino chic mais joueur. Feutrine profonde sous un spot, or
+   metallique en filets fins, cartes ivoire, typographie serif a caractere
+   (Fraunces) pour les titres et chiffres, Manrope pour l'interface.
 --------------------------------------------------------------------------- */
 
 *,
@@ -16,34 +17,60 @@
 }
 
 :root {
-  /* Typographie: on privilegie des fontes systeme au trait manuscrit. */
-  --font-hand:
-    'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', 'Comic Neue',
-    'Segoe Print', 'Marker Felt', cursive;
-  --font-body:
-    'Chalkboard SE', 'Comic Sans MS', 'Comic Neue', 'Segoe UI', system-ui,
-    sans-serif;
+  --font-display:
+    'Fraunces Variable', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-ui:
+    'Manrope Variable', -apple-system, 'Segoe UI', system-ui, sans-serif;
 
-  /* Encre et papier. */
-  --ink: #2a2320;
-  --ink-soft: #5c524c;
-  --paper: #f6efdc;
-  --paper-shade: #e9dcc0;
+  /* Papier et encre des cartes. */
+  --ivory: #fbf6ea;
+  --ivory-2: #f1e8d3;
+  --ink: #17191f;
+  --crimson: #c42a3d;
 
-  /* Couleurs de marque, saturees facon gouache. */
-  --gold: #f2c14e;
-  --gold-deep: #d99b1c;
-  --red: #c0392b;
-  --green: #1f6b3b;
-  --green-deep: #123a24;
-  --blue: #2d6ca8;
-  --plum: #6c3d73;
+  /* Or metallique: une rampe, et un degrade "lingot" pour les surfaces. */
+  --gold-50: #fff6da;
+  --gold-100: #fff1bf;
+  --gold-200: #f3d27c;
+  --gold-300: #e3b95a;
+  --gold-400: #c99532;
+  --gold-500: #a4761f;
+  --gold-600: #7a5517;
+  --on-gold: #2b1d05;
+  --metal: linear-gradient(
+    135deg,
+    #fff1bf 0%,
+    #f0cd72 24%,
+    #c99532 50%,
+    #f3d27c 72%,
+    #a4761f 100%
+  );
 
-  --radius: 14px;
-  --shadow-card: 0 6px 0 rgba(0, 0, 0, 0.14), 0 10px 22px rgba(0, 0, 0, 0.22);
-  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.18);
+  /* Interface sombre posee sur le tapis. */
+  --text: #f6f0e2;
+  --text-2: rgba(246, 240, 226, 0.74);
+  --text-3: rgba(246, 240, 226, 0.52);
+  --surface: rgba(10, 14, 12, 0.66);
+  --surface-raised: linear-gradient(180deg, #1b2320, #111614);
+  --line: rgba(246, 240, 226, 0.11);
+  --line-2: rgba(246, 240, 226, 0.2);
+  --line-gold: rgba(227, 185, 90, 0.42);
+  --pos: #74e0a9;
+  --neg: #ff8f8f;
 
-  --ease-pop: cubic-bezier(0.18, 1.35, 0.5, 1);
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px -6px rgba(0, 0, 0, 0.4);
+  --shadow-2:
+    0 2px 6px rgba(0, 0, 0, 0.3), 0 20px 44px -14px rgba(0, 0, 0, 0.65);
+  --shadow-3:
+    0 40px 90px -24px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.03);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
 
   color-scheme: dark;
 }
@@ -55,10 +82,12 @@ body,
 }
 
 body {
-  font-family: var(--font-body);
-  color: var(--ink);
-  background: #123a24;
+  font-family: var(--font-ui);
+  color: var(--text);
+  background: #08100c;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
@@ -66,14 +95,144 @@ body {
 }
 
 button {
-  font-family: var(--font-hand);
+  font-family: inherit;
+  font-size: inherit;
   cursor: pointer;
   border: none;
   background: none;
   color: inherit;
 }
 
-/* ---- Le plateau et ses ambiances (tapis de jeu) ---- */
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold-200);
+  outline-offset: 2px;
+}
+
+input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ---- Tapis de jeu ---------------------------------------------------------
+   Chaque tapis ne fait que definir des variables. La classe .felt les
+   transforme en surface: un spot de lumiere sur une base qui s'assombrit vers
+   les bords. Le meme rendu sert au plateau (.app) et aux apercus boutique
+   (data-table-preview).
+--------------------------------------------------------------------------- */
+
+.felt,
+[data-table-preview] {
+  --felt-base: #12573e;
+  --felt-edge: #04190f;
+  --felt-spot: rgba(150, 240, 190, 0.16);
+  --felt-pattern: none;
+  --felt-pattern-size: auto;
+  --on-felt: var(--text);
+  --on-felt-2: var(--text-2);
+  --slot-line: rgba(246, 240, 226, 0.16);
+  --slot-fill: rgba(0, 0, 0, 0.14);
+  --slot-mark: rgba(227, 185, 90, 0.34);
+}
+
+.felt {
+  background:
+    var(--felt-pattern),
+    radial-gradient(
+      ellipse 70% 60% at 50% 32%,
+      var(--felt-spot),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 130% 110% at 50% 35%,
+      var(--felt-base) 35%,
+      var(--felt-edge) 100%
+    );
+  background-size: var(--felt-pattern-size), auto, auto;
+}
+
+[data-table='dark'],
+[data-table-preview='dark'] {
+  --felt-base: #23272e;
+  --felt-edge: #07080a;
+  --felt-spot: rgba(160, 190, 240, 0.1);
+}
+
+[data-table='cream'],
+[data-table-preview='cream'] {
+  --felt-base: #efe4c9;
+  --felt-edge: #b9a57a;
+  --felt-spot: rgba(255, 255, 255, 0.55);
+  --on-felt: #2a2116;
+  --on-felt-2: rgba(42, 33, 22, 0.72);
+  --slot-line: rgba(90, 66, 30, 0.26);
+  --slot-fill: rgba(90, 66, 30, 0.08);
+  --slot-mark: rgba(122, 85, 23, 0.4);
+}
+
+[data-table='wood'],
+[data-table-preview='wood'] {
+  --felt-base: #6d4124;
+  --felt-edge: #1f1006;
+  --felt-spot: rgba(255, 200, 140, 0.14);
+  --felt-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='300'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0025 .11' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .12 0 0 0 0 .05 0 0 0 0 0 0 0 0 -2.4 1.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+  --felt-pattern-size: 900px 300px;
+}
+
+[data-table='neon'],
+[data-table-preview='neon'] {
+  --felt-base: #1f1240;
+  --felt-edge: #05030c;
+  --felt-spot: rgba(255, 70, 210, 0.2);
+  --felt-pattern:
+    linear-gradient(rgba(255, 90, 220, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 200, 255, 0.07) 1px, transparent 1px);
+  --felt-pattern-size: 44px 44px;
+  --slot-line: rgba(255, 120, 230, 0.32);
+  --slot-mark: rgba(120, 220, 255, 0.45);
+}
+
+[data-table='burgundy'],
+[data-table-preview='burgundy'] {
+  --felt-base: #651528;
+  --felt-edge: #17040a;
+  --felt-spot: rgba(255, 150, 160, 0.15);
+  --felt-pattern: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.025) 0 2px,
+    transparent 2px 7px
+  );
+}
+
+[data-table='royal'],
+[data-table-preview='royal'] {
+  --felt-base: #153f86;
+  --felt-edge: #030b1f;
+  --felt-spot: rgba(150, 200, 255, 0.18);
+}
+
+[data-table='marble'],
+[data-table-preview='marble'] {
+  --felt-base: #222226;
+  --felt-edge: #050506;
+  --felt-spot: rgba(255, 255, 255, 0.07);
+  --felt-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='700'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='turbulence' baseFrequency='.004 .011' numOctaves='5' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 -5 0 0 0 .62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)' opacity='.32'/%3E%3C/svg%3E");
+  --felt-pattern-size: 700px 700px;
+}
+
+[data-table='salon'],
+[data-table-preview='salon'] {
+  --felt-base: #1a160d;
+  --felt-edge: #030201;
+  --felt-spot: rgba(227, 185, 90, 0.17);
+  --felt-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Cpath d='M18 0L36 18L18 36L0 18Z' fill='none' stroke='%23E3B95A' stroke-opacity='.13' stroke-width='1'/%3E%3Ccircle cx='18' cy='18' r='1.4' fill='%23E3B95A' fill-opacity='.25'/%3E%3C/svg%3E");
+  --felt-pattern-size: 36px 36px;
+}
+
+/* ---- Application ---- */
 
 .app {
   height: 100%;
@@ -82,87 +241,18 @@ button {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  --felt-a: #1f6b3b;
-  --felt-b: #185831;
-  --felt-glow: rgba(255, 255, 255, 0.06);
-  --edge: rgba(0, 0, 0, 0.35);
-  --panel: #f6efdc;
-  --hud-ink: #f6efdc;
 }
 
-.app::before {
-  /* Texture de feutrine: petits grains et taches fantomes de cafe. */
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      120px 90px at 22% 18%,
-      rgba(60, 40, 20, 0.16),
-      transparent 70%
-    ),
-    radial-gradient(
-      160px 120px at 82% 78%,
-      rgba(60, 40, 20, 0.13),
-      transparent 70%
-    ),
-    radial-gradient(circle at 50% 40%, var(--felt-glow), transparent 60%),
-    linear-gradient(160deg, var(--felt-a), var(--felt-b));
-  z-index: 0;
-}
-
+/* Grain de feutrine tres discret, par-dessus le tapis. */
 .app::after {
-  /* Grain fin genere en SVG, applique en superposition tres discrete. */
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
-  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  opacity: 0.07;
   mix-blend-mode: overlay;
-  z-index: 0;
   pointer-events: none;
-}
-
-.app[data-table='cream'] {
-  --felt-a: #f3ead2;
-  --felt-b: #e6d9b8;
-  --felt-glow: rgba(255, 255, 255, 0.5);
-  --edge: rgba(90, 70, 40, 0.2);
-  --hud-ink: #4a3c26;
-}
-.app[data-table='cream'] .chip {
-  background: rgba(90, 70, 40, 0.1);
-  box-shadow: inset 0 0 0 1.5px rgba(90, 70, 40, 0.3);
-}
-.app[data-table='cream'] .hud {
-  background: rgba(90, 70, 40, 0.1);
-}
-.app[data-table='cream'] .iconbtn {
-  background: rgba(90, 70, 40, 0.08);
-  box-shadow: inset 0 0 0 2px rgba(90, 70, 40, 0.3);
-}
-.app[data-table='cream'] .pile__slot {
-  box-shadow: inset 0 0 0 2px rgba(90, 70, 40, 0.28);
-  background: rgba(90, 70, 40, 0.1);
-  color: rgba(90, 70, 40, 0.4);
-}
-
-.app[data-table='dark'] {
-  --felt-a: #23272e;
-  --felt-b: #171a1f;
-  --felt-glow: rgba(120, 160, 220, 0.06);
-}
-
-.app[data-table='wood'] {
-  --felt-a: #7a4d2b;
-  --felt-b: #5c3a20;
-  --felt-glow: rgba(255, 210, 150, 0.08);
-}
-
-.app[data-table='neon'] {
-  --felt-a: #241542;
-  --felt-b: #150c29;
-  --felt-glow: rgba(255, 60, 200, 0.12);
+  z-index: 0;
 }
 
 .app > * {
@@ -170,107 +260,151 @@ button {
   z-index: 1;
 }
 
-/* ---- Boutons facon etiquette decoupee ---- */
+/* ---- Boutons ---- */
 
 .btn {
-  --btn-bg: var(--paper);
-  --btn-ink: var(--ink);
+  --btn-h: 44px;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4em;
-  padding: 0.55em 1.05em;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--btn-ink);
-  background: var(--btn-bg);
-  border-radius: 12px 10px 13px 9px;
-  box-shadow:
-    0 3px 0 rgba(0, 0, 0, 0.22),
-    inset 0 0 0 2px rgba(0, 0, 0, 0.14);
-  transform: rotate(-0.6deg);
+  gap: 0.5em;
+  height: var(--btn-h);
+  padding: 0 20px;
+  border-radius: var(--r-md);
+  font-weight: 750;
+  font-size: 0.94rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  isolation: isolate;
   transition:
-    transform 0.12s var(--ease-pop),
-    box-shadow 0.12s ease,
-    filter 0.12s ease;
+    transform 140ms var(--ease-out),
+    filter 140ms ease,
+    box-shadow 200ms ease,
+    background-color 200ms ease;
 }
 
-.btn:nth-of-type(even) {
-  transform: rotate(0.7deg);
+.btn svg {
+  flex: none;
 }
 
-.btn:hover {
-  transform: translateY(-1px) rotate(-0.3deg);
-  filter: brightness(1.03);
-}
-
-.btn:active {
-  transform: translateY(2px) rotate(-0.4deg);
-  box-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.25),
-    inset 0 0 0 2px rgba(0, 0, 0, 0.16);
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
 }
 
 .btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  opacity: 0.45;
   filter: grayscale(0.4);
 }
 
-.btn--gold {
-  --btn-bg: linear-gradient(160deg, #ffd873, var(--gold-deep));
-  --btn-ink: #4a3405;
-}
-
-.btn--green {
-  --btn-bg: linear-gradient(160deg, #4bbf7b, #178047);
-  --btn-ink: #06331b;
-}
-
-.btn--red {
-  --btn-bg: linear-gradient(160deg, #e2685a, #b02a1c);
-  --btn-ink: #3a0b06;
-}
-
-/* Bouton discret. Il n'apparait que dans les fenetres (fond clair papier),
-   donc encre foncee et bordure sombre: sinon le texte creme etait invisible
-   sur le fond creme. */
-.btn--ghost {
-  --btn-bg: rgba(42, 35, 32, 0.06);
-  --btn-ink: var(--ink);
-  box-shadow: inset 0 0 0 2px rgba(42, 35, 32, 0.32);
-}
-
 .btn--lg {
-  font-size: 1.25rem;
-  padding: 0.7em 1.4em;
+  --btn-h: 54px;
+  padding: 0 26px;
+  font-size: 1.02rem;
+  border-radius: 16px;
 }
 
 .btn--block {
   width: 100%;
 }
 
-/* ---- Titres manuscrits ---- */
-
-.title {
-  font-family: var(--font-hand);
-  font-weight: 700;
-  line-height: 0.95;
-  letter-spacing: 0.5px;
+.btn--icon {
+  width: var(--btn-h);
+  padding: 0;
 }
 
-.chip {
+.btn--gold {
+  background: var(--metal);
+  color: var(--on-gold);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 0 rgba(122, 85, 23, 0.45),
+    0 10px 28px -10px rgba(227, 185, 90, 0.65);
+}
+
+/* Reflet qui balaie le lingot au survol. */
+.btn--gold::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  z-index: -1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn--gold:hover:not(:disabled)::after {
+    transition: transform 700ms var(--ease-out);
+    transform: translateX(120%);
+  }
+  .btn:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+}
+
+.btn--red {
+  background: linear-gradient(180deg, #d63c50, #9a1b2e);
+  color: var(--ivory);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25),
+    0 10px 28px -12px rgba(214, 60, 80, 0.7);
+}
+
+.btn--emerald {
+  background: linear-gradient(180deg, #1d9566, #0f5c3d);
+  color: var(--ivory);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25),
+    0 10px 28px -12px rgba(29, 149, 102, 0.7);
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn--ghost:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.btn--quiet {
+  color: var(--text-3);
+  height: auto;
+  padding: 6px 4px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn__amount {
   display: inline-flex;
   align-items: center;
-  gap: 0.35em;
-  padding: 0.25em 0.7em;
+  gap: 5px;
+  margin-left: 2px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.85rem;
   background: rgba(0, 0, 0, 0.2);
-  box-shadow: inset 0 0 0 1.5px rgba(246, 239, 220, 0.3);
-  color: var(--hud-ink);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.88em;
 }
+
+.btn__amount--loss {
+  color: var(--neg);
+}
+
+/* ---- Utilitaires ---- */
 
 .sr-only {
   position: absolute;
@@ -281,31 +415,46 @@ button {
   white-space: nowrap;
 }
 
+.scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(246, 240, 226, 0.18) transparent;
+}
+.scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.scroll::-webkit-scrollbar-thumb {
+  background: rgba(246, 240, 226, 0.16);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Respect de la preference systeme et du reglage utilisateur. */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
 }
 
-.app[data-motion='reduced'] * {
+.app[data-motion='reduced'] *,
+.app[data-motion='reduced'] *::before,
+.app[data-motion='reduced'] *::after {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
-}
-
-/* Barre de defilement discrete pour les fenetres. */
-.scroll {
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
-}
-.scroll::-webkit-scrollbar {
-  width: 10px;
-}
-.scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.28);
-  border-radius: 999px;
 }
