@@ -70,12 +70,15 @@ export function Modal({
 /** Panneau de fin de manche (victoire, coffre, defaite), sans fermeture libre. */
 export function Stage({
   tone = 'gold',
+  variant = 'panel',
   children,
   label,
   onPointerDown,
   onEscape,
 }: {
   tone?: 'gold' | 'red';
+  /** 'ticket': bordereau papier (fin de manche); 'panel': fenetre sombre. */
+  variant?: 'panel' | 'ticket';
   children: ReactNode;
   label: string;
   onPointerDown?: () => void;
@@ -99,6 +102,7 @@ export function Stage({
       <div
         className="stage"
         data-tone={tone}
+        data-variant={variant}
         role="dialog"
         aria-modal="true"
         aria-label={label}

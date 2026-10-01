@@ -1,27 +1,26 @@
 # Jackpot Solitaire
 
-Un Solitaire (Klondike) habillé façon salon de jeu privé: feutrine sous un
-spot, or en filets fins, cartes ivoire illustrées. Avec un vrai grain de
-folie: une banque de jetons, des tables à mise, une boutique et un mode
-quitte ou double où l&rsquo;on mise son sang-froid.
+[![CI/CD](https://github.com/ClemLy/Jackpot-Solitaire/actions/workflows/ci.yml/badge.svg)](https://github.com/ClemLy/Jackpot-Solitaire/actions/workflows/ci.yml)
 
-L&rsquo;idée de départ est simple: c&rsquo;est un Solitaire. Mais le soin
-apporté au ressenti de jeu, aux animations, aux sons faits maison et à
-l&rsquo;économie de jetons en fait tout autre chose qu&rsquo;un énième jeu de
-cartes générique.
+**[Jouer en ligne](https://clemly.github.io/Jackpot-Solitaire/)** · sur ordinateur, tablette ou téléphone, installable et jouable hors ligne.
+
+Un Solitaire (Klondike) servi sur une table de casino : feutrine, jetons,
+cartes ivoire illustrées. Chaque victoire rapporte des jetons, et le mode
+Jackpot pose la seule question qui compte : encaisser, ou tout remettre en
+jeu sur la manche suivante ?
 
 ![Écran d'accueil](screenshots/accueil.png)
 
 ## Sommaire
 
-- [Ce qui rend le jeu attachant](#ce-qui-rend-le-jeu-attachant)
 - [Aperçu](#aperçu)
+- [Ce qui rend le jeu agréable](#ce-qui-rend-le-jeu-agréable)
 - [Les modes de jeu](#les-modes-de-jeu)
-- [Le système de score et de gambling](#le-système-de-score-et-de-gambling)
+- [Score et mode Jackpot](#score-et-mode-jackpot)
 - [La banque, la boutique et les rangs VIP](#la-banque-la-boutique-et-les-rangs-vip)
+- [Sur téléphone](#sur-téléphone)
 - [Direction artistique](#direction-artistique)
-- [Démarrage rapide](#démarrage-rapide)
-- [Scripts disponibles](#scripts-disponibles)
+- [Lancer le projet](#lancer-le-projet)
 - [Architecture du code](#architecture-du-code)
 - [Tests](#tests)
 - [Intégration et déploiement continus](#intégration-et-déploiement-continus)
@@ -29,55 +28,11 @@ cartes générique.
 - [Vie privée](#vie-privée)
 - [Licence](#licence)
 
-## Ce qui rend le jeu attachant
-
-Ergonomie et ressenti:
-
-- Chaque carte vole réellement d&rsquo;une pile à l&rsquo;autre (animation
-  FLIP), y compris quand on la lâche: elle repart de là où on l&rsquo;a posée.
-- Distribution animée: les 28 cartes partent de la pioche une à une et les
-  cartes visibles se retournent en 3D à l&rsquo;arrivée.
-- Glisser-déposer au pointeur (souris et tactile): la pile soulevée penche
-  dans le sens du geste, la destination valide s&rsquo;illumine.
-- Clic ou tape pour un déplacement automatique vers la meilleure destination
-  (priorité aux fondations, sinon la colonne qui dévoile une carte cachée).
-- Un coup impossible fait trembler la carte, qui revient en vol à sa place.
-- Éclat doré sur chaque fondation qui reçoit une carte, bouquet quand une
-  enseigne est complète.
-- Colonnes qui se resserrent toutes seules quand elles deviennent trop
-  longues: tout reste visible, sans barre de défilement.
-- Décompte de fin de manche façon machine à sous, tampons de multiplicateur,
-  magot qui roule jusqu&rsquo;à sa nouvelle valeur.
-- Quatre effets de victoire: cascade de cartes à l&rsquo;ancienne,
-  confettis dorés, pluie de jetons, feu d&rsquo;artifice.
-- Sons entièrement synthétisés à la volée (aucun fichier audio), donc
-  uniques: jetons qui s&rsquo;entrechoquent, cliquet de roue, tampon...
-
-Confort de jeu:
-
-- Indice quand on bloque, avec mise en avant de la pioche si c&rsquo;est
-  elle qu&rsquo;il faut solliciter.
-- Annuler illimité.
-- Autocomplétion dès qu&rsquo;il n&rsquo;y a plus de suspense (vérifiée par
-  simulation, donc jamais proposée à tort).
-- Détection de blocage: si la donne devient mathématiquement impossible à
-  terminer, le jeu le signale au lieu de laisser chercher dans le vide.
-- Pioche 1 (facile) ou Pioche 3 (classique).
-- Graine de partie: rejoue une donne précise ou partage-la par un lien
-  `?seed=...`.
-
-Progression, gardée en local:
-
-- Tableau de statistiques: taux de victoire, séries, meilleur temps, temps
-  moyen, coups moyens, meilleur score.
-- Hauts faits à débloquer.
-- Records de gambling: plus gros magot sécurisé, plus longue série.
-
 ## Aperçu
 
-| Partie en cours | Fin de partie façon casino |
+| Partie en cours | Bordereau de gains |
 | --- | --- |
-| ![Partie en cours](screenshots/partie.png) | ![Écran de gain](screenshots/jackpot.png) |
+| ![Partie en cours](screenshots/partie.png) | ![Bordereau de gains](screenshots/jackpot.png) |
 
 | Boutique | Tables à mise |
 | --- | --- |
@@ -87,26 +42,66 @@ Progression, gardée en local:
 | --- | --- |
 | ![Roue du jour](screenshots/roue.png) | ![Statistiques](screenshots/stats.png) |
 
-| Règles interactives | Version mobile |
-| --- | --- |
-| ![Règles](screenshots/regles.png) | ![Mobile](screenshots/mobile.png) |
+Sur téléphone, en portrait et en paysage :
+
+| Accueil | Partie | Victoire |
+| --- | --- | --- |
+| ![Accueil sur téléphone](screenshots/mobile-accueil.png) | ![Partie sur téléphone](screenshots/mobile-partie.png) | ![Victoire sur téléphone](screenshots/mobile-victoire.png) |
+
+![Partie en paysage sur téléphone](screenshots/mobile-paysage.png)
+
+## Ce qui rend le jeu agréable
+
+Au toucher et à la souris :
+
+- Les cartes volent vraiment d’une pile à l’autre, même après un glisser :
+  elles repartent de là où on les a lâchées.
+- À chaque donne, les 28 cartes partent de la pioche une à une et se
+  retournent en arrivant.
+- Pendant un glisser, la pile penche dans le sens du geste et la
+  destination valide s’illumine.
+- Un simple clic, ou une tape, envoie une carte vers la meilleure
+  destination : les fondations d’abord, sinon la colonne qui dévoile une
+  carte cachée.
+- Un coup impossible fait trembler la carte, qui revient à sa place.
+- Éclat doré quand une carte rejoint une fondation, petit bouquet quand une
+  enseigne est complète.
+- Les colonnes trop longues se resserrent toutes seules : on tasse d’abord
+  les cartes cachées, puis les visibles, sans jamais sortir de l’écran.
+- La fin de manche se compte ligne par ligne sur un bordereau, tampons de
+  multiplicateur compris.
+- Sons synthétisés à la volée, sans aucun fichier audio : jetons qui
+  s’entrechoquent, cliquet de roue, coup de tampon.
+
+Pour le confort :
+
+- Indice quand on bloque, qui montre aussi la pioche si c’est elle
+  qu’il faut utiliser.
+- Annuler illimité.
+- Fin automatique dès qu’il n’y a plus de suspense (vérifiée par
+  simulation, donc jamais proposée à tort).
+- Détection de blocage : si la donne ne peut plus jamais être terminée, le
+  jeu le dit au lieu de laisser chercher dans le vide.
+- Pioche 1 (facile) ou Pioche 3 (classique).
+- Graine de partie : rejouer une donne précise, ou l’envoyer par un lien
+  `?seed=...`.
+
+La progression reste sur l’appareil : statistiques, séries, meilleur temps,
+douze hauts faits, calendrier des défis du mois.
 
 ## Les modes de jeu
 
-Toutes les règles sont expliquées dans le jeu, via un panneau interactif à
-onglets accessible depuis l&rsquo;accueil (bouton Règles du jeu).
+Toutes les règles sont aussi expliquées dans le jeu (bouton Règles).
 
-- Classique: le Klondike tranquille. Score, indices et annuler illimité.
-- Jackpot: le mode phare. On accumule un magot et on choisit à chaque
-  victoire d&rsquo;encaisser ou de tout remettre en jeu.
-- Défi du jour: une donne unique, identique pour tout le monde le même
-  jour, à ajouter à sa collection mensuelle.
-- Chrono: mêmes règles, mais le bonus de vitesse fond à chaque seconde.
-- Zen: ni score, ni chrono, ni pénalité. Juste le plaisir de ranger.
+- **Jackpot** : le mode phare. On choisit sa table, on accumule un magot et
+  on décide à chaque victoire d’encaisser ou de doubler.
+- **Classique** : le Klondike tranquille, avec score, indices et annuler.
+- **Défi du jour** : la même donne pour tout le monde ce jour-là, avec une
+  prime à la première victoire.
+- **Chrono** : mêmes règles, mais le bonus de vitesse fond à chaque seconde.
+- **Zen** : ni score, ni chrono, ni pénalité.
 
-## Le système de score et de gambling
-
-Le score récompense la prise de risque et la réflexion:
+## Score et mode Jackpot
 
 | Événement | Effet |
 | --- | --- |
@@ -116,219 +111,231 @@ Le score récompense la prise de risque et la réflexion:
 | Coup impossible | -5 |
 | Indice | -25 |
 | Recharger la pioche en Pioche 3 | -20 |
-| Bonus de vitesse (fin de partie) | max(0, 1000 - secondes x 2) |
-| Bonus de précision (0 coup invalide, 0 annuler) | +100 |
+| Bonus de vitesse (fin de partie) | max(0, 1000 - secondes × 2) |
+| Bonus sans faute (aucun coup invalide, aucun annuler) | +100 |
 
-En mode Jackpot, chaque manche gagnée grossit le magot. Un multiplicateur de
-série récompense les victoires enchaînées (x1, x1.5, x2, x3, puis x5). À
-chaque victoire, deux choix:
+En mode Jackpot, chaque manche gagnée grossit le magot, multipliée par la
+série en cours (×1, ×1,5, ×2, ×3, puis ×5). Après chaque victoire :
 
-- Encaisser: le magot rejoint définitivement la banque.
-- Quitte ou double: on rejoue aussitôt en risquant tout. Une manche perdue
-  ou abandonnée, et le magot retombe à zéro.
+- **Encaisser** : le magot rejoint la banque, définitivement.
+- **Quitte ou double** : on rejoue aussitôt en risquant tout. Une manche
+  perdue ou abandonnée, et le magot retombe à zéro.
 
-Trois victoires de suite en quitte ou double débloquent le coffre-fort
-mystère: un multiplicateur surprise appliqué à tout le magot, souvent un
-joli gain, parfois un piège. C&rsquo;est ça, le frisson.
+Trois victoires d’affilée ouvrent le coffre-fort : un multiplicateur
+surprise sur tout le magot, souvent généreux, parfois piégé (×0,5).
 
 Avant chaque série, on choisit sa table. La mise quitte la banque et entre
-dans le magot: on la récupère en encaissant, on la perd avec la série.
+dans le magot : on la récupère en encaissant, on la perd avec la série.
 
 | Table | Mise | Gains |
 | --- | --- | --- |
-| Libre | aucune | x1 |
-| Argent | 500 | x1,5 |
-| Or | 2 500 | x2 |
-| Diamant (rang VIP Or) | 10 000 | x3 |
+| Libre | aucune | ×1 |
+| Argent | 500 | ×1,5 |
+| Or | 2 500 | ×2 |
+| Diamant (rang VIP Or) | 10 000 | ×3 |
 
 ## La banque, la boutique et les rangs VIP
 
-Les jetons encaissés ne dorment plus: ils se dépensent.
+D’où viennent les jetons :
 
-D&rsquo;où ils viennent:
-
-- Encaisser un magot du mode Jackpot (la source principale).
+- Encaisser un magot du mode Jackpot, de loin la source principale.
 - Un pourboire de 10 % du score sur toute autre victoire.
-- Une prime de 500 jetons pour la première victoire du défi du jour.
-- La roue du jour: un tour gratuit quotidien, pour des jetons ou un bonus.
-- Un cadeau de bienvenue de 1 000 jetons (les anciennes sauvegardes gardent
-  leur banque, convertie en solde).
+- 500 jetons pour la première victoire du défi du jour.
+- La roue du jour : un tour gratuit par jour, pour des jetons ou un bonus.
+- 1 000 jetons de bienvenue. Les sauvegardes d’avant la boutique gardent
+  leur banque, convertie en solde.
 
-À quoi ils servent:
+À quoi ils servent :
 
-- La boutique: huit dos de cartes (dont un holographique animé), neuf
+- **La boutique** : huit dos de cartes (dont un holographique animé), neuf
   tapis (velours, Monte-Carlo, marbre noir, salon doré...) et quatre effets
-  de victoire, avec aperçu avant achat.
-- Les tables à mise, pour faire fructifier sa banque.
-- Trois bonus consommables:
-  - Œil du croupier: un indice offert, sans pénalité de score.
-  - Assurance: activée avant un quitte ou double, elle rend la moitié du
+  de victoire, tous visibles avant achat.
+- **Les tables à mise**, pour faire fructifier sa banque.
+- **Trois bonus** :
+  - Œil du croupier : un indice offert, sans pénalité.
+  - Assurance : activée avant un quitte ou double, elle rend la moitié du
     magot si la manche est perdue ou abandonnée.
-  - Seconde chance: sur une donne bloquée en Jackpot, redistribue une
+  - Seconde chance : sur une donne bloquée en Jackpot, redistribue une
     manche neuve sans perdre le magot.
 
-Les rangs VIP (Bronze, Argent, Or, Platine, Diamant) dépendent du total de
-jetons gagnés depuis le début, que les achats ne font jamais baisser. Chaque
-rang accorde jusqu&rsquo;à 20 % de remise et ouvre des objets et des tables
-réservés.
+Le rang VIP (Bronze, Argent, Or, Platine, Diamant) dépend du total de jetons
+gagnés depuis le début ; les achats ne le font jamais baisser. Chaque rang
+donne jusqu’à 20 % de remise et ouvre des objets et des tables réservés.
+
+## Sur téléphone
+
+Le jeu est pensé pour le pouce autant que pour la souris.
+
+- En portrait, les actions (indice, annuler, nouvelle donne, options) sont
+  dans un dock en bas d’écran, et les fenêtres montent du bas comme des
+  feuilles.
+- En paysage, le dock passe sur le côté pour laisser toute la hauteur aux
+  cartes.
+- Les cartes prennent toute la largeur disponible ; leurs coins restent
+  lisibles même quand les colonnes se resserrent.
+- Zones tactiles d’au moins 44 pixels, encoches et bords arrondis pris en
+  compte, pas de menu contextuel sur un appui long.
+- Vérifié de 320 pixels de large (iPhone SE) jusqu’au grand écran, en
+  portrait comme en paysage.
+
+Pour l’installer : depuis le navigateur du téléphone, « Ajouter à
+l’écran d’accueil ». Il se lance alors en plein écran et fonctionne sans
+connexion.
 
 ## Direction artistique
 
-Casino chic, mais joueur.
+Une table de casino, pas une interface web.
 
-- Feutrine profonde éclairée par un spot central, grain discret, bords qui
-  s&rsquo;assombrissent.
-- Or métallique utilisé en filets fins: liserés, jetons, tampons, titres.
-- Cartes ivoire avec index serif lisibles même en éventail serré, et
-  enseignes vectorielles (fini les glyphes Unicode qui deviennent des emojis
-  sur certains téléphones).
-- Figures (Valet, Dame, Roi) en illustrations plates aux couleurs de leur
-  enseigne, qui gardent leur caractère: grognons sur un coup interdit, clin
-  d&rsquo;œil quand un indice les montre.
-- Typographie: Fraunces (serif variable, axes « soft » et « wonk » pour le
-  côté ludique) pour les titres et les chiffres, Manrope pour
-  l&rsquo;interface. Polices embarquées, donc disponibles hors ligne.
-- Icônes Lucide, cohérentes dans tout le jeu.
+- Feutrine éclairée par un spot, avec un grain discret et des bords qui
+  s’assombrissent. Neuf tapis au choix.
+- Le titre est doré à chaud sur le tapis, et une ligne courbe y est
+  imprimée comme sur les tables de blackjack.
+- Les modes de jeu sont de vraies cartes posées de travers sur la table.
+  Elles sont distribuées face cachée puis se retournent, respirent au repos,
+  s’inclinent sous le curseur et s’envolent en se retournant quand on en
+  choisit une. Chacune a son petit emblème animé : trotteuse du chrono, cœur
+  qui bat pour le zen, carreau qui scintille pour le défi du jour.
+- La fin de manche s’imprime sur un bordereau papier, avec des tampons
+  encreurs pour les multiplicateurs.
+- Cartes ivoire aux index serif, enseignes vectorielles (les glyphes Unicode
+  deviennent des emojis sur certains téléphones).
+- Valet, Dame et Roi illustrés aux couleurs de leur enseigne. Ils gardent
+  leur caractère : grognons sur un coup interdit, clin d’œil quand un
+  indice les montre.
+- Typographie : Fraunces pour les titres et les chiffres, Manrope pour
+  l’interface, embarquées pour fonctionner hors ligne.
 
-## Démarrage rapide
+## Lancer le projet
 
-Pré-requis: Node 20 ou plus récent.
+Prérequis : Node 20 ou plus récent.
 
 ```bash
-npm install        # installe les dépendances
-npm run dev        # serveur de développement (http://localhost:5173)
-npm run build      # build de production dans dist/
-npm run preview    # sert le build de production en local
+npm install     # une seule fois
+npm run dev     # http://localhost:5173
 ```
 
-L&rsquo;application est une PWA: elle s&rsquo;installe sur mobile comme sur
-ordinateur et fonctionne à 100 % hors ligne après la première visite.
+Pour tester la version de production (PWA, hors ligne) :
 
-## Scripts disponibles
+```bash
+npm run build && npm run preview
+```
 
 | Script | Rôle |
 | --- | --- |
 | `npm run dev` | Serveur de développement avec rechargement à chaud. |
-| `npm run build` | Vérifie les types puis produit le build de production. |
+| `npm run build` | Vérifie les types puis produit le build dans `dist/`. |
 | `npm run preview` | Sert le build de production en local. |
-| `npm test` | Lance les tests unitaires du moteur (Vitest). |
+| `npm test` | Tests unitaires du moteur et de l’économie (Vitest). |
 | `npm run test:watch` | Tests en mode surveillance. |
 | `npm run typecheck` | Vérification stricte des types TypeScript. |
 | `npm run lint` | Analyse statique ESLint. |
 | `npm run format` | Reformate le code avec Prettier. |
 | `npm run format:check` | Vérifie le formatage sans modifier. |
-| `npm run screenshots` | Régénère icônes et captures (voir plus bas). |
+| `npm run screenshots` | Régénère les captures et les icônes. |
+
+Avant de pousser, `npm run format:check && npm run lint && npm run typecheck && npm test`
+reproduit la CI.
 
 ## Architecture du code
 
-Le code est séparé en trois couches nettes, pour que la logique de jeu reste
-testable indépendamment de l&rsquo;interface.
+Trois couches nettes, pour que la logique de jeu reste testable sans
+l’interface.
 
 ```
 src/
   engine/      Moteur pur, sans dépendance UI (déterministe, testé)
     types.ts     Modèle de données immuable (Board, Card, Move)
-    rng.ts       Générateur pseudo-aléatoire déterministe (seeds)
+    rng.ts       Générateur pseudo-aléatoire déterministe (graines)
     deck.ts      Création et distribution du jeu
     rules.ts     Validation des placements et des séquences
-    moves.ts     Application des coups, auto-move, indices, autocomplétion,
+    moves.ts     Coups, déplacement automatique, indices, fin automatique,
                  détection de blocage
-    scoring.ts   Calcul du score et des bonus de fin de partie
+    scoring.ts   Score et bonus de fin de partie
   state/       État applicatif (Zustand)
-    game.ts      Partie en cours: coups, annuler, timer, gambling, mises,
+    game.ts      Partie en cours : coups, annuler, chrono, Jackpot, mises,
                  assurance, navigation
-    meta.ts      Données persistantes: réglages, stats, portefeuille,
+    meta.ts      Données persistantes : réglages, stats, portefeuille,
                  inventaire, roue, hauts faits, migration des sauvegardes
-    catalog.ts   Économie pure: boutique, bonus, rangs VIP, tables à mise,
-                 roue du jour
+    catalog.ts   Économie pure : boutique, bonus, rangs VIP, tables, roue
     gambling.ts  Règles chiffrées du mode Jackpot
     achievements.ts
   audio/
-    sfx.ts       Sons synthétisés à la volée via la Web Audio API
+    sfx.ts       Sons synthétisés à la volée (Web Audio API)
   components/  Interface React (plateau, bandeau, dock, boutique, roue...)
-  styles/      Feuilles de style: tokens, tapis, cartes, plateau, interface
+  styles/      Tokens et tapis, cartes, plateau, interface
   utils/       Formatage, graines, tracés vectoriels des enseignes
 ```
 
-Choix techniques notables:
+Choix techniques notables :
 
-- Moteur immuable: chaque coup renvoie un nouveau plateau, jamais muté. Cela
-  rend l&rsquo;historique d&rsquo;annulation trivial (on empile les états
-  précédents) et les tests limpides.
-- Graines déterministes: un hash de chaîne alimente un générateur
-  mulberry32. Deux graines identiques donnent exactement la même partie, ce
-  qui permet le défi du jour et le partage par lien.
-- Autocomplétion sûre: proposée uniquement si la partie peut vraiment se
-  terminer en n&rsquo;envoyant que des cartes vers les fondations, vérifié
-  par une simulation bornée.
-- Détection de blocage: la partie est déclarée perdue seulement quand
-  aucun coup ne peut plus jamais faire progresser la donne, y compris en
-  simulant tous les tirages accessibles via la pioche.
+- **Moteur immuable** : chaque coup renvoie un nouveau plateau. L’historique
+  d’annulation n’est qu’une pile d’états, et les tests restent simples.
+- **Graines déterministes** : un hash de chaîne alimente un générateur
+  mulberry32. Deux graines identiques donnent la même partie, d’où le défi
+  du jour et le partage par lien.
+- **Fin automatique sûre** : proposée seulement si la partie peut vraiment se
+  terminer en envoyant les cartes aux fondations, vérifié par simulation.
+- **Détection de blocage** : la partie n’est déclarée perdue que si aucun
+  coup ne peut plus jamais faire progresser la donne, en simulant tous les
+  tirages accessibles via la pioche.
+- **Animations FLIP** via la Web Animations API, mesurées sur la position de
+  mise en page plutôt que sur la position affichée : plusieurs cartes
+  peuvent voler en même temps sans se fausser.
+- **Colonnes adaptatives** : les écarts de chaque colonne sont calculés à
+  partir de la hauteur réellement disponible.
 
-- Animations de cartes en FLIP via la Web Animations API, mesurées sur la
-  position de mise en page (et non la position affichée) pour ne jamais se
-  fausser quand plusieurs cartes sont en vol.
-
-Pile technique: React 18, TypeScript, Vite, Zustand, vite-plugin-pwa, Vitest,
-Lucide, Fontsource (Fraunces, Manrope).
+Pile technique : React 18, TypeScript, Vite, Zustand, vite-plugin-pwa,
+Vitest, Lucide, Fontsource (Fraunces, Manrope).
 
 ## Tests
-
-Le cœur du jeu (le moteur) est couvert par des tests unitaires: mélange
-déterministe, distribution correcte, règles de placement, application et
-non-mutation des coups, détection de victoire et de blocage,
-autocomplétion, indices et calcul du score.
-
-L&rsquo;économie l&rsquo;est aussi: rangs VIP et remises, pourboires, tirage
-pondéré de la roue, migration des anciennes sauvegardes, achats refusés ou
-acceptés, prélèvement des mises, remboursement de l&rsquo;assurance et
-encaissement.
 
 ```bash
 npm test
 ```
 
+Le moteur est couvert : mélange déterministe, distribution, règles de
+placement, application et non-mutation des coups, victoire et blocage, fin
+automatique, indices, score.
+
+L’économie aussi : rangs VIP et remises, pourboires, tirage pondéré de la
+roue, migration des anciennes sauvegardes, achats refusés ou acceptés,
+prélèvement des mises, remboursement de l’assurance, encaissement.
+
 ## Intégration et déploiement continus
 
-Le workflow GitHub Actions (`.github/workflows/ci.yml`) est déclenché à
-chaque push et pull request sur `main`:
+Le workflow GitHub Actions (`.github/workflows/ci.yml`) tourne à chaque push
+et pull request sur `main` :
 
-1. Vérification du formatage (Prettier).
-2. Analyse statique (ESLint).
-3. Vérification des types (TypeScript).
-4. Tests unitaires (Vitest).
-5. Build de production (Vite).
+1. Formatage (Prettier)
+2. Analyse statique (ESLint)
+3. Types (TypeScript)
+4. Tests unitaires (Vitest)
+5. Build de production (Vite)
 
-Sur un push vers `main`, et seulement si la passe qualité est verte, le jeu
-est build avec la base adaptée au sous-chemin puis déployé automatiquement
-sur GitHub Pages.
+Sur un push vers `main`, et seulement si tout est vert, le jeu est construit
+pour le sous-chemin du dépôt puis publié sur
+[GitHub Pages](https://clemly.github.io/Jackpot-Solitaire/).
 
-Pour activer le déploiement: dans les réglages du dépôt, section Pages,
-choisir la source GitHub Actions.
+Pour activer le déploiement sur un fork : Settings, Pages, source « GitHub
+Actions ».
 
 ## Régénérer les captures et les icônes
 
-Les captures d&rsquo;écran (dossier `screenshots/`) et les icônes PWA
-(dossier `public/`) sont générées à partir du vrai rendu du jeu, piloté par
-un navigateur headless.
+Les captures (`screenshots/`) et les icônes PWA (`public/`) sont produites à
+partir du vrai rendu du jeu, piloté par Playwright : une partie réellement
+jouée coup par coup, sur ordinateur, téléphone en portrait et en paysage.
 
 ```bash
-npm install --no-save playwright
-npx playwright install chromium
+npx playwright install chromium   # une seule fois
 npm run screenshots
 ```
-
-Le script lance un serveur de développement, pilote l&rsquo;application
-avec Playwright, enregistre les captures et rastérise l&rsquo;icône SVG aux
-tailles attendues.
 
 ## Vie privée
 
 Aucun compte, aucun serveur, aucun pistage. Statistiques, réglages, banque,
-achats et hauts faits sont stockés uniquement dans le navigateur
-(localStorage). Les jetons n&rsquo;ont aucune valeur réelle et ne
-s&rsquo;achètent pas: ils se gagnent en jouant.
-Rien ne quitte l&rsquo;appareil.
+achats et hauts faits restent dans le navigateur (localStorage) et ne
+quittent jamais l’appareil. Les jetons n’ont aucune valeur réelle et ne
+s’achètent pas : ils se gagnent en jouant.
 
 ## Licence
 

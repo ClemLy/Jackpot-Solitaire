@@ -214,7 +214,7 @@ const SECTIONS: Section[] = [
             {
               tone: 'gold',
               mark: '2',
-              text: "Deuxième d'affilée: x1,5. Puis x2, x3, et jusqu'à x5.",
+              text: "Deuxième d'affilée: ×1,5. Puis ×2, ×3, et jusqu'à ×5.",
             },
           ]}
         />

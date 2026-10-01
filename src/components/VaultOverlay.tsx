@@ -172,11 +172,6 @@ export function VaultOverlay() {
 
   return (
     <Stage label="Coffre-fort mystère" tone={trapped ? 'red' : 'gold'}>
-      <div
-        className="stage__rays"
-        aria-hidden="true"
-        data-on={phase === 'open' && !trapped}
-      />
       <p className="stage__eyebrow">Trois victoires d&rsquo;affilée</p>
       <h2 className="stage__title">Le coffre-fort</h2>
 

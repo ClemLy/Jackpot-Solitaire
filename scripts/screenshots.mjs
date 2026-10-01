@@ -97,6 +97,64 @@ async function generateIcons(browser) {
   console.log('Icones generees dans public/.');
 }
 
+// Joue de vrais coups (ceux que proposerait l'indice) pour obtenir une
+// partie entamee credible, plutot qu'une donne toute fraiche.
+async function playMoves(page, count) {
+  await page.evaluate((n) => {
+    const { game, engine } = window.__jackpot;
+    for (let i = 0; i < n; i++) {
+      const st = game.getState();
+      if (st.phase !== 'playing') break;
+      const move = engine.findHint(st.board);
+      if (!move) break;
+      if (move.type === 'draw' || move.type === 'recycle') st.clickStock();
+      else st.applyDragMove(move);
+    }
+    // Un chrono a 00:00 apres 34 coups trahirait la mise en scene.
+    game.setState({ startedAt: Date.now() - 263000 });
+  }, count);
+  await sleep(500);
+}
+
+const JACKPOT_WIN = {
+  route: 'game',
+  mode: 'gambling',
+  phase: 'won',
+  overlay: 'win',
+  pot: 9860,
+  combo: 2,
+  stakeTable: 'gold',
+  finalTimeMs: 168000,
+  win: {
+    roundScore: 1300,
+    bonuses: { speed: 660, precision: 100, total: 760 },
+    baseScore: 540,
+    multiplier: 1.5,
+    tableMultiplier: 2,
+    gain: 3900,
+    potBefore: 5960,
+    potAfter: 9860,
+    vaultEligible: false,
+    tip: 0,
+    dailyBonus: 0,
+    moves: 131,
+  },
+};
+
+async function openPage(browser, options) {
+  const context = await browser.newContext(options);
+  const page = await context.newPage();
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => Boolean(window.__jackpot), null, { timeout: 15000 });
+  // Reglages stables (pas d'animation, pas de son) et donnees riches.
+  await driveStore(page, (meta) => {
+    window.__jackpot.meta.getState().updateSettings({ reducedMotion: true, soundEnabled: false });
+    window.__jackpot.meta.setState(meta);
+    window.__jackpot.game.getState().goHome();
+  }, richMeta);
+  return { context, page };
+}
+
 async function main() {
   const server = spawn('npx', ['vite', '--port', String(PORT), '--strictPort'], {
     cwd: root,
@@ -110,100 +168,70 @@ async function main() {
 
     await generateIcons(browser);
 
-    const context = await browser.newContext({
+    // ---- Ordinateur ----
+    const desk = await openPage(browser, {
       viewport: { width: 1280, height: 800 },
       deviceScaleFactor: 2,
     });
-    const page = await context.newPage();
-    await page.goto(BASE, { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => Boolean(window.__jackpot), null, { timeout: 15000 });
-
-    // Reglages stables et donnees riches.
-    await driveStore(page, (meta) => {
-      window.__jackpot.meta.getState().updateSettings({ reducedMotion: true, soundEnabled: false });
-      window.__jackpot.meta.setState(meta);
-    }, richMeta);
-
-    // Accueil (on laisse les animations d'entree se terminer).
-    await driveStore(page, () => window.__jackpot.game.getState().goHome());
-    await sleep(1400);
+    let page = desk.page;
+    await sleep(800);
     await page.screenshot({ path: resolve(shotsDir, 'accueil.png') });
 
-    // Partie classique en cours (avec quelques cartes au talon).
-    await driveStore(page, () => {
-      const g = window.__jackpot.game.getState();
-      g.newGame({ mode: 'classic', drawCount: 3, seed: 'demo-jackpot' });
-    });
-    await sleep(1800);
-    await driveStore(page, () => {
-      window.__jackpot.game.getState().clickStock();
-    });
+    await driveStore(page, () =>
+      window.__jackpot.game.getState().newGame({ mode: 'gambling', table: 'gold', drawCount: 3, seed: 'demo-jackpot' }),
+    );
+    await playMoves(page, 34);
     await page.screenshot({ path: resolve(shotsDir, 'partie.png') });
 
-    // Fenetre des regles.
-    await driveStore(page, () => window.__jackpot.game.getState().openModal('rules'));
-    await page.screenshot({ path: resolve(shotsDir, 'regles.png') });
-
-    // Statistiques.
-    await driveStore(page, () => window.__jackpot.game.getState().openModal('stats'));
-    await page.screenshot({ path: resolve(shotsDir, 'stats.png') });
-
-    // Boutique (dos de cartes), puis choix de la table a mise.
-    await driveStore(page, () => window.__jackpot.game.getState().openModal('shop'));
-    await page.screenshot({ path: resolve(shotsDir, 'boutique.png') });
-    await driveStore(page, () => window.__jackpot.game.getState().openModal('tables'));
-    await page.screenshot({ path: resolve(shotsDir, 'tables.png') });
-    await driveStore(page, () => window.__jackpot.game.getState().openModal('wheel'));
-    await page.screenshot({ path: resolve(shotsDir, 'roue.png') });
-    await driveStore(page, () => window.__jackpot.game.getState().closeModal());
-
-    // Fin de partie facon casino (mode Jackpot).
-    await driveStore(page, () => {
-      window.__jackpot.game.setState({
-        route: 'game',
-        mode: 'gambling',
-        phase: 'won',
-        overlay: 'win',
-        pot: 9860,
-        combo: 2,
-        stakeTable: 'gold',
-        finalTimeMs: 168000,
-        win: {
-          roundScore: 1300,
-          bonuses: { speed: 660, precision: 100, total: 760 },
-          baseScore: 540,
-          multiplier: 1.5,
-          tableMultiplier: 2,
-          gain: 3900,
-          potBefore: 5960,
-          potAfter: 9860,
-          vaultEligible: false,
-          tip: 0,
-          dailyBonus: 0,
-          moves: 131,
-        },
-      });
-    });
-    await sleep(600);
+    await driveStore(page, (s) => window.__jackpot.game.setState(s), JACKPOT_WIN);
     await page.screenshot({ path: resolve(shotsDir, 'jackpot.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().goHome());
 
-    // Vue mobile de l'accueil.
-    await context.close();
-    const mobile = await browser.newContext({
+    for (const [modal, file] of [
+      ['shop', 'boutique'],
+      ['tables', 'tables'],
+      ['wheel', 'roue'],
+      ['stats', 'stats'],
+      ['rules', 'regles'],
+    ]) {
+      await driveStore(page, (m) => window.__jackpot.game.getState().openModal(m), modal);
+      await page.screenshot({ path: resolve(shotsDir, `${file}.png`) });
+    }
+    await desk.context.close();
+
+    // ---- Telephone en portrait ----
+    const phone = await openPage(browser, {
       viewport: { width: 390, height: 844 },
       deviceScaleFactor: 3,
       isMobile: true,
+      hasTouch: true,
     });
-    const mpage = await mobile.newPage();
-    await mpage.goto(BASE, { waitUntil: 'networkidle' });
-    await mpage.waitForFunction(() => Boolean(window.__jackpot), null, { timeout: 15000 });
-    await mpage.evaluate((meta) => {
-      window.__jackpot.meta.getState().updateSettings({ reducedMotion: true, soundEnabled: false });
-      window.__jackpot.meta.setState(meta);
-      window.__jackpot.game.getState().goHome();
-    }, richMeta);
-    await sleep(500);
-    await mpage.screenshot({ path: resolve(shotsDir, 'mobile.png') });
+    page = phone.page;
+    await sleep(800);
+    await page.screenshot({ path: resolve(shotsDir, 'mobile-accueil.png') });
+    await driveStore(page, () =>
+      window.__jackpot.game.getState().newGame({ mode: 'gambling', table: 'silver', drawCount: 3, seed: 'demo-jackpot' }),
+    );
+    await playMoves(page, 34);
+    await page.screenshot({ path: resolve(shotsDir, 'mobile-partie.png') });
+    await driveStore(page, (s) => window.__jackpot.game.setState(s), JACKPOT_WIN);
+    await page.screenshot({ path: resolve(shotsDir, 'mobile-victoire.png') });
+    await phone.context.close();
+
+    // ---- Telephone en paysage ----
+    const land = await openPage(browser, {
+      viewport: { width: 844, height: 390 },
+      deviceScaleFactor: 3,
+      isMobile: true,
+      hasTouch: true,
+    });
+    page = land.page;
+    await driveStore(page, () =>
+      window.__jackpot.game.getState().newGame({ mode: 'classic', drawCount: 3, seed: 'demo-jackpot' }),
+    );
+    await playMoves(page, 34);
+    await page.screenshot({ path: resolve(shotsDir, 'mobile-paysage.png') });
+    await land.context.close();
 
     await browser.close();
     console.log('Captures enregistrees dans screenshots/.');
