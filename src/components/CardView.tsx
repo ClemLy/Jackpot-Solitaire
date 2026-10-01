@@ -1,84 +1,93 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { memo } from 'react';
 import type { Card } from '../engine';
-import { cardColor, rankLabel, suitSymbol } from '../engine';
+import { cardColor, rankLabel } from '../engine';
 import { CourtFace, type Expression } from './CourtFace';
+import { SuitIcon } from './Suits';
 
 type Point = [number, number];
 
-// Dispositions classiques des pips pour les cartes 2 a 10.
+const SUIT_NAME: Record<Card['suit'], string> = {
+  spades: 'pique',
+  hearts: 'cœur',
+  diamonds: 'carreau',
+  clubs: 'trèfle',
+};
+
+// Dispositions classiques des pips pour les cartes 2 a 10 (en % de la zone
+// centrale de la carte).
 const PIP_LAYOUT: Record<number, Point[]> = {
   2: [
-    [50, 6],
-    [50, 94],
+    [50, 0],
+    [50, 100],
   ],
   3: [
-    [50, 6],
+    [50, 0],
     [50, 50],
-    [50, 94],
+    [50, 100],
   ],
   4: [
-    [20, 6],
-    [80, 6],
-    [20, 94],
-    [80, 94],
+    [18, 0],
+    [82, 0],
+    [18, 100],
+    [82, 100],
   ],
   5: [
-    [20, 6],
-    [80, 6],
+    [18, 0],
+    [82, 0],
     [50, 50],
-    [20, 94],
-    [80, 94],
+    [18, 100],
+    [82, 100],
   ],
   6: [
-    [20, 6],
-    [80, 6],
-    [20, 50],
-    [80, 50],
-    [20, 94],
-    [80, 94],
+    [18, 0],
+    [82, 0],
+    [18, 50],
+    [82, 50],
+    [18, 100],
+    [82, 100],
   ],
   7: [
-    [20, 6],
-    [80, 6],
-    [50, 28],
-    [20, 50],
-    [80, 50],
-    [20, 94],
-    [80, 94],
+    [18, 0],
+    [82, 0],
+    [50, 25],
+    [18, 50],
+    [82, 50],
+    [18, 100],
+    [82, 100],
   ],
   8: [
-    [20, 6],
-    [80, 6],
-    [50, 28],
-    [20, 50],
-    [80, 50],
-    [50, 72],
-    [20, 94],
-    [80, 94],
+    [18, 0],
+    [82, 0],
+    [50, 25],
+    [18, 50],
+    [82, 50],
+    [50, 75],
+    [18, 100],
+    [82, 100],
   ],
   9: [
-    [20, 6],
-    [80, 6],
-    [20, 37],
-    [80, 37],
+    [18, 0],
+    [82, 0],
+    [18, 33.3],
+    [82, 33.3],
     [50, 50],
-    [20, 63],
-    [80, 63],
-    [20, 94],
-    [80, 94],
+    [18, 66.7],
+    [82, 66.7],
+    [18, 100],
+    [82, 100],
   ],
   10: [
-    [20, 6],
-    [80, 6],
-    [50, 20],
-    [20, 37],
-    [80, 37],
-    [20, 63],
-    [80, 63],
-    [50, 80],
-    [20, 94],
-    [80, 94],
+    [18, 0],
+    [82, 0],
+    [50, 16.7],
+    [18, 33.3],
+    [82, 33.3],
+    [18, 66.7],
+    [82, 66.7],
+    [50, 83.3],
+    [18, 100],
+    [82, 100],
   ],
 };
 
@@ -90,9 +99,6 @@ export interface CardViewProps {
   hint?: boolean;
   hintTarget?: boolean;
   shaking?: boolean;
-  dealing?: boolean;
-  dealDelay?: number;
-  undoing?: boolean;
   expression?: Expression;
   floatText?: string;
   onPointerDown?: (event: ReactPointerEvent) => void;
@@ -108,15 +114,18 @@ function resolveExpression(props: CardViewProps): Expression {
   return 'neutral';
 }
 
-function Face({ card, expression }: { card: Card; expression: Expression }) {
-  const symbol = suitSymbol(card.suit);
+function Center({ card, expression }: { card: Card; expression: Expression }) {
   if (card.rank === 1) {
-    return <div className="card__ace">{symbol}</div>;
+    return (
+      <div className="card__ace" data-ornate={card.suit === 'spades'}>
+        <SuitIcon suit={card.suit} />
+      </div>
+    );
   }
   if (card.rank >= 11) {
     return (
       <div className="card__court">
-        <CourtFace rank={card.rank} expression={expression} />
+        <CourtFace rank={card.rank} suit={card.suit} expression={expression} />
       </div>
     );
   }
@@ -124,23 +133,35 @@ function Face({ card, expression }: { card: Card; expression: Expression }) {
   return (
     <div className="card__pips">
       {pips.map(([x, y], i) => (
-        <span
+        <SuitIcon
           key={i}
+          suit={card.suit}
           className="card__pip"
-          data-flip={y > 50 ? 'true' : 'false'}
-          style={{ left: `${x}%`, top: `${y}%` }}
-        >
-          {symbol}
-        </span>
+          style={{
+            left: `${x}%`,
+            top: `${y}%`,
+            transform: `translate(-50%, -50%)${y > 50 ? ' rotate(180deg)' : ''}`,
+          }}
+        />
       ))}
+    </div>
+  );
+}
+
+function Index({ card, position }: { card: Card; position: 'top' | 'bottom' }) {
+  const label = rankLabel(card.rank);
+  return (
+    <div className={`card__index card__index--${position}`}>
+      <span className="card__rank" data-wide={label.length > 1}>
+        {label}
+      </span>
+      <SuitIcon suit={card.suit} className="card__corner-suit" />
     </div>
   );
 }
 
 function CardViewBase(props: CardViewProps) {
   const { card } = props;
-  const symbol = suitSymbol(card.suit);
-  const label = rankLabel(card.rank);
   const expression = resolveExpression(props);
 
   const classes = ['card'];
@@ -149,8 +170,6 @@ function CardViewBase(props: CardViewProps) {
   if (props.hint) classes.push('is-hint');
   if (props.hintTarget) classes.push('is-hint-target');
   if (props.shaking) classes.push('is-shake');
-  if (props.dealing) classes.push('is-dealing');
-  if (props.undoing) classes.push('is-undo');
 
   return (
     <div
@@ -160,39 +179,34 @@ function CardViewBase(props: CardViewProps) {
       data-color={cardColor(card)}
       data-rank={card.rank}
       data-face-up={card.faceUp ? 'true' : 'false'}
+      aria-label={
+        card.faceUp
+          ? `${rankLabel(card.rank)} de ${SUIT_NAME[card.suit]}`
+          : undefined
+      }
       style={props.style}
       onPointerDown={props.onPointerDown}
       onPointerMove={props.onPointerMove}
       onPointerUp={props.onPointerUp}
       onPointerCancel={props.onPointerCancel}
     >
-      <div
-        className="card__inner"
-        style={
-          props.dealing && props.dealDelay
-            ? { animationDelay: `${props.dealDelay}ms` }
-            : undefined
-        }
-      >
+      <div className="card__inner">
         <div className="card__front">
-          <div className="card__corner card__corner--tl">
-            <span className="rank">{label}</span>
-            <span className="suit">{symbol}</span>
-          </div>
-          <Face card={card} expression={expression} />
-          <div className="card__corner card__corner--br">
-            <span className="rank">{label}</span>
-            <span className="suit">{symbol}</span>
-          </div>
+          {/* Une carte cachee n'a pas besoin de son recto: on allege le DOM.
+              Il apparait au moment du retournement, cache par la face arriere
+              pendant la premiere moitie de la rotation. */}
+          {card.faceUp && (
+            <>
+              <Index card={card} position="top" />
+              <Center card={card} expression={expression} />
+              <Index card={card} position="bottom" />
+            </>
+          )}
         </div>
         <div className="card__back" />
       </div>
       {props.floatText && (
-        <span
-          className="float-score"
-          data-kind="loss"
-          style={{ left: 0, right: 0, top: '-6px', textAlign: 'center' }}
-        >
+        <span className="float-score" data-kind="loss">
           {props.floatText}
         </span>
       )}

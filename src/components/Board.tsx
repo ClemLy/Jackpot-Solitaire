@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -7,6 +8,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { RotateCcw } from 'lucide-react';
 import {
   canPlaceOnFoundation,
   canPlaceOnTableau,
@@ -16,6 +18,9 @@ import {
   type Move,
 } from '../engine';
 import { useGameStore } from '../state/game';
+import type { Board as BoardState } from '../engine';
+import { useMetaStore } from '../state/meta';
+import { playSound } from '../audio/sfx';
 import { CardView } from './CardView';
 
 type Source =
@@ -40,9 +45,19 @@ interface DragMeta {
   moved: boolean;
   lastX: number;
   lastY: number;
+  lastT: number;
+  tilt: number;
 }
 
 const TAP_THRESHOLD = 7;
+
+// Ecarts de l'eventail, en fraction de largeur de carte. Doivent rester
+// alignes sur --fan-down et --fan-up dans board.css.
+const FAN_DOWN = 0.17;
+const FAN_UP = 0.34;
+
+const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const EASE_LAND = 'cubic-bezier(0.25, 1.15, 0.5, 1)';
 
 function parseDrop(el: Element | null): DropTarget | null {
   const holder = el?.closest('[data-drop]') as HTMLElement | null;
@@ -54,26 +69,126 @@ function parseDrop(el: Element | null): DropTarget | null {
   return { kind, index: Number(index) };
 }
 
-function RecycleIcon() {
+function prefersReducedMotion(): boolean {
   return (
-    <svg className="stock-empty-icon" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        d="M12 20 A13 13 0 1 1 11 30"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3.4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M12 12 L12 21 L21 21"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    useMetaStore.getState().settings.reducedMotion ||
+    (typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
   );
+}
+
+interface Pos {
+  left: number;
+  top: number;
+}
+
+/**
+ * Position de mise en page d'une carte, sans tenir compte des animations en
+ * cours (contrairement a getBoundingClientRect). Indispensable: sinon une
+ * mesure prise en plein vol fausserait l'animation suivante.
+ */
+function layoutPos(el: HTMLElement, cache: Map<Element, DOMRect>): Pos {
+  const parent = el.offsetParent;
+  let base: DOMRect | undefined;
+  if (parent) {
+    base = cache.get(parent);
+    if (!base) {
+      base = parent.getBoundingClientRect();
+      cache.set(parent, base);
+    }
+  }
+  return {
+    left: (base?.left ?? 0) + el.offsetLeft,
+    top: (base?.top ?? 0) + el.offsetTop,
+  };
+}
+
+/** Eleve une carte au premier plan le temps d'une animation, puis la repose. */
+function liftDuring(el: HTMLElement, anim: Animation, z: number): void {
+  const previous = el.style.zIndex;
+  el.style.zIndex = String(z);
+  const restore = () => {
+    el.style.zIndex = previous;
+  };
+  anim.addEventListener('finish', restore);
+  anim.addEventListener('cancel', restore);
+}
+
+/** Petit eclat dore pose sur une fondation qui vient de recevoir une carte. */
+function spawnBurst(pile: Element, big: boolean): void {
+  const burst = document.createElement('span');
+  burst.className = big ? 'burst burst--big' : 'burst';
+  for (let i = 0; i < (big ? 12 : 8); i++) {
+    const spark = document.createElement('i');
+    spark.style.setProperty('--a', `${(360 / (big ? 12 : 8)) * i}deg`);
+    burst.appendChild(spark);
+  }
+  pile.appendChild(burst);
+  setTimeout(() => burst.remove(), big ? 1100 : 760);
+}
+
+/** Distribution animee: chaque carte part de la pioche vers sa colonne. */
+function animateDeal(
+  root: HTMLElement,
+  board: BoardState,
+  stockEl: HTMLElement | null,
+  cardEls: NodeListOf<HTMLElement>,
+  positions: Map<string, Pos>,
+): void {
+  const stock = stockEl?.getBoundingClientRect();
+  if (!stock) return;
+  // Ordre de donne reel: rangee par rangee, de gauche a droite.
+  const order = new Map<string, number>();
+  let n = 0;
+  for (let row = 0; row < 7; row++) {
+    for (let col = row; col < 7; col++) {
+      const card = board.tableau[col][row];
+      if (card) order.set(card.id, n++);
+    }
+  }
+  const step = 34;
+  cardEls.forEach((el) => {
+    const id = el.dataset.cardId;
+    if (!id) return;
+    const idx = order.get(id);
+    const pos = positions.get(id);
+    if (idx === undefined || !pos) {
+      // Cartes de la pioche: simple apparition.
+      el.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: 260,
+        easing: EASE_OUT,
+      });
+      return;
+    }
+    const dx = stock.left - pos.left;
+    const dy = stock.top - pos.top;
+    const delay = 120 + idx * step;
+    const anim = el.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px) rotate(-4deg)` },
+        { transform: 'none' },
+      ],
+      { duration: 420, delay, easing: EASE_OUT, fill: 'backwards' },
+    );
+    liftDuring(el, anim, 600 + idx);
+    if (el.dataset.faceUp === 'true') {
+      el.querySelector('.card__inner')?.animate(
+        [
+          { transform: 'rotateY(180deg)' },
+          { transform: 'rotateY(180deg)', offset: 0.55 },
+          { transform: 'rotateY(0deg)' },
+        ],
+        { duration: 640, delay, easing: EASE_OUT, fill: 'backwards' },
+      );
+    }
+  });
+  // Quelques froissements de cartes pendant la donne (pas un par carte:
+  // ce serait une mitraillette).
+  for (let i = 0; i < 28; i += 3) {
+    setTimeout(() => playSound('deal'), 120 + i * step);
+  }
+  root.dataset.dealing = 'true';
+  setTimeout(() => delete root.dataset.dealing, 120 + 28 * step + 420);
 }
 
 export function Board() {
@@ -83,7 +198,7 @@ export function Board() {
   const shake = useGameStore((s) => s.shake);
   const scoring = useGameStore((s) => s.mode !== 'zen');
   const phase = useGameStore((s) => s.phase);
-  const autoCompleting = useGameStore((s) => s.autoCompleting);
+  const dealId = useGameStore((s) => s.dealId);
 
   const clickStock = useGameStore((s) => s.clickStock);
   const autoFromWaste = useGameStore((s) => s.autoFromWaste);
@@ -95,61 +210,134 @@ export function Board() {
   const [drop, setDrop] = useState<{ target: DropTarget; ok: boolean } | null>(
     null,
   );
+  const [area, setArea] = useState<{ h: number; w: number } | null>(null);
+
   const meta = useRef<DragMeta | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
-  const boardRootRef = useRef<HTMLDivElement | null>(null);
-  const prevRectsRef = useRef<Map<string, DOMRect>>(new Map());
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const tableauRef = useRef<HTMLDivElement | null>(null);
+  const stockRef = useRef<HTMLDivElement | null>(null);
 
-  const positionGhost = useCallback((x: number, y: number) => {
-    if (ghostRef.current) {
-      ghostRef.current.style.transform = `translate(${x}px, ${y}px) rotate(2deg)`;
-    }
+  // Memoire de la derniere mise en page, pour animer les ecarts (FLIP).
+  const prevRects = useRef<Map<string, Pos>>(new Map());
+  const prevFaceUp = useRef<Map<string, boolean>>(new Map());
+  const overrideRects = useRef<Map<string, Pos>>(new Map());
+  const seenNodes = useRef<WeakSet<Element>>(new WeakSet());
+  const lastDealId = useRef<number>(-1);
+  const prevFoundations = useRef<number[]>([0, 0, 0, 0]);
+
+  // Mesure de la zone du tableau: sert a resserrer les colonnes trop longues
+  // pour qu'elles tiennent toujours a l'ecran, sans barre de defilement.
+  useEffect(() => {
+    const el = tableauRef.current;
+    if (!el) return;
+    const measure = () => {
+      const pile = el.querySelector('.pile');
+      setArea({
+        h: el.clientHeight,
+        w: pile ? (pile as HTMLElement).offsetWidth : 0,
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
-  // Anime les cartes qui volent vers leur fondation pendant l'autocompletion
-  // (technique FLIP): on mesure la position de chaque carte avant et apres le
-  // rendu, et on rejoue la difference sous forme de transition CSS. Sans ca,
-  // une carte qui change de pile "teleporte" instantanement d'un container a
-  // l'autre, ce qui rendait la fin de partie franchement peu satisfaisante.
   useLayoutEffect(() => {
-    const root = boardRootRef.current;
+    const root = rootRef.current;
     if (!root) return;
-    const cardEls = root.querySelectorAll<HTMLElement>('[data-card-id]');
-    const nextRects = new Map<string, DOMRect>();
+    const reduced = prefersReducedMotion();
+    const cardEls = root.querySelectorAll<HTMLElement>(
+      '.board__piles [data-card-id]',
+    );
+    const dealing = lastDealId.current !== dealId;
+    lastDealId.current = dealId;
+
+    const nextRects = new Map<string, Pos>();
+    const parentCache = new Map<Element, DOMRect>();
+    const nextFace = new Map<string, boolean>();
     cardEls.forEach((el) => {
       const id = el.dataset.cardId;
       if (!id) return;
-      const rect = el.getBoundingClientRect();
-      nextRects.set(id, rect);
-      if (!autoCompleting) return;
-      const prev = prevRectsRef.current.get(id);
-      if (!prev) return;
-      const dx = prev.left - rect.left;
-      const dy = prev.top - rect.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-      el.style.transition = 'none';
-      el.style.transform = `translate(${dx}px, ${dy}px)`;
-      requestAnimationFrame(() => {
-        el.style.transition = 'transform 0.32s ease';
-        el.style.transform = '';
-        // On retire la transition une fois jouee: sinon elle resterait
-        // collee a l'element et animerait aussi les prochains changements
-        // de transform hors autocompletion (pioche, glisser-deposer...).
-        setTimeout(() => {
-          el.style.transition = '';
-        }, 340);
-      });
+      nextRects.set(id, layoutPos(el, parentCache));
+      nextFace.set(id, el.dataset.faceUp === 'true');
     });
-    prevRectsRef.current = nextRects;
-  }, [board, autoCompleting]);
+
+    if (!reduced && dealing) {
+      animateDeal(root, board, stockRef.current, cardEls, nextRects);
+    } else if (!reduced) {
+      cardEls.forEach((el) => {
+        const id = el.dataset.cardId;
+        if (!id) return;
+        const rect = nextRects.get(id);
+        const prev = overrideRects.current.get(id) ?? prevRects.current.get(id);
+        const isNew = !seenNodes.current.has(el);
+        const wasUp = prevFaceUp.current.get(id);
+        const isUp = nextFace.get(id);
+        if (rect && prev) {
+          const dx = prev.left - rect.left;
+          const dy = prev.top - rect.top;
+          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+            const distance = Math.hypot(dx, dy);
+            const anim = el.animate(
+              [
+                { transform: `translate(${dx}px, ${dy}px)` },
+                { transform: 'none' },
+              ],
+              {
+                duration: Math.min(420, 200 + distance * 0.25),
+                easing: overrideRects.current.has(id) ? EASE_LAND : EASE_OUT,
+              },
+            );
+            liftDuring(el, anim, 500 + Number(el.style.zIndex || 0));
+          }
+        }
+        // Une carte remontee ailleurs (pioche vers talon, talon vers pioche)
+        // perd sa transition CSS de retournement: on la rejoue a la main.
+        if (isNew && wasUp !== undefined && wasUp !== isUp) {
+          const inner = el.querySelector('.card__inner');
+          inner?.animate(
+            [
+              { transform: `rotateY(${isUp ? 180 : 0}deg)` },
+              { transform: `rotateY(${isUp ? 0 : 180}deg)` },
+            ],
+            { duration: 300, easing: EASE_OUT },
+          );
+        }
+      });
+    }
+
+    // Eclats dores sur les fondations qui viennent de grandir.
+    board.foundations.forEach((pile, f) => {
+      if (pile.length > prevFoundations.current[f] && !dealing && !reduced) {
+        const el = root.querySelector(`[data-drop="foundation:${f}"]`);
+        const big = pile.length === 13;
+        // L'eclat attend que la carte ait atterri.
+        setTimeout(() => {
+          if (el) spawnBurst(el, big);
+          if (big) playSound('complete');
+        }, 230);
+      }
+    });
+    prevFoundations.current = board.foundations.map((p) => p.length);
+
+    cardEls.forEach((el) => seenNodes.current.add(el));
+    prevRects.current = nextRects;
+    prevFaceUp.current = nextFace;
+    overrideRects.current.clear();
+  }, [board, dragCards, dealId, area]);
+
+  const positionGhost = useCallback((m: DragMeta) => {
+    if (ghostRef.current) {
+      ghostRef.current.style.transform = `translate(${m.lastX - m.offX}px, ${m.lastY - m.offY}px) rotate(${m.tilt}deg) scale(1.05)`;
+    }
+  }, []);
 
   const setGhostNode = useCallback(
     (node: HTMLDivElement | null) => {
       ghostRef.current = node;
-      if (node && meta.current) {
-        const m = meta.current;
-        positionGhost(m.lastX - m.offX, m.lastY - m.offY);
-      }
+      if (node && meta.current) positionGhost(meta.current);
     },
     [positionGhost],
   );
@@ -235,6 +423,8 @@ export function Board() {
         moved: false,
         lastX: event.clientX,
         lastY: event.clientY,
+        lastT: performance.now(),
+        tilt: 0,
       };
       try {
         el.setPointerCapture(event.pointerId);
@@ -249,16 +439,26 @@ export function Board() {
     (event: ReactPointerEvent) => {
       const m = meta.current;
       if (!m) return;
+      const now = performance.now();
+      const dt = Math.max(1, now - m.lastT);
+      const vx = (event.clientX - m.lastX) / dt;
       m.lastX = event.clientX;
       m.lastY = event.clientY;
+      m.lastT = now;
+      // La pile penche dans le sens du mouvement, comme tenue en main.
+      const targetTilt = Math.max(-9, Math.min(9, vx * 6));
+      m.tilt = m.tilt * 0.75 + targetTilt * 0.25;
       const dist = Math.hypot(
         event.clientX - m.startX,
         event.clientY - m.startY,
       );
-      if (!m.moved && dist > TAP_THRESHOLD) m.moved = true;
+      if (!m.moved && dist > TAP_THRESHOLD) {
+        m.moved = true;
+        if (m.draggable) playSound('flip');
+      }
       if (!m.moved || !m.draggable) return;
       if (!dragCards) setDragCards(m.cards);
-      positionGhost(event.clientX - m.offX, event.clientY - m.offY);
+      positionGhost(m);
       const target = parseDrop(
         document.elementFromPoint(event.clientX, event.clientY),
       );
@@ -279,22 +479,41 @@ export function Board() {
     [dragCards, drop, positionGhost, validTarget],
   );
 
+  /** Memorise la position de la pile fantome pour que les cartes en repartent. */
+  const captureGhost = useCallback(() => {
+    const ghost = ghostRef.current;
+    if (!ghost) return;
+    ghost.querySelectorAll<HTMLElement>('[data-card-id]').forEach((el) => {
+      const id = el.dataset.cardId;
+      if (!id) return;
+      const r = el.getBoundingClientRect();
+      overrideRects.current.set(id, { left: r.left, top: r.top });
+    });
+  }, []);
+
   const finishDrag = useCallback(
     (event: ReactPointerEvent) => {
       const m = meta.current;
       meta.current = null;
-      setDragCards(null);
-      setDrop(null);
-      if (!m) return;
+      if (!m) {
+        setDragCards(null);
+        setDrop(null);
+        return;
+      }
       try {
         (event.currentTarget as HTMLElement).releasePointerCapture(m.pointerId);
       } catch {
         // ignore
       }
       if (!m.moved || !m.draggable) {
+        setDragCards(null);
+        setDrop(null);
         handleTap(m.source);
         return;
       }
+      captureGhost();
+      setDragCards(null);
+      setDrop(null);
       const target = parseDrop(
         document.elementFromPoint(event.clientX, event.clientY),
       );
@@ -304,14 +523,15 @@ export function Board() {
       }
       reportInvalid(m.cards[0].id);
     },
-    [applyDragMove, buildMove, handleTap, reportInvalid],
+    [applyDragMove, buildMove, captureGhost, handleTap, reportInvalid],
   );
 
   const onPointerCancel = useCallback(() => {
+    if (meta.current?.moved) captureGhost();
     meta.current = null;
     setDragCards(null);
     setDrop(null);
-  }, []);
+  }, [captureGhost]);
 
   const dragHandlers = {
     onPointerMove,
@@ -375,10 +595,9 @@ export function Board() {
   ) => {
     const isShaking = shakeId === card.id;
     const isHidden = dragCards?.some((c) => c.id === card.id) ?? false;
-    const key = isShaking ? `${card.id}:${shake?.nonce}` : card.id;
     return (
       <CardView
-        key={key}
+        key={card.id}
         card={card}
         style={style}
         playable={opts.playable}
@@ -403,80 +622,99 @@ export function Board() {
     );
   };
 
+  const pileClass = (base: string, target: DropTarget, empty: boolean) => {
+    const isTarget =
+      hintInfo?.target?.kind === target.kind &&
+      hintInfo.target.index === target.index;
+    const dropHere =
+      drop?.target.kind === target.kind && drop.target.index === target.index;
+    let cls = base;
+    if (isTarget && empty) cls += ' is-target';
+    if (dropHere) cls += drop!.ok ? ' is-drop-ok' : ' is-drop-bad';
+    return cls;
+  };
+
+  const stockEmpty = board.stock.length === 0;
+
   return (
-    <div className="board" ref={boardRootRef}>
-      <div className="board__row">
-        {/* Pioche */}
-        <div
-          className={`pile${hintInfo?.stock ? ' is-hint' : ''}`}
-          onClick={() => phase === 'playing' && clickStock()}
-        >
-          <div className="pile__slot">
-            {board.stock.length === 0 && <RecycleIcon />}
+    <div className="board" ref={rootRef} data-shake-nonce={shake?.nonce}>
+      <div className="board__piles">
+        <div className="board__row board__top">
+          {/* Pioche */}
+          <div
+            ref={stockRef}
+            className={`pile pile--stock${hintInfo?.stock ? ' is-hint' : ''}`}
+            onClick={() => phase === 'playing' && clickStock()}
+            role="button"
+            aria-label={
+              stockEmpty ? 'Recharger la pioche' : 'Piocher une carte'
+            }
+          >
+            <div className="pile__slot">
+              {stockEmpty && board.waste.length > 0 && (
+                <RotateCcw className="pile__mark-icon" strokeWidth={2.2} />
+              )}
+            </div>
+            {(() => {
+              // On ne rend que les 3 dernieres cartes: au dela, l'empilement
+              // des ombres finissait par deborder sur le talon voisin.
+              const visibleCount = Math.min(3, board.stock.length);
+              const start = board.stock.length - visibleCount;
+              return board.stock.slice(start).map((card, i) => (
+                <CardView
+                  key={card.id}
+                  card={card}
+                  style={{
+                    top: -i * 0.8,
+                    left: -i * 0.6,
+                    zIndex: i,
+                  }}
+                />
+              ));
+            })()}
+            {board.stock.length > 0 && (
+              <span className="pile__count" aria-hidden="true">
+                {board.stock.length}
+              </span>
+            )}
           </div>
-          {(() => {
-            // On ne rend que les 3 dernieres cartes: au dela, l'empilement des
-            // ombres de chaque carte finissait par deborder sur le talon voisin.
-            const visibleCount = Math.min(3, board.stock.length);
-            const start = board.stock.length - visibleCount;
-            return board.stock.slice(start).map((card, i) => (
-              <CardView
-                key={card.id}
-                card={card}
-                style={{
+
+          {/* Talon */}
+          <div className="pile pile--waste">
+            <div className="pile__slot pile__slot--quiet" />
+            {(() => {
+              const start = Math.max(0, board.waste.length - 3);
+              const visible = board.waste.slice(start);
+              return visible.map((card, i) => {
+                const isTop = start + i === board.waste.length - 1;
+                const style: CSSProperties = {
                   top: 0,
+                  left: `calc(var(--card-w) * 0.26 * ${i})`,
                   zIndex: i,
-                  transform: `translate(${i * 0.4}px, ${i * 0.4}px)`,
-                }}
-              />
-            ));
-          })()}
-        </div>
-
-        {/* Talon */}
-        <div className="pile">
-          <div className="pile__slot" />
-          {(() => {
-            const start = Math.max(0, board.waste.length - 3);
-            const visible = board.waste.slice(start);
-            return visible.map((card, i) => {
-              const isTop = start + i === board.waste.length - 1;
-              const style: CSSProperties = {
-                top: 0,
-                zIndex: i,
-                transform: `translateX(calc(var(--card-w) * 0.24 * ${i}))`,
-              };
-              return renderCard(card, { kind: 'waste' }, style, {
-                draggable: isTop,
-                playable: isTop,
+                };
+                return renderCard(card, { kind: 'waste' }, style, {
+                  draggable: isTop,
+                  playable: isTop,
+                });
               });
-            });
-          })()}
-        </div>
+            })()}
+          </div>
 
-        <div aria-hidden="true" />
+          <div aria-hidden="true" />
 
-        {/* Fondations */}
-        {board.foundations.map((pile, f) => {
-          const isTarget =
-            hintInfo?.target?.kind === 'foundation' &&
-            hintInfo.target.index === f;
-          const dropHere =
-            drop?.target.kind === 'foundation' && drop.target.index === f;
-          return (
+          {/* Fondations */}
+          {board.foundations.map((pile, f) => (
             <div
               key={`foundation-${f}`}
-              className={`pile${isTarget && pile.length === 0 ? ' is-target' : ''}${dropHere ? (drop!.ok ? ' is-drop-ok' : '') : ''}`}
+              className={pileClass(
+                'pile pile--foundation',
+                { kind: 'foundation', index: f },
+                pile.length === 0,
+              )}
               data-drop={`foundation:${f}`}
             >
               <div className="pile__slot">
-                {pile.length === 0 && (
-                  <span
-                    style={{ opacity: 0.5, fontFamily: 'var(--font-hand)' }}
-                  >
-                    A
-                  </span>
-                )}
+                <span className="pile__mark">A</span>
               </div>
               {pile.map((card, i) =>
                 renderCard(
@@ -487,63 +725,76 @@ export function Board() {
                 ),
               )}
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      <div className="board__row board__tableau">
-        {board.tableau.map((column, c) => {
-          let downBefore = 0;
-          let upBefore = 0;
-          const positions = column.map((card, i) => {
-            const style: CSSProperties = {
-              top: `calc(var(--fan-down) * ${downBefore} + var(--fan-up) * ${upBefore})`,
-              zIndex: i,
-            };
-            if (card.faceUp) upBefore += 1;
-            else downBefore += 1;
-            return style;
-          });
-          // Hauteur = offset de la derniere carte + une hauteur de carte, pour
-          // que la zone de depot couvre toute la colonne deployee.
-          const lastIsUp = column.length
-            ? column[column.length - 1].faceUp
-            : false;
-          const dPrefix = Math.max(0, downBefore - (lastIsUp ? 0 : 1));
-          const uPrefix = Math.max(0, upBefore - (lastIsUp ? 1 : 0));
-          const height = `calc(var(--card-h) + var(--fan-down) * ${dPrefix} + var(--fan-up) * ${uPrefix})`;
-          const isTarget =
-            hintInfo?.target?.kind === 'tableau' && hintInfo.target.index === c;
-          const dropHere =
-            drop?.target.kind === 'tableau' && drop.target.index === c;
-          return (
-            <div
-              key={`tableau-${c}`}
-              className={`pile pile--column${isTarget && column.length === 0 ? ' is-target' : ''}${dropHere ? (drop!.ok ? ' is-drop-ok' : '') : ''}`}
-              data-drop={`tableau:${c}`}
-              style={{ height: column.length > 1 ? height : undefined }}
-            >
-              <div className="pile__slot" />
-              {column.map((card, i) => {
-                const run = card.faceUp ? movableRun(column, i) : null;
-                const draggable = run !== null;
-                return renderCard(
-                  card,
-                  { kind: 'tableau', column: c, index: i },
-                  positions[i],
-                  {
-                    // Seule une carte qui demarre une sequence deplacable
-                    // reagit au clic: une carte "cassee" au milieu d'une
-                    // colonne ne doit jamais repondre au pointeur.
-                    draggable,
-                    playable: draggable,
-                    dragCards: run ?? [card],
-                  },
-                );
-              })}
-            </div>
-          );
-        })}
+        <div className="board__row board__tableau" ref={tableauRef}>
+          {board.tableau.map((column, c) => {
+            // Hauteur naturelle de la colonne, puis resserrement eventuel
+            // pour tenir dans la zone visible.
+            let dPrefix = 0;
+            let uPrefix = 0;
+            column.forEach((card, i) => {
+              if (i === column.length - 1) return;
+              if (card.faceUp) uPrefix += 1;
+              else dPrefix += 1;
+            });
+            let squeeze = 1;
+            if (area && area.w > 0) {
+              const cardH = area.w * 1.4;
+              const natural = (dPrefix * FAN_DOWN + uPrefix * FAN_UP) * area.w;
+              const room = area.h - cardH - 6;
+              if (natural > room && natural > 0) {
+                squeeze = Math.max(0.35, room / natural);
+              }
+            }
+            let downBefore = 0;
+            let upBefore = 0;
+            const positions = column.map((card, i) => {
+              const style: CSSProperties = {
+                top: `calc((var(--fan-down) * ${downBefore} + var(--fan-up) * ${upBefore}) * ${squeeze})`,
+                zIndex: i,
+              };
+              if (card.faceUp) upBefore += 1;
+              else downBefore += 1;
+              return style;
+            });
+            const height = `calc(var(--card-h) + (var(--fan-down) * ${dPrefix} + var(--fan-up) * ${uPrefix}) * ${squeeze})`;
+            return (
+              <div
+                key={`tableau-${c}`}
+                className={pileClass(
+                  'pile pile--column',
+                  { kind: 'tableau', index: c },
+                  column.length === 0,
+                )}
+                data-drop={`tableau:${c}`}
+                style={{ height: column.length > 1 ? height : undefined }}
+              >
+                <div className="pile__slot">
+                  <span className="pile__mark">K</span>
+                </div>
+                {column.map((card, i) => {
+                  const run = card.faceUp ? movableRun(column, i) : null;
+                  const draggable = run !== null;
+                  return renderCard(
+                    card,
+                    { kind: 'tableau', column: c, index: i },
+                    positions[i],
+                    {
+                      // Seule une carte qui demarre une sequence deplacable
+                      // reagit au clic: une carte "cassee" au milieu d'une
+                      // colonne ne doit jamais repondre au pointeur.
+                      draggable,
+                      playable: draggable,
+                      dragCards: run ?? [card],
+                    },
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {dragCards && (

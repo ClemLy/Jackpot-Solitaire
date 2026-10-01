@@ -1,35 +1,49 @@
+import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useGameStore } from '../state/game';
 import { formatNumber } from '../utils/format';
+import { Stage } from './Modal';
+import { Chip } from './ui';
 
 export function ConfirmLeaveModal() {
   const pot = useGameStore((s) => s.pot);
+  const insured = useGameStore((s) => s.insured);
   const confirmPendingAction = useGameStore((s) => s.confirmPendingAction);
   const cancelPendingAction = useGameStore((s) => s.cancelPendingAction);
 
   return (
-    <div className="modal" style={{ zIndex: 340 }}>
-      <div className="casino">
-        <div className="casino__title is-lose">Attention au magot !</div>
-        <p className="muted" style={{ margin: '0.6rem 0' }}>
-          Tu as {formatNumber(pot)} points en jeu dans cette série de quitte ou
-          double. Partir ou relancer maintenant fait retomber le magot à zéro,
-          comme un abandon.
+    <Stage label="Attention au magot" tone="red" onEscape={cancelPendingAction}>
+      <span className="stage__icon" aria-hidden="true">
+        <AlertTriangle size={26} />
+      </span>
+      <h2 className="stage__title stage__title--red">Attention au magot</h2>
+      <p className="stage__text">
+        Tu as <strong>{formatNumber(pot)} jetons</strong> en jeu. Partir ou
+        relancer maintenant compte comme un abandon: le magot retombe à zéro.
+      </p>
+      {insured && (
+        <p className="stage__note">
+          <ShieldCheck size={16} /> Manche assurée:{' '}
+          {formatNumber(Math.round(pot / 2))} jetons te seront rendus.
         </p>
-        <div className="casino__actions">
-          <button
-            className="btn btn--green btn--lg"
-            onClick={cancelPendingAction}
-          >
-            Continuer la partie
-          </button>
-          <button
-            className="btn btn--red btn--lg"
-            onClick={confirmPendingAction}
-          >
-            Abandonner et perdre {formatNumber(pot)} points
-          </button>
-        </div>
+      )}
+      <div className="stage__actions is-in">
+        <button
+          className="btn btn--emerald btn--lg btn--block"
+          onClick={cancelPendingAction}
+          autoFocus
+        >
+          Continuer la partie
+        </button>
+        <button
+          className="btn btn--ghost btn--lg btn--block"
+          onClick={confirmPendingAction}
+        >
+          Abandonner
+          <span className="btn__amount btn__amount--loss">
+            <Chip size={16} tone="red" /> -{formatNumber(pot)}
+          </span>
+        </button>
       </div>
-    </div>
+    </Stage>
   );
 }

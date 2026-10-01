@@ -14,7 +14,15 @@ type SoundName =
   | 'win'
   | 'button'
   | 'whoosh'
-  | 'vault';
+  | 'vault'
+  | 'chip'
+  | 'tick'
+  | 'stamp'
+  | 'purchase'
+  | 'jackpot'
+  | 'ratchet'
+  | 'deal'
+  | 'complete';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -224,6 +232,101 @@ function render(name: SoundName, context: AudioContext, bus: GainNode): void {
         filter: 500,
         gain: 0.25,
         start: 0.12,
+      });
+      break;
+    case 'chip':
+      // Deux jetons d'argile qui s'entrechoquent.
+      burst(context, bus, { duration: 0.04, filter: 4200, q: 3, gain: 0.3 });
+      tone(context, bus, { freq: 2100, to: 1700, duration: 0.05, gain: 0.08 });
+      burst(context, bus, {
+        duration: 0.035,
+        filter: 3600,
+        q: 3,
+        gain: 0.22,
+        start: 0.055,
+      });
+      break;
+    case 'tick':
+      tone(context, bus, {
+        freq: 1800 + Math.random() * 300,
+        duration: 0.03,
+        gain: 0.07,
+        type: 'square',
+      });
+      break;
+    case 'stamp':
+      tone(context, bus, { freq: 180, to: 60, duration: 0.22, gain: 0.35 });
+      burst(context, bus, { duration: 0.12, filter: 700, q: 0.7, gain: 0.3 });
+      tone(context, bus, {
+        freq: 1320,
+        duration: 0.25,
+        start: 0.04,
+        gain: 0.1,
+        type: 'sine',
+      });
+      break;
+    case 'purchase':
+      [988, 1319, 1976].forEach((f, i) => {
+        tone(context, bus, {
+          freq: f,
+          duration: 0.28,
+          start: i * 0.07,
+          gain: 0.16,
+          type: 'sine',
+        });
+      });
+      for (let i = 0; i < 4; i++) {
+        tone(context, bus, {
+          freq: 1200 + Math.random() * 800,
+          to: 700,
+          duration: 0.08,
+          gain: 0.07,
+          start: 0.18 + i * 0.05,
+        });
+      }
+      break;
+    case 'jackpot': {
+      const notes = [523, 659, 784, 1047, 784, 1047, 1319, 1568];
+      notes.forEach((f, i) => {
+        tone(context, bus, {
+          freq: f,
+          duration: 0.22,
+          gain: 0.17,
+          start: i * 0.085,
+          type: 'square',
+        });
+      });
+      for (let i = 0; i < 12; i++) {
+        tone(context, bus, {
+          freq: 1400 + Math.random() * 1200,
+          to: 800,
+          duration: 0.09,
+          gain: 0.06,
+          start: 0.35 + i * 0.045,
+        });
+      }
+      break;
+    }
+    case 'ratchet':
+      burst(context, bus, { duration: 0.025, filter: 3000, q: 4, gain: 0.25 });
+      break;
+    case 'deal':
+      burst(context, bus, {
+        duration: 0.05,
+        filter: 3800 + Math.random() * 800,
+        q: 0.9,
+        gain: 0.12,
+      });
+      break;
+    case 'complete':
+      [784, 988, 1175, 1568].forEach((f, i) => {
+        tone(context, bus, {
+          freq: f,
+          duration: 0.3,
+          start: i * 0.06,
+          gain: 0.14,
+          type: 'sine',
+        });
       });
       break;
     default:

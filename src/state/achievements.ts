@@ -52,6 +52,21 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     title: 'Chasseur de trésor',
     description: 'Ouvrir le coffre-fort mystère.',
   },
+  {
+    id: 'collector',
+    title: 'Client fidèle',
+    description: 'Faire un premier achat à la boutique.',
+  },
+  {
+    id: 'regular',
+    title: 'Habitué du salon',
+    description: 'Atteindre le rang VIP Or.',
+  },
+  {
+    id: 'high-stakes',
+    title: 'Carré VIP',
+    description: 'Gagner une manche à la table Diamant.',
+  },
 ] as const;
 
 export interface AchievementContext {

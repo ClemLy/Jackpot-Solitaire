@@ -1,13 +1,14 @@
 # Jackpot Solitaire
 
-Un Solitaire (Klondike) dessiné à la main, plein de caractère, avec un vrai
-grain de folie: une banque de points façon casino et un mode quitte ou double
-où l&rsquo;on mise son sang-froid.
+Un Solitaire (Klondike) habillé façon salon de jeu privé: feutrine sous un
+spot, or en filets fins, cartes ivoire illustrées. Avec un vrai grain de
+folie: une banque de jetons, des tables à mise, une boutique et un mode
+quitte ou double où l&rsquo;on mise son sang-froid.
 
 L&rsquo;idée de départ est simple: c&rsquo;est un Solitaire. Mais le soin
-apporté au ressenti de jeu, aux animations, aux sons faits maison et au
-système de mise en fait tout autre chose qu&rsquo;un énième jeu de cartes
-générique.
+apporté au ressenti de jeu, aux animations, aux sons faits maison et à
+l&rsquo;économie de jetons en fait tout autre chose qu&rsquo;un énième jeu de
+cartes générique.
 
 ![Écran d'accueil](screenshots/accueil.png)
 
@@ -17,6 +18,7 @@ générique.
 - [Aperçu](#aperçu)
 - [Les modes de jeu](#les-modes-de-jeu)
 - [Le système de score et de gambling](#le-système-de-score-et-de-gambling)
+- [La banque, la boutique et les rangs VIP](#la-banque-la-boutique-et-les-rangs-vip)
 - [Direction artistique](#direction-artistique)
 - [Démarrage rapide](#démarrage-rapide)
 - [Scripts disponibles](#scripts-disponibles)
@@ -31,17 +33,25 @@ générique.
 
 Ergonomie et ressenti:
 
-- Glisser-déposer fluide au pointeur (souris et tactile), avec pile fantôme
-  qui suit le doigt.
+- Chaque carte vole réellement d&rsquo;une pile à l&rsquo;autre (animation
+  FLIP), y compris quand on la lâche: elle repart de là où on l&rsquo;a posée.
+- Distribution animée: les 28 cartes partent de la pioche une à une et les
+  cartes visibles se retournent en 3D à l&rsquo;arrivée.
+- Glisser-déposer au pointeur (souris et tactile): la pile soulevée penche
+  dans le sens du geste, la destination valide s&rsquo;illumine.
 - Clic ou tape pour un déplacement automatique vers la meilleure destination
   (priorité aux fondations, sinon la colonne qui dévoile une carte cachée).
-- Retour visuel de secousse et petit malus flottant sur un coup impossible.
-- Animation d&rsquo;apparition des cartes façon livre pop-up à la
-  distribution.
-- Cartes qui rebondissent à la victoire, comme au bon vieux temps.
+- Un coup impossible fait trembler la carte, qui revient en vol à sa place.
+- Éclat doré sur chaque fondation qui reçoit une carte, bouquet quand une
+  enseigne est complète.
+- Colonnes qui se resserrent toutes seules quand elles deviennent trop
+  longues: tout reste visible, sans barre de défilement.
+- Décompte de fin de manche façon machine à sous, tampons de multiplicateur,
+  magot qui roule jusqu&rsquo;à sa nouvelle valeur.
+- Quatre effets de victoire: cascade de cartes à l&rsquo;ancienne,
+  confettis dorés, pluie de jetons, feu d&rsquo;artifice.
 - Sons entièrement synthétisés à la volée (aucun fichier audio), donc
-  uniques.
-- Thèmes: quatre dos de cartes et cinq tapis de jeu (dont un tout doux, crème).
+  uniques: jetons qui s&rsquo;entrechoquent, cliquet de roue, tampon...
 
 Confort de jeu:
 
@@ -69,13 +79,17 @@ Progression, gardée en local:
 | --- | --- |
 | ![Partie en cours](screenshots/partie.png) | ![Écran de gain](screenshots/jackpot.png) |
 
-| Règles interactives | Statistiques |
+| Boutique | Tables à mise |
 | --- | --- |
-| ![Règles](screenshots/regles.png) | ![Statistiques](screenshots/stats.png) |
+| ![Boutique](screenshots/boutique.png) | ![Tables à mise](screenshots/tables.png) |
 
-| Personnalisation | Version mobile |
+| Roue du jour | Statistiques |
 | --- | --- |
-| ![Thèmes](screenshots/themes.png) | ![Mobile](screenshots/mobile.png) |
+| ![Roue du jour](screenshots/roue.png) | ![Statistiques](screenshots/stats.png) |
+
+| Règles interactives | Version mobile |
+| --- | --- |
+| ![Règles](screenshots/regles.png) | ![Mobile](screenshots/mobile.png) |
 
 ## Les modes de jeu
 
@@ -117,19 +131,64 @@ Trois victoires de suite en quitte ou double débloquent le coffre-fort
 mystère: un multiplicateur surprise appliqué à tout le magot, souvent un
 joli gain, parfois un piège. C&rsquo;est ça, le frisson.
 
+Avant chaque série, on choisit sa table. La mise quitte la banque et entre
+dans le magot: on la récupère en encaissant, on la perd avec la série.
+
+| Table | Mise | Gains |
+| --- | --- | --- |
+| Libre | aucune | x1 |
+| Argent | 500 | x1,5 |
+| Or | 2 500 | x2 |
+| Diamant (rang VIP Or) | 10 000 | x3 |
+
+## La banque, la boutique et les rangs VIP
+
+Les jetons encaissés ne dorment plus: ils se dépensent.
+
+D&rsquo;où ils viennent:
+
+- Encaisser un magot du mode Jackpot (la source principale).
+- Un pourboire de 10 % du score sur toute autre victoire.
+- Une prime de 500 jetons pour la première victoire du défi du jour.
+- La roue du jour: un tour gratuit quotidien, pour des jetons ou un bonus.
+- Un cadeau de bienvenue de 1 000 jetons (les anciennes sauvegardes gardent
+  leur banque, convertie en solde).
+
+À quoi ils servent:
+
+- La boutique: huit dos de cartes (dont un holographique animé), neuf
+  tapis (velours, Monte-Carlo, marbre noir, salon doré...) et quatre effets
+  de victoire, avec aperçu avant achat.
+- Les tables à mise, pour faire fructifier sa banque.
+- Trois bonus consommables:
+  - Œil du croupier: un indice offert, sans pénalité de score.
+  - Assurance: activée avant un quitte ou double, elle rend la moitié du
+    magot si la manche est perdue ou abandonnée.
+  - Seconde chance: sur une donne bloquée en Jackpot, redistribue une
+    manche neuve sans perdre le magot.
+
+Les rangs VIP (Bronze, Argent, Or, Platine, Diamant) dépendent du total de
+jetons gagnés depuis le début, que les achats ne font jamais baisser. Chaque
+rang accorde jusqu&rsquo;à 20 % de remise et ouvre des objets et des tables
+réservés.
+
 ## Direction artistique
 
-Le parti pris est assumé: du fait main, pas du tout lisse.
+Casino chic, mais joueur.
 
-- Cartes en papier crème aux bords légèrement irréguliers, avec un double
-  liseret dessiné.
-- Pips placés à la main pour les cartes 2 à 10.
-- Figures (Valet, Dame, Roi) au trait, qui changent d&rsquo;expression:
-  grognon sur un coup interdit, clin d&rsquo;œil quand elles sont montrées
-  par un indice.
-- Tapis en feutrine avec grain et taches fantômes de café (ou tapis crème,
-  bois, nuit, néon).
-- Typographie manuscrite, couleurs de gouache.
+- Feutrine profonde éclairée par un spot central, grain discret, bords qui
+  s&rsquo;assombrissent.
+- Or métallique utilisé en filets fins: liserés, jetons, tampons, titres.
+- Cartes ivoire avec index serif lisibles même en éventail serré, et
+  enseignes vectorielles (fini les glyphes Unicode qui deviennent des emojis
+  sur certains téléphones).
+- Figures (Valet, Dame, Roi) en illustrations plates aux couleurs de leur
+  enseigne, qui gardent leur caractère: grognons sur un coup interdit, clin
+  d&rsquo;œil quand un indice les montre.
+- Typographie: Fraunces (serif variable, axes « soft » et « wonk » pour le
+  côté ludique) pour les titres et les chiffres, Manrope pour
+  l&rsquo;interface. Polices embarquées, donc disponibles hors ligne.
+- Icônes Lucide, cohérentes dans tout le jeu.
 
 ## Démarrage rapide
 
@@ -176,15 +235,19 @@ src/
                  détection de blocage
     scoring.ts   Calcul du score et des bonus de fin de partie
   state/       État applicatif (Zustand)
-    game.ts      Partie en cours: coups, annuler, timer, gambling, navigation
-    meta.ts      Données persistantes: réglages, stats, banque, hauts faits
+    game.ts      Partie en cours: coups, annuler, timer, gambling, mises,
+                 assurance, navigation
+    meta.ts      Données persistantes: réglages, stats, portefeuille,
+                 inventaire, roue, hauts faits, migration des sauvegardes
+    catalog.ts   Économie pure: boutique, bonus, rangs VIP, tables à mise,
+                 roue du jour
     gambling.ts  Règles chiffrées du mode Jackpot
-    achievements.ts, themes.ts
+    achievements.ts
   audio/
     sfx.ts       Sons synthétisés à la volée via la Web Audio API
-  components/  Interface React
-  styles/      Feuilles de style (design system fait main)
-  utils/       Formatage du temps, gestion des graines
+  components/  Interface React (plateau, bandeau, dock, boutique, roue...)
+  styles/      Feuilles de style: tokens, tapis, cartes, plateau, interface
+  utils/       Formatage, graines, tracés vectoriels des enseignes
 ```
 
 Choix techniques notables:
@@ -202,7 +265,12 @@ Choix techniques notables:
   aucun coup ne peut plus jamais faire progresser la donne, y compris en
   simulant tous les tirages accessibles via la pioche.
 
-Pile technique: React 18, TypeScript, Vite, Zustand, vite-plugin-pwa, Vitest.
+- Animations de cartes en FLIP via la Web Animations API, mesurées sur la
+  position de mise en page (et non la position affichée) pour ne jamais se
+  fausser quand plusieurs cartes sont en vol.
+
+Pile technique: React 18, TypeScript, Vite, Zustand, vite-plugin-pwa, Vitest,
+Lucide, Fontsource (Fraunces, Manrope).
 
 ## Tests
 
@@ -210,6 +278,11 @@ Le cœur du jeu (le moteur) est couvert par des tests unitaires: mélange
 déterministe, distribution correcte, règles de placement, application et
 non-mutation des coups, détection de victoire et de blocage,
 autocomplétion, indices et calcul du score.
+
+L&rsquo;économie l&rsquo;est aussi: rangs VIP et remises, pourboires, tirage
+pondéré de la roue, migration des anciennes sauvegardes, achats refusés ou
+acceptés, prélèvement des mises, remboursement de l&rsquo;assurance et
+encaissement.
 
 ```bash
 npm test
@@ -251,8 +324,10 @@ tailles attendues.
 
 ## Vie privée
 
-Aucun compte, aucun serveur, aucun pistage. Statistiques, réglages, banque
-et hauts faits sont stockés uniquement dans le navigateur (localStorage).
+Aucun compte, aucun serveur, aucun pistage. Statistiques, réglages, banque,
+achats et hauts faits sont stockés uniquement dans le navigateur
+(localStorage). Les jetons n&rsquo;ont aucune valeur réelle et ne
+s&rsquo;achètent pas: ils se gagnent en jouant.
 Rien ne quitte l&rsquo;appareil.
 
 ## Licence
