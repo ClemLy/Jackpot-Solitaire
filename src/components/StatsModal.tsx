@@ -8,6 +8,8 @@ import {
   Flag,
   Flame,
   Gem,
+  Sparkles,
+  Trophy,
   ShoppingBag,
   Snowflake,
   Vault,
@@ -34,6 +36,8 @@ const ACH_ICON: Record<string, ReactNode> = {
   collector: <ShoppingBag size={20} />,
   regular: <Crown size={20} />,
   'high-stakes': <Diamond size={20} />,
+  grail: <Trophy size={20} />,
+  completionist: <Sparkles size={20} />,
 };
 
 function Stat({ k, v }: { k: string; v: ReactNode }) {

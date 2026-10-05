@@ -2,7 +2,7 @@
 // permettent d'acheter, les rangs VIP, les tables a mise du mode Jackpot et la
 // roue quotidienne. Module pur (aucun etat), pour rester facilement testable.
 
-export type CosmeticCategory = 'back' | 'table' | 'fx';
+export type CosmeticCategory = 'back' | 'face' | 'table' | 'fx' | 'title';
 
 export type VipTierId = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
@@ -15,6 +15,8 @@ export interface Cosmetic {
   price: number;
   /** Rang VIP minimum pour pouvoir l'acheter. */
   minTier?: VipTierId;
+  /** Piece maitresse de la boutique: mise en avant comme le graal. */
+  grail?: boolean;
 }
 
 export const CARD_BACKS: readonly Cosmetic[] = [
@@ -74,6 +76,83 @@ export const CARD_BACKS: readonly Cosmetic[] = [
     hint: 'Reflets irisés qui glissent sous la lumière',
     price: 12000,
     minTier: 'silver',
+  },
+  {
+    id: 'crest',
+    category: 'back',
+    label: 'Blason royal',
+    hint: 'Armoiries dorées sur velours bleu nuit',
+    price: 18000,
+    minTier: 'gold',
+  },
+  {
+    id: 'obsidian',
+    category: 'back',
+    label: 'Obsidienne',
+    hint: 'Verre volcanique veiné d’or, reflet mouvant',
+    price: 40000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'aurora',
+    category: 'back',
+    label: 'Aurore boréale',
+    hint: 'Des voiles de lumière qui ondulent sans fin',
+    price: 65000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'prism',
+    category: 'back',
+    label: 'Diamant taillé',
+    hint: 'Mille facettes qui accrochent la lumière',
+    price: 120000,
+    minTier: 'diamond',
+  },
+  {
+    id: 'triple7',
+    category: 'back',
+    label: 'Triple sept',
+    hint: 'Le dos des légendes: 777 en or, qui scintille',
+    price: 250000,
+    minTier: 'diamond',
+    grail: true,
+  },
+] as const;
+
+// Le recto des cartes: papier, encres et finition, visibles a chaque coup.
+export const CARD_FACES: readonly Cosmetic[] = [
+  {
+    id: 'ivory',
+    category: 'face',
+    label: 'Ivoire',
+    hint: 'Le papier ivoire classique, encres franches',
+    price: 0,
+  },
+  {
+    id: 'parchment',
+    category: 'face',
+    label: 'Parchemin',
+    hint: 'Papier vieilli et encres sépia, façon salon d’antan',
+    price: 8000,
+    minTier: 'silver',
+  },
+  {
+    id: 'noir',
+    category: 'face',
+    label: 'Noir & or',
+    hint: 'Cartes d’encre noire, enseignes dorées et rubis',
+    price: 75000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'gilded',
+    category: 'face',
+    label: 'Or massif',
+    hint: 'Cartes plaquées or, gravées à la main, reflet vivant',
+    price: 300000,
+    minTier: 'diamond',
+    grail: true,
   },
 ] as const;
 
@@ -143,6 +222,31 @@ export const TABLES: readonly Cosmetic[] = [
     price: 20000,
     minTier: 'gold',
   },
+  {
+    id: 'vegas',
+    category: 'table',
+    label: 'Las Vegas',
+    hint: 'Rouge Strip et rampes de lumière dorées',
+    price: 45000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'starlight',
+    category: 'table',
+    label: 'Ciel étoilé',
+    hint: 'On joue à la belle étoile, et les étoiles scintillent',
+    price: 110000,
+    minTier: 'diamond',
+  },
+  {
+    id: 'goldleaf',
+    category: 'table',
+    label: 'Feuille d’or',
+    hint: 'Laque noire incrustée d’or fin qui miroite',
+    price: 220000,
+    minTier: 'diamond',
+    grail: true,
+  },
 ] as const;
 
 export const VICTORY_FX: readonly Cosmetic[] = [
@@ -175,12 +279,91 @@ export const VICTORY_FX: readonly Cosmetic[] = [
     price: 7000,
     minTier: 'silver',
   },
+  {
+    id: 'champagne',
+    category: 'fx',
+    label: 'Champagne',
+    hint: 'Le bouchon saute, les bulles montent',
+    price: 15000,
+    minTier: 'gold',
+  },
+  {
+    id: 'goldbars',
+    category: 'fx',
+    label: 'Pluie de lingots',
+    hint: 'Des lingots d’or qui s’empilent au sol',
+    price: 50000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'supernova',
+    category: 'fx',
+    label: 'Supernova',
+    hint: 'Une explosion d’étoiles qui embrase tout l’écran',
+    price: 160000,
+    minTier: 'diamond',
+    grail: true,
+  },
+] as const;
+
+// Titres honorifiques: affiches sur l'accueil et sur les bordereaux de gain.
+export const TITLES: readonly Cosmetic[] = [
+  {
+    id: 'rookie',
+    category: 'title',
+    label: 'Joueur du dimanche',
+    hint: 'Tout le monde commence quelque part',
+    price: 0,
+  },
+  {
+    id: 'flambeur',
+    category: 'title',
+    label: 'Flambeur',
+    hint: 'Tu ne repars jamais les poches pleines',
+    price: 10000,
+    minTier: 'silver',
+  },
+  {
+    id: 'baron',
+    category: 'title',
+    label: 'Baron du tapis',
+    hint: 'Ta place est réservée à la table',
+    price: 40000,
+    minTier: 'gold',
+  },
+  {
+    id: 'magnat',
+    category: 'title',
+    label: 'Magnat du casino',
+    hint: 'Le croupier t’appelle par ton prénom',
+    price: 120000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'legende',
+    category: 'title',
+    label: 'Légende de Monte-Carlo',
+    hint: 'On raconte encore tes séries au bar',
+    price: 500000,
+    minTier: 'diamond',
+  },
+  {
+    id: 'roi',
+    category: 'title',
+    label: 'Roi du Jackpot',
+    hint: 'Le titre ultime. Un seul trône, il est à toi.',
+    price: 1000000,
+    minTier: 'diamond',
+    grail: true,
+  },
 ] as const;
 
 export const COSMETICS: readonly Cosmetic[] = [
   ...CARD_BACKS,
+  ...CARD_FACES,
   ...TABLES,
   ...VICTORY_FX,
+  ...TITLES,
 ];
 
 const COSMETIC_BY_ID = new Map(COSMETICS.map((c) => [c.id, c]));
@@ -192,6 +375,8 @@ export function findCosmetic(id: string): Cosmetic | undefined {
 export const DEFAULT_CARD_BACK = 'retro';
 export const DEFAULT_TABLE = 'felt';
 export const DEFAULT_VICTORY_FX = 'bounce';
+export const DEFAULT_CARD_FACE = 'ivory';
+export const DEFAULT_TITLE = 'rookie';
 
 export function isValidCardBack(id: string): boolean {
   return CARD_BACKS.some((t) => t.id === id);
@@ -204,6 +389,19 @@ export function isValidTable(id: string): boolean {
 export function isValidVictoryFx(id: string): boolean {
   return VICTORY_FX.some((t) => t.id === id);
 }
+
+export function isValidCardFace(id: string): boolean {
+  return CARD_FACES.some((t) => t.id === id);
+}
+
+export function isValidTitle(id: string): boolean {
+  return TITLES.some((t) => t.id === id);
+}
+
+/** Objets achetables (hors objets offerts), pour le compteur de collection. */
+export const COLLECTIBLES: readonly Cosmetic[] = COSMETICS.filter(
+  (c) => c.price > 0,
+);
 
 // ---------------------------------------------------------------------------
 // Bonus consommables, achetes en boutique et utilises en partie.
@@ -258,14 +456,34 @@ export interface VipTier {
   label: string;
   threshold: number;
   discount: number;
+  /** Multiplicateur applique aux jetons gagnes a la roue du jour. */
+  wheelBoost: number;
 }
 
 export const VIP_TIERS: readonly VipTier[] = [
-  { id: 'bronze', label: 'Bronze', threshold: 0, discount: 0 },
-  { id: 'silver', label: 'Argent', threshold: 5000, discount: 0.05 },
-  { id: 'gold', label: 'Or', threshold: 20000, discount: 0.1 },
-  { id: 'platinum', label: 'Platine', threshold: 60000, discount: 0.15 },
-  { id: 'diamond', label: 'Diamant', threshold: 150000, discount: 0.2 },
+  { id: 'bronze', label: 'Bronze', threshold: 0, discount: 0, wheelBoost: 1 },
+  {
+    id: 'silver',
+    label: 'Argent',
+    threshold: 5000,
+    discount: 0.05,
+    wheelBoost: 1.25,
+  },
+  { id: 'gold', label: 'Or', threshold: 20000, discount: 0.1, wheelBoost: 1.5 },
+  {
+    id: 'platinum',
+    label: 'Platine',
+    threshold: 60000,
+    discount: 0.15,
+    wheelBoost: 2,
+  },
+  {
+    id: 'diamond',
+    label: 'Diamant',
+    threshold: 150000,
+    discount: 0.2,
+    wheelBoost: 3,
+  },
 ] as const;
 
 export function tierIndex(id: VipTierId): number {
@@ -313,7 +531,8 @@ export function discountedPrice(price: number, lifetimeEarned: number): number {
 // s'asseoir, et les gains de chaque manche sont multiplies.
 // ---------------------------------------------------------------------------
 
-export type StakeTableId = 'free' | 'silver' | 'gold' | 'diamond';
+export type StakeTableId =
+  'free' | 'silver' | 'gold' | 'diamond' | 'platinum' | 'legend';
 
 export interface StakeTable {
   id: StakeTableId;
@@ -353,6 +572,22 @@ export const STAKE_TABLES: readonly StakeTable[] = [
     multiplier: 3,
     minTier: 'gold',
     pitch: 'Le carré des gros joueurs. Gains triplés.',
+  },
+  {
+    id: 'platinum',
+    label: 'Salon Platine',
+    stake: 25000,
+    multiplier: 4,
+    minTier: 'platinum',
+    pitch: 'Porte capitonnée, mises lourdes, gains ×4.',
+  },
+  {
+    id: 'legend',
+    label: 'Table Légende',
+    stake: 75000,
+    multiplier: 6,
+    minTier: 'diamond',
+    pitch: 'Une seule table, tout en haut. Gains ×6.',
   },
 ] as const;
 

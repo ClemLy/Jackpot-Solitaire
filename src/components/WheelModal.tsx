@@ -212,6 +212,11 @@ export function WheelModal({ onClose }: { onClose: () => void }) {
             <span className="wheel__result-v">
               {describeReward(result.reward)}
             </span>
+            {result.boost > 1 && (
+              <span className="wheel__boost">
+                Bonus VIP ×{String(result.boost).replace('.', ',')} compris
+              </span>
+            )}
             <button className="btn btn--gold btn--lg" onClick={onClose}>
               Merci la chance
             </button>

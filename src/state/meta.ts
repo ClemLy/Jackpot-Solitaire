@@ -5,6 +5,9 @@ import {
   DEFAULT_CARD_BACK,
   DEFAULT_TABLE,
   DEFAULT_VICTORY_FX,
+  DEFAULT_CARD_FACE,
+  DEFAULT_TITLE,
+  COLLECTIBLES,
   WELCOME_GIFT,
   WHEEL_SEGMENTS,
   discountedPrice,
@@ -14,6 +17,8 @@ import {
   isValidCardBack,
   isValidTable,
   isValidVictoryFx,
+  isValidCardFace,
+  isValidTitle,
   meetsTier,
   tierIndex,
   vipTierFor,
@@ -31,6 +36,10 @@ export interface Settings {
   cardBack: string;
   table: string;
   victoryFx: string;
+  /** Recto des cartes. */
+  cardFace: string;
+  /** Titre honorifique affiche sur l'accueil et les bordereaux. */
+  title: string;
   defaultDraw: 1 | 3;
   reducedMotion: boolean;
 }
@@ -101,7 +110,10 @@ export type PurchaseResult = 'ok' | 'owned' | 'funds' | 'locked' | 'unknown';
 
 export interface SpinResult {
   index: number;
+  /** Recompense reellement versee (jetons multiplies par le rang VIP). */
   reward: WheelReward;
+  /** Multiplicateur VIP applique aux jetons (1 si aucun). */
+  boost: number;
 }
 
 interface MetaState {
@@ -143,6 +155,8 @@ const initialSettings: Settings = {
   cardBack: DEFAULT_CARD_BACK,
   table: DEFAULT_TABLE,
   victoryFx: DEFAULT_VICTORY_FX,
+  cardFace: DEFAULT_CARD_FACE,
+  title: DEFAULT_TITLE,
   defaultDraw: 3,
   reducedMotion: false,
 };
@@ -238,6 +252,10 @@ export const useMetaStore = create<MetaState>()(
               next.table = state.settings.table;
             if (!isValidVictoryFx(next.victoryFx) || !owns(next.victoryFx))
               next.victoryFx = state.settings.victoryFx;
+            if (!isValidCardFace(next.cardFace) || !owns(next.cardFace))
+              next.cardFace = state.settings.cardFace ?? DEFAULT_CARD_FACE;
+            if (!isValidTitle(next.title) || !owns(next.title))
+              next.title = state.settings.title ?? DEFAULT_TITLE;
             setSoundEnabled(next.soundEnabled);
             setSoundVolume(next.volume);
             return { settings: next };
@@ -402,7 +420,12 @@ export const useMetaStore = create<MetaState>()(
           set((s) => ({
             inventory: { ...s.inventory, owned: [...s.inventory.owned, id] },
           }));
-          grant(['collector']);
+          const owned = new Set(get().inventory.owned);
+          const unlocked = ['collector'];
+          if (item.grail) unlocked.push('grail');
+          if (COLLECTIBLES.every((c) => owned.has(c.id)))
+            unlocked.push('completionist');
+          grant(unlocked);
           return 'ok';
         },
 
@@ -444,7 +467,13 @@ export const useMetaStore = create<MetaState>()(
         spinWheel: (roll) => {
           if (!get().canSpinWheel()) return null;
           const index = drawWheelSegment(roll);
-          const { reward } = WHEEL_SEGMENTS[index];
+          const base = WHEEL_SEGMENTS[index].reward;
+          // Plus le rang est haut, plus la roue est genereuse en jetons.
+          const boost = vipTierFor(get().wallet.lifetimeEarned).wheelBoost;
+          const reward: WheelReward =
+            base.kind === 'chips'
+              ? { kind: 'chips', amount: Math.round(base.amount * boost) }
+              : base;
           set({ wheel: { lastSpin: todayISO() } });
           if (reward.kind === 'chips') {
             get().credit(reward.amount);
@@ -460,7 +489,7 @@ export const useMetaStore = create<MetaState>()(
               },
             }));
           }
-          return { index, reward };
+          return { index, reward, boost: reward.kind === 'chips' ? boost : 1 };
         },
 
         notify: (notice) => {
@@ -488,6 +517,8 @@ export const useMetaStore = create<MetaState>()(
               cardBack: DEFAULT_CARD_BACK,
               table: DEFAULT_TABLE,
               victoryFx: DEFAULT_VICTORY_FX,
+              cardFace: DEFAULT_CARD_FACE,
+              title: DEFAULT_TITLE,
             },
           });
         },
@@ -495,7 +526,7 @@ export const useMetaStore = create<MetaState>()(
     },
     {
       name: 'jackpot-solitaire-meta-v1',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         settings: state.settings,
@@ -543,6 +574,15 @@ export function migrateMeta(persisted: unknown, version: number): unknown {
     data.settings = {
       ...settings,
       victoryFx: settings.victoryFx ?? DEFAULT_VICTORY_FX,
+    };
+  }
+  if (version < 2) {
+    // Version 2: recto des cartes et titres honorifiques.
+    const settings = (data.settings ?? {}) as Partial<Settings>;
+    data.settings = {
+      ...settings,
+      cardFace: settings.cardFace ?? DEFAULT_CARD_FACE,
+      title: settings.title ?? DEFAULT_TITLE,
     };
   }
   return data;

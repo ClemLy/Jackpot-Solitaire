@@ -8,7 +8,12 @@ import {
 } from 'lucide-react';
 import { useGameStore, type GameMode } from '../state/game';
 import { useMetaStore } from '../state/meta';
-import { nextVipTier, vipProgress, vipTierFor } from '../state/catalog';
+import {
+  findCosmetic,
+  nextVipTier,
+  vipProgress,
+  vipTierFor,
+} from '../state/catalog';
 import { formatDuration, formatNumber, percent } from '../utils/format';
 import { dailySeed, todayISO } from '../utils/seed';
 import type { Card } from '../engine';
@@ -134,6 +139,8 @@ export function Home() {
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
   const daily = useMetaStore((s) => s.daily);
   const canSpin = useMetaStore((s) => s.wheel.lastSpin !== todayISO());
+  const titleId = useMetaStore((s) => s.settings.title);
+  const title = findCosmetic(titleId);
 
   const tier = vipTierFor(lifetime);
   const next = nextVipTier(lifetime);
@@ -219,6 +226,16 @@ export function Home() {
               <span className="brand__jackpot">Jackpot</span>
               <span className="brand__solitaire">Solitaire</span>
             </h1>
+            {title && (
+              <button
+                className="plaque plaque--hero"
+                data-title={title.id}
+                onClick={() => openModal('shop')}
+                title="Changer de titre en boutique"
+              >
+                {title.label}
+              </button>
+            )}
             <p className="hero__tag">
               Gagne une manche, puis choisis: encaisser tes jetons, ou tout
               remettre en jeu sur la suivante.

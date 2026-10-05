@@ -42,6 +42,7 @@ export default function App() {
 
   const table = useMetaStore((s) => s.settings.table);
   const cardBack = useMetaStore((s) => s.settings.cardBack);
+  const cardFace = useMetaStore((s) => s.settings.cardFace);
   const reducedMotion = useMetaStore((s) => s.settings.reducedMotion);
 
   // Deblocage de l'audio a la premiere interaction (contrainte des navigateurs mobiles).
@@ -70,6 +71,7 @@ export default function App() {
       className="app felt"
       data-table={table}
       data-back={cardBack}
+      data-face={cardFace}
       data-motion={reducedMotion ? 'reduced' : 'full'}
       data-route={route}
     >

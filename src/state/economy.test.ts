@@ -135,6 +135,51 @@ describe('boutique', () => {
   });
 });
 
+describe('boutique de prestige', () => {
+  beforeEach(() => resetStores());
+
+  it('reserve les pieces maitresses au rang Diamant', () => {
+    useMetaStore.setState({
+      wallet: { balance: 2_000_000, lifetimeEarned: 60000, spent: 0 },
+    });
+    expect(useMetaStore.getState().buyCosmetic('triple7')).toBe('locked');
+    expect(useMetaStore.getState().buyCosmetic('obsidian')).toBe('ok');
+  });
+
+  it('decerne le Graal a l achat d une piece maitresse', () => {
+    useMetaStore.setState({
+      wallet: { balance: 2_000_000, lifetimeEarned: 150000, spent: 0 },
+    });
+    expect(useMetaStore.getState().buyCosmetic('gilded')).toBe('ok');
+    expect(useMetaStore.getState().achievements.grail).toBeTruthy();
+    useMetaStore.getState().updateSettings({ cardFace: 'gilded' });
+    expect(useMetaStore.getState().settings.cardFace).toBe('gilded');
+  });
+
+  it('multiplie les jetons de la roue selon le rang', () => {
+    useMetaStore.setState({
+      wallet: { balance: 0, lifetimeEarned: 150000, spent: 0 },
+      wheel: { lastSpin: null },
+    });
+    // roll 0 = premier segment (100 jetons), x3 au rang Diamant.
+    const res = useMetaStore.getState().spinWheel(0);
+    expect(res?.boost).toBe(3);
+    expect(res?.reward).toEqual({ kind: 'chips', amount: 300 });
+    expect(useMetaStore.getState().wallet.balance).toBe(300);
+  });
+
+  it('migre une sauvegarde v1 avec recto et titre par defaut', () => {
+    const out = migrateMeta({ settings: { cardBack: 'foil' } }, 1) as {
+      settings: Record<string, string>;
+    };
+    expect(out.settings).toMatchObject({
+      cardBack: 'foil',
+      cardFace: 'ivory',
+      title: 'rookie',
+    });
+  });
+});
+
 describe('mode Jackpot et banque', () => {
   beforeEach(() => resetStores(1000));
 
@@ -143,6 +188,14 @@ describe('mode Jackpot et banque', () => {
     expect(useGameStore.getState().pot).toBe(500);
     expect(useGameStore.getState().stakeTable).toBe('silver');
     expect(useMetaStore.getState().wallet.balance).toBe(500);
+  });
+
+  it('ferme la table Legende a qui n est pas Diamant', () => {
+    useMetaStore.setState({
+      wallet: { balance: 500000, lifetimeEarned: 60000, spent: 0 },
+    });
+    useGameStore.getState().newGame({ mode: 'gambling', table: 'legend' });
+    expect(useGameStore.getState().stakeTable).toBe('free');
   });
 
   it('se rabat sur la table libre si la mise est trop chere', () => {

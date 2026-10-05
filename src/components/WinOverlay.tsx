@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Vault, Home as HomeIcon } from 'lucide-react';
 import { useGameStore, MODE_LABEL } from '../state/game';
-import { findStakeTable } from '../state/catalog';
+import { findStakeTable, findCosmetic } from '../state/catalog';
 import { useMetaStore } from '../state/meta';
 import { playSound } from '../audio/sfx';
 import {
@@ -72,6 +72,7 @@ interface Step {
 export function WinOverlay() {
   const win = useGameStore((s) => s.win);
   const mode = useGameStore((s) => s.mode);
+  const titleId = useMetaStore((s) => s.settings.title);
   const combo = useGameStore((s) => s.combo);
   const stakeTable = useGameStore((s) => s.stakeTable);
   const finalTimeMs = useGameStore((s) => s.finalTimeMs);
@@ -130,6 +131,7 @@ export function WinOverlay() {
     };
   }, [stage, steps, skipped]);
 
+  const playerTitle = findCosmetic(titleId)?.label ?? 'Jackpot Solitaire';
   if (!win) return null;
 
   const reached = (key: string) =>
@@ -147,7 +149,7 @@ export function WinOverlay() {
     >
       <div className="ticket">
         <div className="ticket__head">
-          <span className="ticket__house">Jackpot Solitaire</span>
+          <span className="ticket__house">{playerTitle}</span>
           <span>
             {MODE_LABEL[mode]} · {formatDuration(finalTimeMs)} · {win.moves}{' '}
             coups
