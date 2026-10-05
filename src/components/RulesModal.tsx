@@ -251,7 +251,9 @@ const SECTIONS: Section[] = [
                   ? `mise de ${formatNumber(t.stake)} jetons`
                   : 'sans mise'}
                 , gains multipliés par {formatMultiplier(t.multiplier)}
-                {t.minTier ? ' (rang VIP Or requis).' : '.'}
+                {t.minTier
+                  ? ` (rang VIP ${VIP_TIERS.find((v) => v.id === t.minTier)?.label} requis).`
+                  : '.'}
               </>
             ),
           }))}
@@ -300,7 +302,7 @@ const SECTIONS: Section[] = [
         <RuleList
           items={[
             {
-              text: 'La boutique: dos de cartes, tapis et effets de victoire à collectionner.',
+              text: 'La boutique: dos et recto des cartes, tapis, effets de victoire et titres honorifiques. Les plus belles pièces sont réservées aux rangs Platine et Diamant.',
             },
             {
               text: 'Les tables à mise du Jackpot, pour faire fructifier ta banque.',

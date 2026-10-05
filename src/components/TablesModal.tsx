@@ -13,6 +13,8 @@ const STACK_TONES = [
   ['blue', 'blue'],
   ['red', 'red', 'gold'],
   ['black', 'violet', 'gold', 'gold'],
+  ['violet', 'violet', 'black', 'gold', 'gold'],
+  ['black', 'black', 'red', 'gold', 'gold', 'gold'],
 ] as const;
 
 /** Choix de la table a mise avant une serie Jackpot. */

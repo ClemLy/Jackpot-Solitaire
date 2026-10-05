@@ -63,6 +63,16 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     description: 'Atteindre le rang VIP Or.',
   },
   {
+    id: 'grail',
+    title: 'Le Graal',
+    description: 'S’offrir une pièce maîtresse de la boutique.',
+  },
+  {
+    id: 'completionist',
+    title: 'Collection complète',
+    description: 'Posséder absolument tout ce que vend la boutique.',
+  },
+  {
     id: 'high-stakes',
     title: 'Carré VIP',
     description: 'Gagner une manche à la table Diamant.',

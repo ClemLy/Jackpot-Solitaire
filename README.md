@@ -87,7 +87,7 @@ Pour le confort :
   `?seed=...`.
 
 La progression reste sur l’appareil : statistiques, séries, meilleur temps,
-douze hauts faits, calendrier des défis du mois.
+quatorze hauts faits, calendrier des défis du mois.
 
 ## Les modes de jeu
 
@@ -133,6 +133,8 @@ dans le magot : on la récupère en encaissant, on la perd avec la série.
 | Argent | 500 | ×1,5 |
 | Or | 2 500 | ×2 |
 | Diamant (rang VIP Or) | 10 000 | ×3 |
+| Salon Platine (rang VIP Platine) | 25 000 | ×4 |
+| Légende (rang VIP Diamant) | 75 000 | ×6 |
 
 ## La banque, la boutique et les rangs VIP
 
@@ -147,9 +149,17 @@ D’où viennent les jetons :
 
 À quoi ils servent :
 
-- **La boutique** : huit dos de cartes (dont un holographique animé), neuf
-  tapis (velours, Monte-Carlo, marbre noir, salon doré...) et quatre effets
-  de victoire, tous visibles avant achat.
+- **La boutique** : une quarantaine d’objets, tous visibles avant achat,
+  même ceux encore verrouillés.
+  - Treize dos de cartes, du treillis bordeaux au « Triple sept » doré.
+  - Quatre recto de cartes : ivoire, parchemin, noir & or, or massif.
+  - Douze tapis, dont un ciel étoilé qui scintille et une laque noire à la
+    feuille d’or.
+  - Sept effets de victoire, du champagne à la supernova.
+  - Six titres honorifiques, affichés sur l’accueil et sur chaque
+    bordereau, de « Flambeur » à « Roi du Jackpot ».
+  - Les pièces maîtresses (badge Graal) coûtent de 160 000 à 1 000 000 de
+    jetons et sont réservées au rang Diamant.
 - **Les tables à mise**, pour faire fructifier sa banque.
 - **Trois bonus** :
   - Œil du croupier : un indice offert, sans pénalité.
@@ -158,9 +168,19 @@ D’où viennent les jetons :
   - Seconde chance : sur une donne bloquée en Jackpot, redistribue une
     manche neuve sans perdre le magot.
 
-Le rang VIP (Bronze, Argent, Or, Platine, Diamant) dépend du total de jetons
-gagnés depuis le début ; les achats ne le font jamais baisser. Chaque rang
-donne jusqu’à 20 % de remise et ouvre des objets et des tables réservés.
+Le rang VIP dépend du total de jetons gagnés depuis le début ; les achats ne
+le font jamais baisser.
+
+| Rang | Dès | Remise | Roue du jour | Ce qu’il ouvre |
+| --- | --- | --- | --- | --- |
+| Bronze | 0 | aucune | ×1 | La boutique de base |
+| Argent | 5 000 | 5 % | ×1,25 | Holographique, marbre, parchemin, Flambeur |
+| Or | 20 000 | 10 % | ×1,5 | Table Diamant, salon doré, blason, champagne |
+| Platine | 60 000 | 15 % | ×2 | Salon Platine, noir & or, obsidienne, Las Vegas |
+| Diamant | 150 000 | 20 % | ×3 | Table Légende et toutes les pièces maîtresses |
+
+Un compteur de collection suit les objets possédés, et deux hauts faits
+récompensent le premier Graal et la collection complète.
 
 ## Sur téléphone
 

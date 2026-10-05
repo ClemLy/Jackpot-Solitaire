@@ -562,6 +562,11 @@
 .victory-layer {
   position: fixed;
   inset: 0;
+  /* Un canvas garde sa taille interne (en pixels physiques) si on ne fixe
+     pas sa taille CSS: sur un ecran Retina, les effets etaient dessines deux
+     fois trop grands et decales. */
+  width: 100%;
+  height: 100%;
   z-index: 299;
   pointer-events: none;
 }

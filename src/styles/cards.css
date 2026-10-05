@@ -37,21 +37,117 @@
 .card__front {
   color: var(--suit-ink);
   background:
-    radial-gradient(130% 80% at 25% 0%, #fffdf6 0%, transparent 60%),
-    linear-gradient(180deg, var(--ivory), var(--ivory-2));
+    radial-gradient(130% 80% at 25% 0%, var(--face-hi) 0%, transparent 60%),
+    var(--face-texture),
+    linear-gradient(180deg, var(--face-paper), var(--face-paper-2));
   box-shadow:
     0 0 0 0.5px rgba(23, 25, 31, 0.4),
     0 1px 1px rgba(0, 0, 0, 0.16),
     0 3px 8px -2px rgba(0, 0, 0, 0.4),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+    inset 0 0 0 1px var(--face-edge);
   transition: box-shadow 160ms ease;
 }
 
+/* ---- Recto des cartes ----------------------------------------------------
+   Papier, encres et cadre des figures sont des variables: le plateau
+   (.app[data-face]) et les apercus de la boutique (data-face-preview) les
+   definissent, chaque carte les lit.
+--------------------------------------------------------------------------- */
+
+.app,
+[data-face-preview] {
+  --face-paper: var(--ivory);
+  --face-paper-2: var(--ivory-2);
+  --face-hi: #fffdf6;
+  --face-texture: linear-gradient(transparent, transparent);
+  --face-edge: rgba(255, 255, 255, 0.65);
+  --face-red: var(--crimson);
+  --face-black: var(--ink);
+  --face-court-red: radial-gradient(ellipse at 50% 30%, #fff6ef, #f6dcd3);
+  --face-court-black: radial-gradient(ellipse at 50% 30%, #f8f9fb, #dde2ea);
+  --face-frame: var(--gold-300);
+  --face-sheen: none;
+}
+
+.app[data-face='parchment'],
+[data-face-preview='parchment'] {
+  --face-paper: #f1e2bf;
+  --face-paper-2: #dcc497;
+  --face-hi: rgba(255, 246, 220, 0.8);
+  --face-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='3' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .3 0 0 0 0 .12 0 0 0 .35 -.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+  --face-edge: rgba(255, 240, 210, 0.5);
+  --face-red: #8e2b1c;
+  --face-black: #3b2615;
+  --face-court-red: radial-gradient(ellipse at 50% 30%, #f6e6c8, #e2c79c);
+  --face-court-black: radial-gradient(ellipse at 50% 30%, #f3e6cc, #dcc8a3);
+  --face-frame: #8a6430;
+}
+
+.app[data-face='noir'],
+[data-face-preview='noir'] {
+  --face-paper: #1b1c21;
+  --face-paper-2: #0e0f12;
+  --face-hi: rgba(255, 255, 255, 0.07);
+  --face-edge: rgba(227, 185, 90, 0.55);
+  --face-red: #ff5a6e;
+  --face-black: var(--gold-200);
+  --face-court-red: radial-gradient(ellipse at 50% 30%, #3a1d24, #1e1013);
+  --face-court-black: radial-gradient(ellipse at 50% 30%, #2c2a24, #15140f);
+  --face-frame: var(--gold-200);
+}
+
+.app[data-face='gilded'],
+[data-face-preview='gilded'] {
+  --face-paper: #f3d27c;
+  --face-paper-2: #c99532;
+  --face-hi: rgba(255, 246, 210, 0.9);
+  --face-texture: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0 2px,
+    transparent 2px 5px
+  );
+  --face-edge: rgba(255, 246, 210, 0.85);
+  --face-red: #7d0f1f;
+  --face-black: #2a1a03;
+  --face-court-red: radial-gradient(ellipse at 50% 30%, #fff1c8, #f0cd72);
+  --face-court-black: radial-gradient(ellipse at 50% 30%, #fff1c8, #e9c25e);
+  --face-frame: #7a5517;
+  --face-sheen: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 60%
+  );
+}
+
+/* Reflet qui balaie les cartes plaquees or. */
+.card__front::after {
+  content: '';
+  position: absolute;
+  inset: -20% -60%;
+  background: var(--face-sheen);
+  pointer-events: none;
+  opacity: 0.9;
+}
+.app[data-face='gilded'] .card__front::after,
+[data-face-preview='gilded'] .card__front::after {
+  animation: faceSheen 5.5s ease-in-out infinite;
+}
+@keyframes faceSheen {
+  0%,
+  55% {
+    transform: translateX(-60%);
+  }
+  100% {
+    transform: translateX(60%);
+  }
+}
+
 .card[data-color='red'] {
-  --suit-ink: var(--crimson);
+  --suit-ink: var(--face-red);
 }
 .card[data-color='black'] {
-  --suit-ink: var(--ink);
+  --suit-ink: var(--face-black);
 }
 
 /* Index: rang a gauche, enseigne a droite, sur une bande assez fine pour
@@ -156,15 +252,15 @@
   border-radius: calc(var(--card-w) * 0.05);
   overflow: hidden;
   box-shadow:
-    inset 0 0 0 1px var(--gold-300),
-    inset 0 0 0 calc(var(--card-w) * 0.025) rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1px var(--face-frame),
+    inset 0 0 0 calc(var(--card-w) * 0.025) var(--face-edge),
     inset 0 0 0 calc(var(--card-w) * 0.035) rgba(227, 185, 90, 0.35);
 }
 .card[data-color='red'] .card__court {
-  background: radial-gradient(ellipse at 50% 30%, #fff6ef, #f6dcd3);
+  background: var(--face-court-red);
 }
 .card[data-color='black'] .card__court {
-  background: radial-gradient(ellipse at 50% 30%, #f8f9fb, #dde2ea);
+  background: var(--face-court-black);
 }
 .card__court svg {
   position: absolute;
@@ -317,6 +413,140 @@
   }
   to {
     background-position: 100% 70%;
+  }
+}
+
+/* ---- Dos de prestige (rangs Or a Diamant) ---- */
+
+.app[data-back='crest'],
+[data-back-preview='crest'] {
+  --back-bg: radial-gradient(circle at 50% 40%, #233a72, #0c1633 75%);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M6 1.5L7.2 6L6 10.5L4.8 6Z' fill='%23E3B95A' fill-opacity='.35'/%3E%3C/svg%3E");
+  --back-size: 10px 10px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 12L82 23V50C82 71 67 83 50 90C33 83 18 71 18 50V23Z' fill='%23000' fill-opacity='.4' stroke='%23E3B95A' stroke-width='3.5'/%3E%3Cpath d='M34 44L40 30L50 39L60 30L66 44V50H34Z' fill='%23E3B95A'/%3E%3Cpath d='M50 56L57 66L50 77L43 66Z' fill='%23E3B95A'/%3E%3C/svg%3E");
+}
+
+.app[data-back='obsidian'],
+[data-back-preview='obsidian'] {
+  --back-bg:
+    linear-gradient(
+      115deg,
+      transparent 42%,
+      rgba(255, 255, 255, 0.14) 50%,
+      transparent 58%
+    ),
+    radial-gradient(circle at 30% 20%, #2b2b33, #060608 70%);
+  --back-border: #141418;
+  --back-line: var(--gold-300);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='o'%3E%3CfeTurbulence type='turbulence' baseFrequency='.012 .03' numOctaves='3' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 .89 0 0 0 0 .72 0 0 0 0 .35 -6 0 0 0 .75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23o)'/%3E%3C/svg%3E");
+  --back-size: 200px 200px;
+}
+
+.app[data-back='aurora'],
+[data-back-preview='aurora'] {
+  --back-bg: linear-gradient(
+    160deg,
+    #06162b,
+    #0d5c4f,
+    #2bd49a,
+    #4b3bb8,
+    #0b1d3d,
+    #19a888,
+    #06162b
+  );
+  --back-border: #e9fbf4;
+  --back-line: rgba(233, 251, 244, 0.6);
+  --back-pattern: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.55) 0.8px,
+    transparent 1.2px
+  );
+  --back-size: 13px 17px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%23fff' fill-opacity='.12' stroke='%23fff' stroke-width='3'/%3E%3Cpath d='M50 18L56 44L82 50L56 56L50 82L44 56L18 50L44 44Z' fill='%23fff'/%3E%3C/svg%3E");
+}
+
+.app[data-back='prism'],
+[data-back-preview='prism'] {
+  --back-bg:
+    linear-gradient(
+      120deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.5) 50%,
+      transparent 60%
+    ),
+    conic-gradient(
+      from 30deg at 50% 50%,
+      #dfe8f5,
+      #8ea6c8,
+      #f4f7fb,
+      #6d86ad,
+      #cfdcef,
+      #9fb4d4,
+      #dfe8f5
+    );
+  --back-border: #f5f8fc;
+  --back-line: rgba(40, 60, 95, 0.55);
+  --back-pattern:
+    linear-gradient(60deg, rgba(40, 60, 95, 0.25) 1px, transparent 1px),
+    linear-gradient(-60deg, rgba(40, 60, 95, 0.25) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+  --back-size: 18px 31px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231d2c49' fill-opacity='.75' stroke='%23fff' stroke-width='3'/%3E%3Cpath d='M28 40L40 26H60L72 40L50 78Z' fill='%23fff'/%3E%3Cpath d='M28 40H72M40 26L45 40L50 78L55 40L60 26' fill='none' stroke='%237f95bb' stroke-width='1.6'/%3E%3C/svg%3E");
+}
+
+.app[data-back='triple7'],
+[data-back-preview='triple7'] {
+  --back-bg:
+    linear-gradient(
+      110deg,
+      transparent 40%,
+      rgba(255, 236, 170, 0.35) 50%,
+      transparent 60%
+    ),
+    radial-gradient(circle at 50% 45%, #7a0e1e, #22040a 75%);
+  --back-border: #f3d27c;
+  --back-line: var(--gold-200);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cpath d='M8 2L9.2 6.8L14 8L9.2 9.2L8 14L6.8 9.2L2 8L6.8 6.8Z' fill='%23F3D27C' fill-opacity='.4'/%3E%3C/svg%3E");
+  --back-size: 12px 12px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23000' fill-opacity='.5' stroke='%23F3D27C' stroke-width='3.5'/%3E%3Ccircle cx='50' cy='50' r='37' fill='none' stroke='%23F3D27C' stroke-opacity='.5'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='33' fill='%23F3D27C'%3E777%3C/text%3E%3C/svg%3E");
+}
+
+/* Les dos animes: reflet ou voile qui se deplace lentement. */
+.app[data-back='obsidian'] .card__back,
+[data-back-preview='obsidian'] .card__back,
+.app[data-back='prism'] .card__back,
+[data-back-preview='prism'] .card__back,
+.app[data-back='triple7'] .card__back,
+[data-back-preview='triple7'] .card__back {
+  background-size:
+    300% 100%,
+    auto;
+  animation: backGlint 6s ease-in-out infinite;
+}
+@keyframes backGlint {
+  0%,
+  50% {
+    background-position:
+      120% 0,
+      0 0;
+  }
+  100% {
+    background-position:
+      -20% 0,
+      0 0;
+  }
+}
+.app[data-back='aurora'] .card__back,
+[data-back-preview='aurora'] .card__back {
+  background-size: 100% 400%;
+  animation: aurora 12s ease-in-out infinite alternate;
+}
+@keyframes aurora {
+  from {
+    background-position: 0 0%;
+  }
+  to {
+    background-position: 0 100%;
   }
 }
 

@@ -1,7 +1,11 @@
 import { Home as HomeIcon, LifeBuoy, ShieldCheck } from 'lucide-react';
 import { useGameStore, MODE_LABEL } from '../state/game';
 import { useMetaStore } from '../state/meta';
-import { discountedPrice, findConsumable } from '../state/catalog';
+import {
+  discountedPrice,
+  findConsumable,
+  findCosmetic,
+} from '../state/catalog';
 import { playSound } from '../audio/sfx';
 import { formatDuration, formatNumber } from '../utils/format';
 import { Stage } from './Modal';
@@ -10,6 +14,7 @@ import { Chip } from './ui';
 export function LostOverlay() {
   const lost = useGameStore((s) => s.lost);
   const mode = useGameStore((s) => s.mode);
+  const titleId = useMetaStore((s) => s.settings.title);
   const newGame = useGameStore((s) => s.newGame);
   const goHome = useGameStore((s) => s.goHome);
   const secondChance = useGameStore((s) => s.secondChance);
@@ -18,6 +23,7 @@ export function LostOverlay() {
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
   const buy = useMetaStore((s) => s.buyConsumable);
 
+  const playerTitle = findCosmetic(titleId)?.label ?? 'Jackpot Solitaire';
   if (!lost) return null;
   const scoring = mode !== 'zen';
   const redealPrice = discountedPrice(findConsumable('redeal').price, lifetime);
@@ -27,7 +33,7 @@ export function LostOverlay() {
     <Stage variant="ticket" label="Donne bloquée" tone="red">
       <div className="ticket">
         <div className="ticket__head">
-          <span className="ticket__house">Jackpot Solitaire</span>
+          <span className="ticket__house">{playerTitle}</span>
           <span>
             {MODE_LABEL[mode]} · {formatDuration(lost.timeMs)}
           </span>

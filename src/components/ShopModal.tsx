@@ -11,11 +11,18 @@ import {
   Shield,
   Sparkles,
   Coins,
+  Gem,
+  Wine,
+  Sun,
+  Award,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
 import {
   CARD_BACKS,
+  CARD_FACES,
+  COLLECTIBLES,
+  TITLES,
   CONSUMABLES,
   TABLES,
   VICTORY_FX,
@@ -31,7 +38,7 @@ import {
   type CosmeticCategory,
 } from '../state/catalog';
 import { playSound } from '../audio/sfx';
-import { formatNumber } from '../utils/format';
+import { formatMultiplier, formatNumber } from '../utils/format';
 import type { Card } from '../engine';
 import { CardView } from './CardView';
 import { Balance, Chip } from './ui';
@@ -41,18 +48,30 @@ type Tab = CosmeticCategory | 'bonus';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'back', label: 'Dos de cartes' },
+  { id: 'face', label: 'Recto des cartes' },
   { id: 'table', label: 'Tapis' },
   { id: 'fx', label: 'Effets de victoire' },
+  { id: 'title', label: 'Titres' },
   { id: 'bonus', label: 'Bonus' },
 ];
 
+const LISTS: Record<CosmeticCategory, readonly Cosmetic[]> = {
+  back: CARD_BACKS,
+  face: CARD_FACES,
+  table: TABLES,
+  fx: VICTORY_FX,
+  title: TITLES,
+};
+
 const SETTING_KEY: Record<
   CosmeticCategory,
-  'cardBack' | 'table' | 'victoryFx'
+  'cardBack' | 'cardFace' | 'table' | 'victoryFx' | 'title'
 > = {
   back: 'cardBack',
+  face: 'cardFace',
   table: 'table',
   fx: 'victoryFx',
+  title: 'title',
 };
 
 const BACK_CARD: Card = {
@@ -67,12 +86,27 @@ const FRONT_CARD: Card = {
   rank: 1,
   faceUp: true,
 };
+const FACE_KING: Card = {
+  id: 'preview-king',
+  suit: 'spades',
+  rank: 13,
+  faceUp: true,
+};
+const FACE_TEN: Card = {
+  id: 'preview-ten',
+  suit: 'hearts',
+  rank: 10,
+  faceUp: true,
+};
 
 const FX_ICON: Record<string, ReactNode> = {
   bounce: <Layers size={30} />,
   confetti: <Sparkles size={30} />,
   coins: <Coins size={30} />,
   fireworks: <Rocket size={30} />,
+  champagne: <Wine size={30} />,
+  goldbars: <Award size={30} />,
+  supernova: <Sun size={30} />,
 };
 
 const BONUS_ICON: Record<ConsumableId, ReactNode> = {
@@ -106,10 +140,48 @@ function Preview({ item }: { item: Cosmetic }) {
       </div>
     );
   }
+  if (item.category === 'face') {
+    return (
+      <div className="preview preview--face" data-face-preview={item.id}>
+        <div className="preview__card preview__card--a">
+          <CardView card={FACE_KING} style={{ top: 0, left: 0 }} />
+        </div>
+        <div className="preview__card preview__card--b">
+          <CardView card={FACE_TEN} style={{ top: 0, left: 0 }} />
+        </div>
+      </div>
+    );
+  }
+  if (item.category === 'title') {
+    return (
+      <div className="preview preview--title">
+        <span className="plaque" data-title={item.id}>
+          {item.label}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="preview preview--fx" data-fx={item.id}>
       <span className="preview__medal">{FX_ICON[item.id]}</span>
     </div>
+  );
+}
+
+/** Pastilles posees sur l'apercu: rang exclusif et piece maitresse. */
+function Badges({ item }: { item: Cosmetic }) {
+  const exclusive = item.minTier === 'platinum' || item.minTier === 'diamond';
+  if (!exclusive && !item.grail) return null;
+  const tier = VIP_TIERS.find((t) => t.id === item.minTier);
+  return (
+    <span className="item__badges">
+      {exclusive && (
+        <span className="tier-tag" data-tier={item.minTier}>
+          <Gem size={11} /> {tier?.label}
+        </span>
+      )}
+      {item.grail && <span className="grail-tag">Graal</span>}
+    </span>
   );
 }
 
@@ -177,8 +249,12 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
     else refuse(item.id);
   };
 
-  const list: readonly Cosmetic[] =
-    tab === 'back' ? CARD_BACKS : tab === 'table' ? TABLES : VICTORY_FX;
+  const list: readonly Cosmetic[] = tab === 'bonus' ? [] : LISTS[tab];
+  const ownedSet = new Set(owned);
+  const collected = COLLECTIBLES.filter((c) => ownedSet.has(c.id)).length;
+  const nextUnlocks = next
+    ? COLLECTIBLES.filter((c) => c.minTier === next.id).length
+    : 0;
 
   return (
     <Modal
@@ -196,7 +272,8 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
             <strong>Rang {tier.label}</strong>
             {tier.discount > 0 ? (
               <span className="vip-banner__perk">
-                −{Math.round(tier.discount * 100)} % sur toute la boutique
+                −{Math.round(tier.discount * 100)} % en boutique · roue du jour
+                ×{formatMultiplier(tier.wheelBoost)}
               </span>
             ) : (
               <span className="vip-banner__perk">
@@ -212,8 +289,8 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
           </div>
           <div className="vip-banner__next">
             {next
-              ? `Encore ${formatNumber(next.threshold - lifetime)} jetons gagnés pour le rang ${next.label} (−${Math.round(next.discount * 100)} %)`
-              : 'Rang maximum atteint. Respect.'}
+              ? `Encore ${formatNumber(next.threshold - lifetime)} jetons gagnés pour le rang ${next.label}: −${Math.round(next.discount * 100)} %, roue ×${formatMultiplier(next.wheelBoost)} et ${nextUnlocks} objets exclusifs.`
+              : 'Rang maximum atteint. Tout est à portée, il ne reste qu’à tout s’offrir.'}
           </div>
         </div>
         <ol className="vip-ladder" aria-label="Rangs VIP">
@@ -223,6 +300,21 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
             </li>
           ))}
         </ol>
+      </div>
+
+      <div className="collection">
+        <span>
+          Collection{' '}
+          <strong>
+            {collected} / {COLLECTIBLES.length}
+          </strong>
+        </span>
+        <span
+          className="meter meter--thin"
+          style={{ '--p': collected / COLLECTIBLES.length } as CSSProperties}
+        >
+          <span />
+        </span>
       </div>
 
       <div className="tabs" role="tablist">
@@ -251,11 +343,19 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
                 <article
                   key={item.id}
                   className="item"
+                  data-locked={locked}
+                  data-grail={item.grail ? 'true' : undefined}
                   data-equipped={equipped}
                   data-flash={flash === item.id}
                   data-denied={denied === item.id}
                 >
                   <Preview item={item} />
+                  <Badges item={item} />
+                  {locked && (
+                    <span className="item__lock" aria-hidden="true">
+                      <Lock size={18} />
+                    </span>
+                  )}
                   {item.category === 'fx' && (
                     <button
                       className="item__peek"
