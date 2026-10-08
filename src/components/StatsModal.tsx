@@ -1,44 +1,13 @@
-import { useState, type ReactNode } from 'react';
-import {
-  Brain,
-  CalendarHeart,
-  Crown,
-  Diamond,
-  Dices,
-  Flag,
-  Flame,
-  Gem,
-  Sparkles,
-  Trophy,
-  ShoppingBag,
-  Snowflake,
-  Vault,
-  Zap,
-} from 'lucide-react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
+import { ChevronRight, Trophy } from 'lucide-react';
 import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
+import { useGameStore } from '../state/game';
 import { ACHIEVEMENTS } from '../state/achievements';
 import { vipTierFor } from '../state/catalog';
 import { formatDuration, formatNumber, percent } from '../utils/format';
 import { todayISO } from '../utils/seed';
 import { Chip } from './ui';
-
-const ACH_ICON: Record<string, ReactNode> = {
-  'first-win': <Flag size={20} />,
-  lightning: <Zap size={20} />,
-  strategist: <Brain size={20} />,
-  'clear-mind': <Snowflake size={20} />,
-  faithful: <CalendarHeart size={20} />,
-  'hot-streak': <Flame size={20} />,
-  'high-roller': <Gem size={20} />,
-  daredevil: <Dices size={20} />,
-  'treasure-hunter': <Vault size={20} />,
-  collector: <ShoppingBag size={20} />,
-  regular: <Crown size={20} />,
-  'high-stakes': <Diamond size={20} />,
-  grail: <Trophy size={20} />,
-  completionist: <Sparkles size={20} />,
-};
 
 function Stat({ k, v }: { k: string; v: ReactNode }) {
   return (
@@ -131,6 +100,7 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
   const wallet = useMetaStore((s) => s.wallet);
   const achievements = useMetaStore((s) => s.achievements);
   const resetProgress = useMetaStore((s) => s.resetProgress);
+  const openModal = useGameStore((s) => s.openModal);
   const [confirm, setConfirm] = useState(false);
 
   const avgTime =
@@ -216,26 +186,24 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
 
         <DailyCalendar done={daily.completedDates} />
 
-        <h3 className="section-title">
-          Hauts faits{' '}
-          <span className="section-title__count">
-            {unlocked} / {ACHIEVEMENTS.length}
+        <button className="achs-cta" onClick={() => openModal('achievements')}>
+          <span className="achs-cta__icon">
+            <Trophy size={22} />
           </span>
-        </h3>
-        <div className="ach-grid">
-          {ACHIEVEMENTS.map((a) => {
-            const on = Boolean(achievements[a.id]);
-            return (
-              <div key={a.id} className="ach" data-on={on}>
-                <span className="ach__medal">{ACH_ICON[a.id]}</span>
-                <span className="ach__body">
-                  <span className="ach__t">{a.title}</span>
-                  <span className="ach__d">{a.description}</span>
-                </span>
-              </div>
-            );
-          })}
-        </div>
+          <span className="achs-cta__body">
+            <strong>Hauts faits</strong>
+            <span>
+              {unlocked} / {ACHIEVEMENTS.length} débloqués
+            </span>
+            <span
+              className="meter meter--thin"
+              style={{ '--p': unlocked / ACHIEVEMENTS.length } as CSSProperties}
+            >
+              <span />
+            </span>
+          </span>
+          <ChevronRight size={18} aria-hidden="true" />
+        </button>
       </div>
     </Modal>
   );

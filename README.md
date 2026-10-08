@@ -18,6 +18,7 @@ jeu sur la manche suivante ?
 - [Les modes de jeu](#les-modes-de-jeu)
 - [Score et mode Jackpot](#score-et-mode-jackpot)
 - [La banque, la boutique et les rangs VIP](#la-banque-la-boutique-et-les-rangs-vip)
+- [Les hauts faits](#les-hauts-faits)
 - [Comptes, profil et amis](#comptes-profil-et-amis)
 - [Sur téléphone](#sur-téléphone)
 - [Direction artistique](#direction-artistique)
@@ -44,6 +45,8 @@ jeu sur la manche suivante ?
 | Roue du jour | Statistiques |
 | --- | --- |
 | ![Roue du jour](screenshots/roue.png) | ![Statistiques](screenshots/stats.png) |
+
+![Hauts faits](screenshots/hauts-faits.png)
 
 Les comptes, le profil et les amis :
 
@@ -123,8 +126,9 @@ Pour le confort :
 - Graine de partie : rejouer une donne précise, ou l’envoyer par un lien
   `?seed=...`.
 
-La progression reste sur l’appareil : statistiques, séries, meilleur temps,
-quatorze hauts faits, calendrier des défis du mois.
+La progression reste sur l’appareil (ou sur le compte) : statistiques,
+séries, meilleur temps, cinquante-quatre hauts faits, calendrier des défis
+du mois.
 
 ## Les modes de jeu
 
@@ -220,7 +224,12 @@ D’où viennent les jetons :
     (ville la nuit, pleine lune, nébuleuse, draperies royales) et des
     effets animés (fumée, feuilles qui tombent, étoile filante, souffle de
     feu, pluie de pièces). Les cadres vont d’un simple liseré à l’anneau de
-    cristal du rang Diamant et à l’Écrin impérial, couronné et serti.
+    cristal du rang Diamant et à l’Écrin impérial, couronné et serti. Les
+    cartes de profil suivent la même logique : feutre uni, surpiqûre de
+    velours, ciel étoilé avec lune et étoile filante, coins Art déco,
+    marbre incrusté d’or, enseigne de Vegas aux ampoules qui chenillent,
+    laque à filigranes dorés, feuille holographique à bordure arc-en-ciel,
+    et la carte Légende, avec aurore, filigranes sertis et particules.
   - Les pièces maîtresses (badge Graal) coûtent de 160 000 à 1 000 000 de
     jetons et sont réservées au rang Diamant.
 - **Les tables à mise**, pour faire fructifier sa banque.
@@ -261,8 +270,30 @@ platine, couronne de diamants).
 | Platine | 60 000 | 15 % | ×2 | Salon Platine, noir & or, obsidienne, Las Vegas |
 | Diamant | 150 000 | 20 % | ×3 | Table Légende et toutes les pièces maîtresses |
 
-Un compteur de collection suit les objets possédés, et deux hauts faits
-récompensent le premier Graal et la collection complète.
+Un compteur de collection suit les objets possédés ; les hauts faits de
+collection récompensent le premier achat, 10 et 30 objets, le premier
+Graal et la collection complète.
+
+## Les hauts faits
+
+Cinquante-quatre hauts faits, rangés en cinq catégories et réunis sur un
+écran dédié (« Hauts faits » sur l’accueil, ou depuis les statistiques) :
+un anneau de progression, le compte des médailles, puis une ligne par
+famille avec sa jauge vers le prochain palier.
+
+- **Les paliers** se débloquent tout seuls avec la progression, de la
+  médaille de bronze à celle de diamant : victoires (1, 25, 100, 500),
+  parties jouées, séries, vitesse (moins de 3 min, 2 min, 90 s, 1 min),
+  meilleur score, magot encaissé, quitte ou double, coffre-fort, jackpot
+  progressif, défis du jour, rang VIP et collection. Une progression déjà
+  acquise est reconnue d’un coup, en un seul message.
+- **Les exploits** se gagnent sur une partie : sans indice, en Expert, au
+  Chrono, avec un bénéfice à Vegas, en pioche par 3 sans faute, la partie
+  parfaite, les trois paris annexes gagnés, une manche à la table Diamant,
+  et le Graal.
+
+Comme le reste de l’économie, ils sont calculés par le cœur partagé : avec
+un compte, c’est le serveur qui les accorde.
 
 ## Sur téléphone
 
@@ -422,7 +453,7 @@ src/
     account.ts   Session, inscription, connexion, amis (client Supabase)
     economy.ts   Envoie chaque action d'argent au cœur local (invité) ou
                  au serveur (compte)
-    achievements.ts
+    achievements.ts  Hauts faits: paliers par famille et exploits
   audio/
     sfx.ts       Sons synthétisés à la volée (Web Audio API)
     haptics.ts   Vibrations (Vibration API)
@@ -432,6 +463,8 @@ src/
     Portrait.tsx    Avatar dans son cadre (SVG, cadres animés)
     ProfileCard.tsx Carte de profil et ligne d'ami
     Rank.tsx        Emblèmes et étiquettes des rangs VIP
+    CardDecor.tsx   Ornements des cartes de profil
+    AchievementsModal.tsx  Écran des hauts faits
   styles/      Tokens et tapis, cartes, plateau, interface, comptes, rangs
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
 server/        Fonction api : authentifie, rejoue et enregistre

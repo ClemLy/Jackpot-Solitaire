@@ -9,6 +9,7 @@ import {
 import { formatDuration, formatNumber, percent } from '../utils/format';
 import { Portrait } from './Portrait';
 import { RankBadge } from './Rank';
+import { CardDecor } from './CardDecor';
 
 function memberSince(iso: string | null): string | null {
   if (!iso) return null;
@@ -59,6 +60,7 @@ export function ProfileCard({
       aria-label={`Carte de profil de ${card.pseudo}`}
     >
       <div className="pcard__shine" aria-hidden="true" />
+      <CardDecor style={card.profileCard} />
       <header className="pcard__top">
         <span className="pcard__tier rank-pill" data-tier={tier.id}>
           <RankBadge tier={tier.id} size={18} />

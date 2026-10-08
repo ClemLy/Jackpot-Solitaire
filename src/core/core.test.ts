@@ -23,6 +23,11 @@ import {
   type StartRequest,
 } from './index';
 import {
+  ACHIEVEMENTS,
+  progressAchievements,
+  winExploits,
+} from '../state/achievements';
+import {
   CHRONO_LIMIT_MS,
   VEGAS_STAKE,
   findDifficulty,
@@ -684,6 +689,89 @@ describe('import d une sauvegarde d invite', () => {
 });
 
 // Garde-fou: les coups produits par le solveur restent applicables.
+describe('hauts faits', () => {
+  it('a des identifiants uniques', () => {
+    const ids = ACHIEVEMENTS.map((a) => a.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('deduit les paliers de la progression', () => {
+    const s = fresh();
+    s.stats.gamesWon = 30;
+    s.stats.bestWinStreak = 5;
+    s.stats.bestTimeMs = 100_000;
+    s.wallet.lifetimeEarned = 25_000;
+    const ids = progressAchievements(s);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        'first-win',
+        'wins-25',
+        'hot-streak',
+        'streak-5',
+        'lightning',
+        'speed-120',
+        'rank-silver',
+        'regular',
+      ]),
+    );
+    expect(ids).not.toContain('wins-100');
+    // Un record de temps plus bas vaut mieux; aucun temps, aucun palier.
+    expect(ids).not.toContain('speed-90');
+    s.stats.bestTimeMs = null;
+    expect(progressAchievements(s)).not.toContain('lightning');
+  });
+
+  it('accorde les exploits d une partie gagnee', () => {
+    const base = {
+      drawCount: 3 as const,
+      difficulty: 'expert',
+      mode: 'chrono',
+      invalidMoves: 0,
+      undoCount: 0,
+      usedHint: false,
+      usedJoker: false,
+      betsWon: 3,
+      vegasNet: null,
+    };
+    expect(winExploits(base)).toEqual(
+      expect.arrayContaining([
+        'clear-mind',
+        'strategist',
+        'perfect',
+        'expert-win',
+        'chrono-win',
+        'bets-hat-trick',
+      ]),
+    );
+    const sloppy = winExploits({ ...base, undoCount: 1, usedHint: true });
+    expect(sloppy).not.toContain('perfect');
+    expect(sloppy).not.toContain('clear-mind');
+  });
+
+  it('debloque les paliers en fin de partie et annonce un rattrapage en un message', () => {
+    const veteran = fresh();
+    veteran.stats.gamesWon = 120;
+    veteran.stats.gamesPlayed = 150;
+    veteran.stats.bestWinStreak = 11;
+    const { state, round } = start(veteran, {
+      kind: 'new',
+      mode: 'classic',
+      difficulty: 'normal',
+    });
+    const out = finishRound(
+      state,
+      { roundId: round.id, log: winLog(round), reason: 'win' },
+      ctx(T0 + 120_000),
+    );
+    for (const id of ['first-win', 'wins-100', 'played-100', 'streak-10']) {
+      expect(out.state.achievements[id]).toBeGreaterThan(0);
+    }
+    const notes = out.notices.filter((n) => n.kind === 'achievement');
+    expect(notes).toHaveLength(1);
+    expect(notes[0].title).toMatch(/hauts faits débloqués/);
+  });
+});
+
 describe('outillage des tests', () => {
   it('rejoue la solution d une donne gagnable', () => {
     const { round } = start(fresh(), {

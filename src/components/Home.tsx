@@ -7,6 +7,7 @@ import {
   Settings,
   ShoppingBag,
   Target,
+  Trophy,
   UserRound,
   Users,
 } from 'lucide-react';
@@ -371,6 +372,12 @@ export function Home() {
               )}
             </button>
           )}
+          <button
+            className="link-btn"
+            onClick={() => openModal('achievements')}
+          >
+            <Trophy size={18} /> Hauts faits
+          </button>
           <button className="link-btn" onClick={() => openModal('missions')}>
             <Target size={18} /> Missions
           </button>

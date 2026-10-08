@@ -36,7 +36,7 @@ import {
   type SideBetId,
   type StakeTableId,
 } from '../state/catalog';
-import { satisfiedAchievements } from '../state/achievements';
+import { winExploits } from '../state/achievements';
 import {
   comboMultiplier,
   drawVaultOutcome,
@@ -471,22 +471,6 @@ function resolveGame(
   } else {
     stats.currentWinStreak = 0;
   }
-  tx.grant(
-    satisfiedAchievements({
-      won,
-      timeMs: r.timeMs,
-      drawCount: round.drawCount,
-      invalidMoves: r.replay.invalidMoves,
-      undoCount: r.replay.undoCount,
-      usedHint: r.replay.usedHint,
-      isDaily,
-      dailyCompletedCount: daily.completedDates.length,
-      currentWinStreak: stats.currentWinStreak,
-      securedAmount: 0,
-      gamblingStreak: 0,
-      vaultOpened: false,
-    }),
-  );
 }
 
 /**
@@ -694,6 +678,19 @@ function win(tx: Tx, round: Round, r: Replay, timeMs: number): WinSummary {
   const vegas = settleVegas(tx, round, r.board);
 
   if (!unpaid) {
+    tx.grant(
+      winExploits({
+        drawCount: round.drawCount,
+        difficulty: round.difficulty,
+        mode: round.mode,
+        invalidMoves: r.invalidMoves,
+        undoCount: r.undoCount,
+        usedHint: r.usedHint,
+        usedJoker: r.usedJoker,
+        betsWon: bets.filter((b) => b.won).length,
+        vegasNet: vegas ? vegas.net : null,
+      }),
+    );
     tx.recordMission({
       kind: 'game',
       won: true,

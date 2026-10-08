@@ -16,7 +16,7 @@ import {
   vipTierFor,
   type ConsumableId,
 } from '../state/catalog';
-import { ACHIEVEMENTS, satisfiedAchievements } from '../state/achievements';
+import { ACHIEVEMENT_BY_ID, progressAchievements } from '../state/achievements';
 import {
   activeMissions,
   advance,
@@ -120,12 +120,12 @@ export function currentPeriod(
     : { key, progress: {}, claimed: [] };
 }
 
-const ACHIEVEMENT_BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
-
 /** Modifications successives d'un etat de joueur, sur une copie. */
 export class Tx {
   readonly s: PlayerState;
   readonly notices: Notice[] = [];
+  /** Hauts faits debloques pendant cette transaction. */
+  private unlocked: string[] = [];
 
   constructor(
     state: PlayerState,
@@ -175,20 +175,42 @@ export class Tx {
       (this.s.inventory.consumables[id] ?? 0) + n;
   }
 
-  /** Accorde des hauts faits, avec un message pour chaque nouveau. */
+  /** Accorde des hauts faits (annonces a la fin de la transaction). */
   grant(ids: string[]): void {
     for (const id of new Set(ids)) {
-      if (this.s.achievements[id]) continue;
+      if (this.s.achievements[id] || !ACHIEVEMENT_BY_ID.has(id)) continue;
       this.s.achievements[id] = this.ctx.now;
+      this.unlocked.push(id);
+    }
+  }
+
+  /**
+   * Annonce les hauts faits debloques. Au-dela de deux d'un coup (par
+   * exemple les paliers rattrapes d'une ancienne progression), un seul
+   * message les resume.
+   */
+  private announce(): void {
+    const list = this.unlocked.flatMap((id) => {
       const a = ACHIEVEMENT_BY_ID.get(id);
-      if (a) {
+      return a ? [a] : [];
+    });
+    this.unlocked = [];
+    if (list.length <= 2) {
+      for (const a of list) {
         this.notify({
           kind: 'achievement',
           title: a.title,
           text: a.description,
         });
       }
+      return;
     }
+    const names = list.slice(0, 3).map((a) => a.title);
+    this.notify({
+      kind: 'achievement',
+      title: `${list.length} hauts faits débloqués`,
+      text: `${names.join(', ')}${list.length > 3 ? '…' : '.'}`,
+    });
   }
 
   recordMission(event: MissionEvent): void {
@@ -222,22 +244,6 @@ export class Tx {
       this.credit(amount);
       this.recordMission({ kind: 'secure', amount });
     }
-    this.grant(
-      satisfiedAchievements({
-        won: false,
-        timeMs: 0,
-        drawCount: 1,
-        invalidMoves: 0,
-        undoCount: 0,
-        usedHint: false,
-        isDaily: false,
-        dailyCompletedCount: this.s.daily.completedDates.length,
-        currentWinStreak: this.s.stats.currentWinStreak,
-        securedAmount: amount,
-        gamblingStreak: runStreak,
-        vaultOpened: false,
-      }),
-    );
   }
 
   feedProgressive(amount: number): void {
@@ -284,6 +290,9 @@ export class Tx {
   }
 
   done<T>(result: T) {
+    // Les paliers suivent la progression: on les verifie a chaque fois.
+    this.grant(progressAchievements(this.s));
+    this.announce();
     return { state: this.s, notices: this.notices, result };
   }
 }

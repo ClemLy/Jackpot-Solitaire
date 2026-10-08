@@ -567,26 +567,12 @@
   --pc-edge: rgba(164, 118, 31, 0.6);
 }
 [data-style='carte-vegas'] {
-  --pc-bg:
-    radial-gradient(circle, #ffe7a0 0 2.2px, transparent 2.8px) 0 0 / 16px 16px,
-    radial-gradient(ellipse 100% 80% at 50% 20%, #a61f33 0%, #2a0610 100%);
-  --pc-edge: #ffd25a;
-}
-[data-style='carte-vegas'] .pcard__shine {
-  /* Les ampoules ne garnissent que le pourtour. */
-  inset: 12px;
-  border-radius: 12px;
-  background: radial-gradient(
+  --pc-bg: radial-gradient(
     ellipse 100% 80% at 50% 20%,
     #a61f33 0%,
     #2a0610 100%
   );
-  animation: bulbs 1.2s steps(2) infinite;
-}
-@keyframes bulbs {
-  50% {
-    box-shadow: 0 0 0 2px rgba(255, 210, 90, 0.4);
-  }
+  --pc-edge: #ffd25a;
 }
 [data-style='carte-gilded'] {
   --pc-bg:
@@ -667,14 +653,6 @@
   --pc-edge: #ffe7a0;
   animation: legendGlow 5s ease-in-out infinite alternate;
 }
-[data-style='carte-legend'] .pcard__shine {
-  background:
-    radial-gradient(circle at 20% 30%, #fff 0 1px, transparent 2px),
-    radial-gradient(circle at 75% 20%, #fff 0 1.4px, transparent 2.4px),
-    radial-gradient(circle at 60% 80%, #fff 0 1px, transparent 2px),
-    radial-gradient(circle at 30% 70%, #fff 0 1.2px, transparent 2px);
-  animation: frameTwinkle 3s ease-in-out infinite;
-}
 @keyframes legendGlow {
   to {
     box-shadow:
@@ -684,9 +662,347 @@
   }
 }
 
+/* ---- Decors des cartes (CardDecor): de plus en plus riches ---- */
+
+.pcard__decor {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pcard__decor > * {
+  position: absolute;
+}
+.pcard__inlay {
+  inset: 3.6cqw;
+  border-radius: 3.4cqw;
+}
+.pcard__inlay--stitch {
+  border: 1px dashed rgba(227, 185, 90, 0.6);
+}
+.pcard__inlay--double {
+  border: 1px solid rgba(227, 185, 90, 0.75);
+  box-shadow:
+    inset 0 0 0 3px transparent,
+    inset 0 0 0 4px rgba(227, 185, 90, 0.4);
+}
+.pcard__inlay--gold {
+  border: 1.5px solid rgba(201, 149, 50, 0.85);
+}
+.pcard__corner {
+  width: 12%;
+  aspect-ratio: 1;
+  overflow: visible;
+}
+/* Les cartes ornees gardent leur contenu a l'abri des coins et des
+   ampoules. (Les unites cqw ne valent ici que pour les enfants de la
+   carte: sa propre marge est en pixels.) */
+.pcard:is(
+  [data-style='carte-deco'],
+  [data-style='carte-marble'],
+  [data-style='carte-gilded'],
+  [data-style='carte-legend']
+) {
+  padding: 24px 24px 20px;
+}
+.pcard[data-style='carte-vegas'] {
+  padding: 28px 28px 24px;
+}
+.pcard:is(
+    [data-style='carte-deco'],
+    [data-style='carte-marble'],
+    [data-style='carte-gilded'],
+    [data-style='carte-legend']
+  )
+  .pcard__foot {
+  padding-inline: 16px;
+}
+.pcard[data-style='carte-marble'] .pcard__tier {
+  background: rgba(20, 24, 28, 0.85);
+}
+.pcard__corner--tl {
+  top: 1.8cqw;
+  left: 1.8cqw;
+}
+.pcard__corner--tr {
+  top: 1.8cqw;
+  right: 1.8cqw;
+  scale: -1 1;
+}
+.pcard__corner--bl {
+  bottom: 1.8cqw;
+  left: 1.8cqw;
+  scale: 1 -1;
+}
+.pcard__corner--br {
+  bottom: 1.8cqw;
+  right: 1.8cqw;
+  scale: -1 -1;
+}
+.pcard__moon {
+  top: 7%;
+  right: 9%;
+  width: 15%;
+  filter: drop-shadow(0 0 6px rgba(255, 241, 191, 0.6));
+}
+/* Etoile a quatre branches, posee en pourcentage. */
+.pcard__star,
+.pcard__sparkle {
+  width: calc(var(--s) * 3.4cqw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: #fff;
+  clip-path: polygon(
+    50% 0,
+    61% 39%,
+    100% 50%,
+    61% 61%,
+    50% 100%,
+    39% 61%,
+    0 50%,
+    39% 39%
+  );
+  animation: frameTwinkle 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.55s);
+}
+.pcard__sparkle {
+  filter: drop-shadow(0 0 3px #fff);
+}
+.pcard__comet {
+  top: 14%;
+  left: -30%;
+  width: 34%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #fff);
+  rotate: 18deg;
+  animation: pcardComet 7s ease-in infinite;
+}
+@keyframes pcardComet {
+  0%,
+  78% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    translate: 420% 0;
+    opacity: 0;
+  }
+}
+.pcard__sheen {
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 60%
+  );
+  background-size: 300% 100%;
+  animation: pcardSheen 6s ease-in-out infinite;
+}
+@keyframes pcardSheen {
+  0%,
+  45% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+/* Vegas: neon interieur et ampoules qui chenillent tout autour. */
+.pcard__neon {
+  inset: 5.6cqw;
+  border-radius: 3cqw;
+  border: 1.5px solid #ffc2e2;
+  box-shadow:
+    0 0 8px #ff5fa8,
+    inset 0 0 8px rgba(255, 95, 168, 0.45);
+  animation: neonFlicker 4s steps(1) infinite;
+}
+.pcard__bulbs {
+  --bulb: 1cqw;
+  filter: drop-shadow(0 0 2px rgba(255, 210, 90, 0.9));
+  animation: pcardChase 0.8s steps(1) infinite;
+}
+.pcard__bulbs--top,
+.pcard__bulbs--bottom {
+  left: 3cqw;
+  right: 3cqw;
+  height: 4cqw;
+  background:
+    radial-gradient(
+      circle at 25% 50%,
+      #fff3c4 0 var(--bulb),
+      transparent calc(var(--bulb) + 0.5cqw)
+    ),
+    radial-gradient(
+      circle at 75% 50%,
+      #7a5a22 0 var(--bulb),
+      transparent calc(var(--bulb) + 0.5cqw)
+    );
+  background-size: 8cqw 100%;
+}
+.pcard__bulbs--top {
+  top: 1cqw;
+}
+.pcard__bulbs--bottom {
+  bottom: 1cqw;
+}
+.pcard__bulbs--left,
+.pcard__bulbs--right {
+  top: 5cqw;
+  bottom: 5cqw;
+  width: 4cqw;
+  background:
+    radial-gradient(
+      circle at 50% 25%,
+      #fff3c4 0 var(--bulb),
+      transparent calc(var(--bulb) + 0.5cqw)
+    ),
+    radial-gradient(
+      circle at 50% 75%,
+      #7a5a22 0 var(--bulb),
+      transparent calc(var(--bulb) + 0.5cqw)
+    );
+  background-size: 100% 8cqw;
+  animation-name: pcardChaseY;
+}
+.pcard__bulbs--left {
+  left: 1cqw;
+}
+.pcard__bulbs--right {
+  right: 1cqw;
+}
+@keyframes pcardChase {
+  50% {
+    background-position-x: 4cqw;
+  }
+}
+@keyframes pcardChaseY {
+  50% {
+    background-position-y: 4cqw;
+  }
+}
+.pcard__flake {
+  width: calc(var(--s) * 2.4cqw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  rotate: 45deg;
+  background: linear-gradient(135deg, #fff1bf, #c99532);
+  animation: frameTwinkle 3.2s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.6s);
+}
+/* Holographique: trame irisee qui glisse. */
+.pcard__foil {
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.07) 0 2px,
+      transparent 2px 7px
+    ),
+    linear-gradient(
+      115deg,
+      transparent 15%,
+      rgba(255, 120, 220, 0.22) 35%,
+      rgba(120, 255, 230, 0.22) 50%,
+      rgba(255, 240, 140, 0.22) 65%,
+      transparent 85%
+    );
+  background-size:
+    auto,
+    250% 100%;
+  animation: pcardFoil 5s ease-in-out infinite alternate;
+}
+@keyframes pcardFoil {
+  to {
+    background-position:
+      0 0,
+      100% 0;
+  }
+}
+/* Bordure arc-en-ciel qui tourne (holo, legende). */
+.pcard__rainbow {
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--rank-angle),
+    #9dffd8,
+    #8fd3ff,
+    #c7a6ff,
+    #ff9ad5,
+    #ffe7a0,
+    #9dffd8
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rankBorder 6s linear infinite;
+}
+.pcard__rainbow--legend {
+  padding: 2.5px;
+}
+.pcard__aurora {
+  inset: -25%;
+  background:
+    radial-gradient(
+      ellipse 40% 30% at 30% 30%,
+      rgba(157, 255, 216, 0.3),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 30% at 70% 40%,
+      rgba(199, 166, 255, 0.32),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 45% 30% at 45% 75%,
+      rgba(255, 154, 213, 0.26),
+      transparent 70%
+    );
+  animation: pcardAurora 14s ease-in-out infinite alternate;
+}
+@keyframes pcardAurora {
+  to {
+    translate: 8% -6%;
+    rotate: 25deg;
+  }
+}
+.pcard__particle {
+  width: calc(var(--s) * 1.8cqw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #ffe7a0;
+  box-shadow: 0 0 6px #ffe7a0;
+  animation: pcardRise 7s linear infinite;
+  animation-delay: calc(var(--i) * -0.9s);
+}
+@keyframes pcardRise {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    translate: 4cqw -150cqw;
+    opacity: 0;
+  }
+}
+
 /* Vignette de fond de carte (boutique, profil). */
 .pcard-swatch {
   position: relative;
+  isolation: isolate;
+  container-type: inline-size;
   display: grid;
   place-items: center;
   align-content: center;
@@ -1397,8 +1713,7 @@ button.player-row__main:hover strong {
   [data-style='carte-holo'],
   [data-style='carte-holo'] .pcard__shine,
   [data-style='carte-legend'],
-  [data-style='carte-legend'] .pcard__shine,
-  [data-style='carte-vegas'] .pcard__shine,
+  .pcard__decor *,
   .auth__card {
     animation: none;
   }

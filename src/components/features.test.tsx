@@ -59,6 +59,27 @@ describe('accueil', () => {
   });
 });
 
+describe('hauts faits', () => {
+  it('montre les paliers, la progression et les exploits', async () => {
+    useMetaStore.setState({
+      stats: {
+        ...useMetaStore.getState().stats,
+        gamesPlayed: 40,
+        gamesWon: 30,
+      },
+      achievements: { 'first-win': 1, 'wins-25': 2, 'clear-mind': 3 },
+    });
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Hauts faits' }));
+    expect(screen.getByRole('img', { name: /3 hauts faits sur/ })).toBeTruthy();
+    expect(screen.getByText('Habitué du tapis')).toBeTruthy();
+    expect(screen.getByText('30 / 100')).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: /Exploits/ }));
+    expect(screen.getByText('Tête froide')).toBeTruthy();
+    expect(screen.queryByText('Victoires')).toBeNull();
+  });
+});
+
 describe('missions', () => {
   it('recupere une mission terminee et le coffret de rang', async () => {
     const key = periodKey('daily');

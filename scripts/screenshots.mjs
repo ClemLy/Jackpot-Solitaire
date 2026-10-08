@@ -88,7 +88,7 @@ const FRIEND_CARD = {
   lifetimeEarned: 212400,
   stats: { gamesPlayed: 412, gamesWon: 287, bestWinStreak: 19, bestScore: 2640, bestTimeMs: 118000 },
   jackpot: { bestSecuredRun: 15240, longestStreak: 9, vaultsOpened: 14, progressiveWins: 2 },
-  achievements: { unlocked: 13, total: 14 },
+  achievements: { unlocked: 38, total: 54 },
   collection: { owned: 41, total: 57 },
   dailyDone: 96,
   memberSince: '2026-02-11T09:00:00Z',
@@ -302,6 +302,7 @@ async function main() {
       ['tables', 'tables'],
       ['wheel', 'roue'],
       ['stats', 'stats'],
+      ['achievements', 'hauts-faits'],
       ['rules', 'regles'],
     ]) {
       await driveStore(page, (m) => window.__jackpot.game.getState().openModal(m), modal);

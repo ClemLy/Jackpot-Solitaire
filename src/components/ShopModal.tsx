@@ -49,6 +49,7 @@ import { Balance, Chip } from './ui';
 import { VictoryLayer } from './VictoryLayer';
 import { ConsumableIcon } from './icons';
 import { Portrait } from './Portrait';
+import { CardDecor } from './CardDecor';
 import { RankBadge, RankEmblem } from './Rank';
 import { economy, reportFailure } from '../state/economy';
 
@@ -175,6 +176,7 @@ function Preview({
     return (
       <div className="preview preview--pcard">
         <div className="pcard-swatch" data-style={item.id}>
+          <CardDecor style={item.id} />
           <Portrait avatar={avatar} frame={frame} size="46%" />
           <span className="pcard-swatch__line" />
           <span className="pcard-swatch__line pcard-swatch__line--short" />
