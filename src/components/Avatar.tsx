@@ -1,7 +1,7 @@
 // Avatars des joueurs: des personnages en illustration plate, dans l'esprit
 // des figures du paquet. Chaque portrait tient dans un disque de 100 x 100.
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 const INK = '#2A1D19';
 const GOLD = '#E2B24F';
@@ -765,11 +765,633 @@ const AVATARS: Record<string, AvatarDef> = {
   },
 };
 
+/** Etoile a quatre branches. */
+function star4(x: number, y: number, s: number) {
+  const k = s * 0.28;
+  return `M${x} ${y - s} L${x + k} ${y - k} L${x + s} ${y} L${x + k} ${y + k} L${x} ${y + s} L${x - k} ${y + k} L${x - s} ${y} L${x - k} ${y - k} Z`;
+}
+
+function heart(x: number, y: number, s: number) {
+  return `M${x} ${y + s * 0.9} C${x - s * 1.4} ${y} ${x - s * 0.8} ${y - s} ${x} ${y - s * 0.35} C${x + s * 0.8} ${y - s} ${x + s * 1.4} ${y} ${x} ${y + s * 0.9} Z`;
+}
+
+function spade(x: number, y: number, s: number) {
+  return `M${x} ${y - s * 0.9} C${x - s * 1.4} ${y} ${x - s * 0.8} ${y + s} ${x} ${y + s * 0.35} C${x + s * 0.8} ${y + s} ${x + s * 1.4} ${y} ${x} ${y - s * 0.9} Z M${x} ${y + s * 0.2} L${x - s * 0.4} ${y + s * 1.15} H${x + s * 0.4} Z`;
+}
+
+/** Element anime: --i decale chaque occurrence. */
+const anim = (i: number) => ({ '--i': i }) as CSSProperties;
+
+/** Etincelles qui scintillent. */
+function Twinkles({
+  points,
+  fill = '#FFFFFF',
+}: {
+  points: [number, number, number][];
+  fill?: string;
+}) {
+  return (
+    <>
+      {points.map(([x, y, sz], i) => (
+        <path
+          key={i}
+          className="av-twinkle"
+          style={anim(i)}
+          d={star4(x, y, sz)}
+          fill={fill}
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * Decors et effets des avatars payants. Les avatars offerts restent sobres;
+ * plus un avatar est cher, plus sa scene est riche et animee.
+ */
+const EXTRAS: Record<
+  string,
+  { scene?: () => ReactNode; fx?: () => ReactNode }
+> = {
+  // 800: une baguette qui scintille.
+  magicien: {
+    scene: () => (
+      <Twinkles
+        points={[
+          [16, 22, 2.4],
+          [84, 30, 1.8],
+          [22, 62, 1.6],
+        ]}
+        fill="#E9D6FF"
+      />
+    ),
+    fx: () => (
+      <>
+        <path
+          d="M70 99 L86 72"
+          stroke="#17191F"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M83.5 76.2 L86 72"
+          stroke="#FBF6EA"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <Twinkles
+          points={[
+            [89, 67, 4],
+            [80, 64, 2.2],
+          ]}
+          fill="#FFE7A0"
+        />
+      </>
+    ),
+  },
+
+  // 800: la barre du navire derriere lui.
+  pirate: {
+    scene: () => (
+      <g opacity="0.28" stroke="#E3B95A" fill="none">
+        <circle cx="50" cy="44" r="27" strokeWidth="3" />
+        <circle cx="50" cy="44" r="6" strokeWidth="2.4" />
+        {Array.from({ length: 8 }, (_, i) => {
+          const a = (i * Math.PI) / 4;
+          return (
+            <g key={i}>
+              <line
+                x1={50 + Math.cos(a) * 6}
+                y1={44 + Math.sin(a) * 6}
+                x2={50 + Math.cos(a) * 34}
+                y2={44 + Math.sin(a) * 34}
+                strokeWidth="2.4"
+              />
+              <circle
+                cx={50 + Math.cos(a) * 36}
+                cy={44 + Math.sin(a) * 36}
+                r="2.6"
+                fill="#E3B95A"
+              />
+            </g>
+          );
+        })}
+      </g>
+    ),
+  },
+
+  // 1500: la ville la nuit et la fumee de la pipe.
+  detective: {
+    scene: () => (
+      <>
+        <circle cx="20" cy="20" r="7" fill="#FFF1BF" opacity="0.7" />
+        <path
+          d="M0 100 V74 H7 V64 H14 V70 H20 V58 H27 V100 Z M73 100 V62 H80 V54 H86 V66 H93 V72 H100 V100 Z"
+          fill="#0A2424"
+        />
+        {[
+          [3, 78],
+          [10, 68],
+          [22, 63],
+          [22, 72],
+          [76, 66],
+          [82, 58],
+          [88, 70],
+          [95, 76],
+        ].map(([x, y]) => (
+          <rect
+            key={`${x}-${y}`}
+            x={x}
+            y={y}
+            width="2"
+            height="2.4"
+            fill="#F3D27C"
+            opacity="0.85"
+          />
+        ))}
+        <path
+          d="M0 52 Q25 47 50 52 T100 50"
+          stroke="#FFFFFF"
+          strokeOpacity="0.08"
+          strokeWidth="6"
+          fill="none"
+        />
+      </>
+    ),
+    fx: () => (
+      <>
+        {[0, 1, 2].map((i) => (
+          <circle
+            key={i}
+            className="av-smoke"
+            style={anim(i)}
+            cx="68"
+            cy="58"
+            r="2.6"
+            fill="#E8E4DA"
+          />
+        ))}
+      </>
+    ),
+  },
+
+  // 1500: projecteur de scene et paillettes.
+  diva: {
+    scene: () => (
+      <>
+        <path d="M38 0 H62 L92 100 H8 Z" fill="#FFFFFF" opacity="0.13" />
+        <Twinkles
+          points={[
+            [14, 24, 2],
+            [86, 20, 2.4],
+            [20, 46, 1.4],
+            [82, 50, 1.6],
+            [10, 70, 1.4],
+          ]}
+          fill="#FFE1EE"
+        />
+      </>
+    ),
+  },
+
+  // 2500: circuits lumineux, regard qui balaie, antenne qui pulse.
+  robot: {
+    scene: () => (
+      <g stroke="#8FE6FF" strokeWidth="1.2" fill="none" opacity="0.4">
+        <path d="M0 22 H14 V34 H24 M100 18 H86 V30 H78 M0 60 H10 V52 M100 62 H90 V54" />
+        {[
+          [24, 34],
+          [78, 30],
+          [10, 52],
+          [90, 54],
+        ].map(([x, y], i) => (
+          <circle
+            key={i}
+            className="av-pulse"
+            style={anim(i)}
+            cx={x}
+            cy={y}
+            r="2"
+            fill="#8FE6FF"
+          />
+        ))}
+      </g>
+    ),
+    fx: () => (
+      <>
+        <rect
+          className="av-scan"
+          x="37"
+          y="39"
+          width="4"
+          height="9"
+          rx="2"
+          fill="#E9FBFF"
+          opacity="0.8"
+        />
+        <circle
+          className="av-pulse"
+          style={anim(1)}
+          cx="50"
+          cy="14"
+          r="6"
+          fill="#FF6B7D"
+          opacity="0.45"
+        />
+      </>
+    ),
+  },
+
+  // 2500: pleine lune, sapins et feuilles qui tombent.
+  renard: {
+    scene: () => (
+      <>
+        <circle cx="78" cy="20" r="12" fill="#FFF1BF" opacity="0.9" />
+        <circle cx="74" cy="17" r="2.4" fill="#E9D9A0" />
+        <circle cx="82" cy="24" r="1.6" fill="#E9D9A0" />
+        <path
+          d="M2 90 L10 66 L18 90 Z M10 80 L16 60 L22 80 Z M82 92 L90 70 L98 92 Z"
+          fill="#0F2E17"
+        />
+      </>
+    ),
+    fx: () => (
+      <>
+        {[
+          [24, 0],
+          [70, 1],
+          [44, 2],
+        ].map(([x, i]) => (
+          <path
+            key={i}
+            className="av-fall"
+            style={anim(i)}
+            d={`M${x} 6 q4 -3 7 1 q-4 3 -7 -1 Z`}
+            fill={['#E2793A', '#C99532', '#C42A3D'][i]}
+          />
+        ))}
+      </>
+    ),
+  },
+
+  // 5000: nebuleuse, planete a anneau, etoiles et etoile filante.
+  astronaute: {
+    scene: () => (
+      <>
+        <ellipse
+          cx="22"
+          cy="30"
+          rx="26"
+          ry="16"
+          fill="#8E4FD8"
+          opacity="0.28"
+        />
+        <ellipse cx="80" cy="64" rx="22" ry="14" fill="#E25C9E" opacity="0.2" />
+        <circle cx="82" cy="20" r="8" fill="#E9A65A" />
+        <path d="M82 13 A8 8 0 0 1 82 27" fill="#B8742F" opacity="0.6" />
+        <ellipse
+          cx="82"
+          cy="20"
+          rx="14"
+          ry="3.6"
+          fill="none"
+          stroke="#FFE1B0"
+          strokeWidth="1.4"
+          transform="rotate(-18 82 20)"
+        />
+        <Twinkles
+          points={[
+            [12, 14, 2],
+            [30, 6, 1.4],
+            [64, 8, 1.6],
+            [92, 44, 1.6],
+            [8, 50, 1.4],
+          ]}
+          fill="#FFF6DA"
+        />
+        <path
+          className="av-shoot"
+          d="M8 8 L22 16"
+          stroke="#FFFFFF"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+        />
+      </>
+    ),
+  },
+
+  // 8000: coeurs en motif, rayons, sceptre et eclat de la couronne.
+  'reine-coeur': {
+    scene: () => (
+      <>
+        <g className="av-spin" opacity="0.14">
+          {Array.from({ length: 12 }, (_, i) => (
+            <path
+              key={i}
+              d="M50 50 L46 -6 H54 Z"
+              fill="#FFE7A0"
+              transform={`rotate(${i * 30} 50 50)`}
+            />
+          ))}
+        </g>
+        {[
+          [12, 14],
+          [88, 14],
+          [8, 46],
+          [92, 46],
+          [26, 6],
+          [74, 6],
+        ].map(([x, y]) => (
+          <path
+            key={`${x}-${y}`}
+            d={heart(x, y, 3.4)}
+            fill="#FFB3BF"
+            opacity="0.3"
+          />
+        ))}
+      </>
+    ),
+    fx: () => (
+      <>
+        <path
+          d="M84 100 L88 66"
+          stroke={GOLD}
+          strokeWidth="2.6"
+          strokeLinecap="round"
+        />
+        <path
+          d={heart(88.4, 62, 4.4)}
+          fill="#E2384D"
+          stroke={GOLD_DEEP}
+          strokeWidth="0.8"
+        />
+        <Twinkles points={[[54, 16, 3.4]]} />
+      </>
+    ),
+  },
+
+  // 8000: piques en motif, draperies royales et epee.
+  'roi-pique': {
+    scene: () => (
+      <>
+        <path
+          d="M0 0 H30 Q20 18 0 26 Z M100 0 H70 Q80 18 100 26 Z"
+          fill="#8E1A2B"
+        />
+        <path
+          d="M0 26 Q20 18 30 0 M100 26 Q80 18 70 0"
+          stroke={GOLD}
+          strokeWidth="1.4"
+          fill="none"
+        />
+        {[
+          [12, 46],
+          [88, 46],
+          [16, 66],
+          [84, 66],
+        ].map(([x, y]) => (
+          <path
+            key={`${x}-${y}`}
+            d={spade(x, y, 3.4)}
+            fill="#B4C3F0"
+            opacity="0.28"
+          />
+        ))}
+      </>
+    ),
+    fx: () => (
+      <>
+        <path
+          d="M18 100 L13 60"
+          stroke="#DDE3EA"
+          strokeWidth="3.4"
+          strokeLinecap="round"
+        />
+        <path
+          d="M7 64 L20 62.4"
+          stroke={GOLD}
+          strokeWidth="2.6"
+          strokeLinecap="round"
+        />
+        <circle
+          cx="12.6"
+          cy="56.5"
+          r="2.4"
+          fill="#2F6BD6"
+          stroke={GOLD}
+          strokeWidth="1"
+        />
+        <Twinkles points={[[56, 28, 3.4]]} />
+      </>
+    ),
+  },
+
+  // 40000: eventail de cartes, confettis et grelots qui tintent.
+  joker: {
+    scene: () => (
+      <>
+        {[-28, -10, 10, 28].map((r, i) => (
+          <g key={r} transform={`rotate(${r} 50 92)`}>
+            <rect
+              x="42"
+              y="2"
+              width="16"
+              height="22"
+              rx="2"
+              fill="#FBF6EA"
+              stroke="#C9BFA8"
+              strokeWidth="0.6"
+            />
+            <path
+              d={i % 2 ? heart(50, 13, 3.2) : spade(50, 12, 3.2)}
+              fill={i % 2 ? '#C42A3D' : '#17191F'}
+            />
+          </g>
+        ))}
+      </>
+    ),
+    fx: () => (
+      <>
+        {[
+          [16, 0, '#F3D27C'],
+          [80, 1, '#2E8A6A'],
+          [36, 2, '#C42A3D'],
+          [64, 3, '#8FD3FF'],
+          [8, 4, '#FF9AD5'],
+          [92, 5, '#F3D27C'],
+        ].map(([x, i, c]) => (
+          <rect
+            key={i as number}
+            className="av-fall"
+            style={anim(i as number)}
+            x={x as number}
+            y="2"
+            width="3"
+            height="4.4"
+            rx="0.6"
+            fill={c as string}
+          />
+        ))}
+        <g className="av-jingle">
+          <circle
+            cx="12"
+            cy="22"
+            r="3.6"
+            fill={GOLD}
+            stroke={GOLD_DEEP}
+            strokeWidth="0.8"
+          />
+        </g>
+        <g className="av-jingle" style={anim(1)}>
+          <circle
+            cx="88"
+            cy="22"
+            r="3.6"
+            fill={GOLD}
+            stroke={GOLD_DEEP}
+            strokeWidth="0.8"
+          />
+        </g>
+      </>
+    ),
+  },
+
+  // 60000: ailes, lave, ecailles, souffle de feu et braises.
+  dragon: {
+    scene: () => (
+      <>
+        <ellipse
+          cx="50"
+          cy="104"
+          rx="60"
+          ry="22"
+          fill="#FF6A2A"
+          opacity="0.35"
+        />
+        <path d="M30 70 L2 30 L8 52 L0 56 L12 66 L4 74 Z" fill="#1E6B36" />
+        <path d="M70 70 L98 30 L92 52 L100 56 L88 66 L96 74 Z" fill="#1E6B36" />
+        <path
+          d="M30 70 L2 30 M30 70 L8 52 M30 70 L12 66 M70 70 L98 30 M70 70 L92 52 M70 70 L88 66"
+          stroke="#0E3D1E"
+          strokeWidth="1"
+        />
+      </>
+    ),
+    fx: () => (
+      <>
+        <g stroke="#145226" strokeWidth="1" fill="none" opacity="0.6">
+          <path d="M24 92 q4 -4 8 0 q4 -4 8 0 M60 92 q4 -4 8 0 q4 -4 8 0 M30 84 q4 -4 8 0 M62 84 q4 -4 8 0" />
+        </g>
+        <g className="av-flicker">
+          <path
+            d="M66 58 C76 50 90 50 104 44 C96 56 92 62 104 70 C90 68 78 66 66 60 Z"
+            fill="#FF8A2A"
+          />
+          <path
+            d="M66 58.6 C74 54 84 54 96 50 C90 57 90 61 98 66 C86 64 76 62 66 59.6 Z"
+            fill="#FFD25A"
+          />
+        </g>
+        {[0, 1, 2, 3].map((i) => (
+          <circle
+            key={i}
+            className="av-rise"
+            style={anim(i)}
+            cx={[74, 84, 92, 80][i]}
+            cy={[52, 48, 58, 64][i]}
+            r="1.2"
+            fill="#FFE7A0"
+          />
+        ))}
+      </>
+    ),
+  },
+
+  // 250000: le nabab. Rayons d'or, piles de jetons, pluie de pieces, eclat.
+  nabab: {
+    scene: () => (
+      <>
+        <g className="av-spin" opacity="0.3">
+          {Array.from({ length: 16 }, (_, i) => (
+            <path
+              key={i}
+              d="M50 50 L47 -8 H53 Z"
+              fill="#FFF1BF"
+              transform={`rotate(${i * 22.5} 50 50)`}
+            />
+          ))}
+        </g>
+        {[
+          [11, 0],
+          [89, 1],
+        ].map(([x, side]) =>
+          Array.from({ length: 5 }, (_, i) => (
+            <g key={`${side}-${i}`}>
+              <ellipse
+                cx={x}
+                cy={92 - i * 4}
+                rx="8"
+                ry="2.6"
+                fill={i % 2 ? '#C99532' : GOLD}
+                stroke={GOLD_DEEP}
+                strokeWidth="0.6"
+              />
+            </g>
+          )),
+        )}
+      </>
+    ),
+    fx: () => (
+      <>
+        {[18, 34, 66, 82, 50].map((x, i) => (
+          <g key={x} className="av-fall" style={anim(i)}>
+            <ellipse
+              cx={x}
+              cy="4"
+              rx="3.6"
+              ry="3.6"
+              fill={GOLD}
+              stroke={GOLD_DEEP}
+              strokeWidth="0.8"
+            />
+            <path d={`M${x} 2 V6`} stroke={GOLD_DEEP} strokeWidth="0.8" />
+          </g>
+        ))}
+        <path
+          d="M60 86 L76 82"
+          stroke="#5A3519"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <circle cx="76.6" cy="81.8" r="1.4" fill="#FF6A2A" />
+        {[0, 1].map((i) => (
+          <circle
+            key={i}
+            className="av-smoke"
+            style={anim(i)}
+            cx="78"
+            cy="79"
+            r="2"
+            fill="#E8E4DA"
+          />
+        ))}
+        <Twinkles
+          points={[
+            [60, 43, 3.6],
+            [36, 12, 2.6],
+          ]}
+        />
+      </>
+    ),
+  },
+};
+
 export const AVATAR_IDS = Object.keys(AVATARS);
 
 /** Portrait seul, dans un disque. */
 export function AvatarArt({ id }: { id: string }) {
   const def = AVATARS[id] ?? AVATARS.croupier;
+  const extra = AVATARS[id] ? EXTRAS[id] : undefined;
   const gid = `avatar-bg-${id}`;
   return (
     <g>
@@ -784,7 +1406,9 @@ export function AvatarArt({ id }: { id: string }) {
       </defs>
       <g clipPath={`url(#${gid}-clip)`}>
         <rect width="100" height="100" fill={`url(#${gid})`} />
+        {extra?.scene?.()}
         {def.draw()}
+        {extra?.fx?.()}
       </g>
     </g>
   );

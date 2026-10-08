@@ -215,6 +215,12 @@ D’où viennent les jetons :
   - Pour le profil : seize avatars (quatre offerts), douze cadres (quatre
     se gagnent avec le rang, sept s’achètent) et neuf cartes de profil,
     de l’enseigne de Vegas à la carte holographique.
+    Plus un avatar ou un cadre est cher (ou haut placé), plus il est
+    travaillé : les avatars offerts restent sobres, puis viennent un décor
+    (ville la nuit, pleine lune, nébuleuse, draperies royales) et des
+    effets animés (fumée, feuilles qui tombent, étoile filante, souffle de
+    feu, pluie de pièces). Les cadres vont d’un simple liseré à l’anneau de
+    cristal du rang Diamant et à l’Écrin impérial, couronné et serti.
   - Les pièces maîtresses (badge Graal) coûtent de 160 000 à 1 000 000 de
     jetons et sont réservées au rang Diamant.
 - **Les tables à mise**, pour faire fructifier sa banque.

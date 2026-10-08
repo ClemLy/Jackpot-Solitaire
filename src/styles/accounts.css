@@ -59,6 +59,201 @@
   }
 }
 
+/* Reflet qui traverse les cadres d'or, de platine et l'ecrin imperial. */
+.frame-shine {
+  animation: frameShine 4s ease-in-out infinite;
+}
+@keyframes frameShine {
+  0%,
+  50% {
+    translate: 0 0;
+  }
+  100% {
+    translate: 170px 0;
+  }
+}
+/* Rayons derriere les cadres: le groupe est centre sur le portrait. */
+.frame-rays {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: frameSpin 30s linear infinite;
+}
+@keyframes frameSpin {
+  to {
+    rotate: 360deg;
+  }
+}
+.frame-bulb {
+  animation: frameBulb 1.1s steps(1) infinite;
+  animation-delay: calc(var(--i) * -0.55s);
+}
+@keyframes frameBulb {
+  50% {
+    fill: #6b5a2e;
+  }
+}
+.frame-ember {
+  transform-box: fill-box;
+  animation: frameEmber 2.6s ease-out infinite;
+  animation-delay: calc(var(--i) * -0.37s);
+}
+@keyframes frameEmber {
+  0% {
+    translate: 0 4px;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    translate: 0 -14px;
+    opacity: 0;
+  }
+}
+.portrait[data-frame='cadre-rang-diamond'] {
+  filter: drop-shadow(0 0 7px rgba(180, 205, 255, 0.55));
+}
+.portrait[data-frame='cadre-royal'] {
+  filter: drop-shadow(0 0 7px rgba(243, 210, 124, 0.5));
+}
+
+/* ---- Avatars: effets des avatars payants ---- */
+
+.av-twinkle,
+.av-smoke,
+.av-fall,
+.av-rise,
+.av-jingle,
+.av-flicker,
+.av-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.av-twinkle {
+  animation: frameTwinkle 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.7s);
+}
+.av-pulse {
+  animation: avPulse 1.8s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i, 0) * -0.45s);
+}
+@keyframes avPulse {
+  from {
+    opacity: 0.15;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+.av-smoke {
+  animation: avSmoke 2.8s ease-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.93s);
+}
+@keyframes avSmoke {
+  0% {
+    translate: 0 0;
+    scale: 0.6;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.7;
+  }
+  100% {
+    translate: 5px -18px;
+    scale: 2.2;
+    opacity: 0;
+  }
+}
+.av-fall {
+  animation: avFall 4.2s linear infinite;
+  animation-delay: calc(var(--i, 0) * -0.8s);
+}
+@keyframes avFall {
+  0% {
+    translate: 0 -8px;
+    rotate: 0deg;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    translate: 6px 96px;
+    rotate: 260deg;
+    opacity: 0;
+  }
+}
+.av-rise {
+  animation: avRise 1.8s ease-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.45s);
+}
+@keyframes avRise {
+  0% {
+    translate: 0 4px;
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    translate: 6px -14px;
+    opacity: 0;
+  }
+}
+.av-scan {
+  animation: avScan 2.6s ease-in-out infinite alternate;
+}
+@keyframes avScan {
+  to {
+    translate: 18px 0;
+  }
+}
+.av-shoot {
+  animation: avShoot 5s ease-in infinite;
+}
+@keyframes avShoot {
+  0%,
+  70% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    translate: 60px 34px;
+    opacity: 0;
+  }
+}
+.av-spin {
+  animation: frameSpin 40s linear infinite;
+}
+.av-jingle {
+  transform-origin: 50% 0%;
+  animation: avJingle 1.3s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i, 0) * -0.65s);
+}
+@keyframes avJingle {
+  from {
+    rotate: -16deg;
+  }
+  to {
+    rotate: 16deg;
+  }
+}
+.av-flicker {
+  transform-origin: 0% 50%;
+  animation: avFlicker 0.45s ease-in-out infinite alternate;
+}
+@keyframes avFlicker {
+  to {
+    scale: 1.08 0.88;
+  }
+}
+
 /* ---- Plaque de profil (accueil) ---- */
 
 .profile-plate {
@@ -1182,9 +1377,23 @@ button.player-row__main:hover strong {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .av-twinkle,
+  .av-pulse,
+  .av-smoke,
+  .av-fall,
+  .av-rise,
+  .av-scan,
+  .av-shoot,
+  .av-spin,
+  .av-jingle,
+  .av-flicker,
   .frame-sparkle,
   .frame-neon,
   .frame-flame,
+  .frame-shine,
+  .frame-rays,
+  .frame-bulb,
+  .frame-ember,
   [data-style='carte-holo'],
   [data-style='carte-holo'] .pcard__shine,
   [data-style='carte-legend'],
