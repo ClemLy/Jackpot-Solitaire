@@ -1,0 +1,274 @@
+/* ---------------------------------------------------------------------------
+   Rangs VIP: emblèmes et étiquettes. Le niveau de détail monte avec le rang,
+   du bronze tout simple au diamant prismatique.
+--------------------------------------------------------------------------- */
+
+@property --rank-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.rank-emblem {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+.rank-emblem[data-tier='gold'],
+.rank-emblem[data-tier='platinum'] {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tier) 35%, transparent));
+}
+.rank-emblem[data-tier='diamond'] {
+  filter: drop-shadow(0 0 8px rgba(180, 205, 255, 0.6));
+}
+.rank-emblem__shine {
+  animation: rankShine 3.6s ease-in-out infinite;
+}
+.rank-emblem[data-tier='platinum'] .rank-emblem__shine {
+  animation-duration: 2.8s;
+}
+@keyframes rankShine {
+  0%,
+  45% {
+    translate: -20px 0;
+  }
+  100% {
+    translate: 70px 0;
+  }
+}
+.rank-emblem__rays {
+  transform-box: view-box;
+  transform-origin: 24px 24px;
+  animation: rankSpin 18s linear infinite;
+}
+@keyframes rankSpin {
+  to {
+    rotate: 360deg;
+  }
+}
+.rank-emblem__sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rankTwinkle 2.2s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.7s);
+}
+@keyframes rankTwinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    scale: 0.5;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.15;
+  }
+}
+
+/* ---- Étiquette: emblème + nom ---- */
+
+.rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--tier);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.rank__label {
+  color: var(--tier);
+}
+/* Bronze: une couleur unie. Ensuite, le nom prend le métal du rang. */
+.rank:not([data-tier='bronze']) .rank__label {
+  background: var(--tier-metal);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.rank[data-tier='gold'] .rank__label {
+  filter: drop-shadow(0 0 6px rgba(243, 210, 124, 0.35));
+}
+.rank[data-tier='platinum'] .rank__label {
+  background:
+    linear-gradient(
+      100deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.95) 50%,
+      transparent 60%
+    ),
+    var(--tier-metal);
+  background-size:
+    250% 100%,
+    100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: rankTextShine 3.2s ease-in-out infinite;
+}
+.rank[data-tier='diamond'] .rank__label {
+  background: linear-gradient(
+    90deg,
+    #9dffd8,
+    #8fd3ff,
+    #c7a6ff,
+    #ff9ad5,
+    #8fd3ff,
+    #9dffd8
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 6px rgba(180, 205, 255, 0.55));
+  animation: rankPrism 6s linear infinite;
+}
+@keyframes rankTextShine {
+  0%,
+  40% {
+    background-position:
+      120% 0,
+      0 0;
+  }
+  100% {
+    background-position:
+      -120% 0,
+      0 0;
+  }
+}
+@keyframes rankPrism {
+  to {
+    background-position: 300% 0;
+  }
+}
+
+/* ---- Pastilles de rang: le contour s'enrichit avec le rang ---- */
+
+.rank-pill {
+  color: var(--tier);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 55%, transparent);
+}
+.rank-pill[data-tier='silver'] {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.rank-pill[data-tier='gold'] {
+  background-image: linear-gradient(
+    180deg,
+    rgba(243, 210, 124, 0.14),
+    transparent
+  );
+  box-shadow:
+    inset 0 0 0 1px currentColor,
+    0 0 14px -4px rgba(243, 210, 124, 0.6);
+}
+.rank-pill[data-tier='platinum'] {
+  background-image: linear-gradient(
+    180deg,
+    rgba(181, 230, 232, 0.16),
+    transparent
+  );
+  box-shadow:
+    inset 0 0 0 1px currentColor,
+    inset 0 0 0 3px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 4px color-mix(in srgb, var(--tier) 45%, transparent),
+    0 0 16px -4px rgba(181, 230, 232, 0.6);
+}
+/* Diamant: bordure prismatique qui tourne et halo. */
+.rank-pill[data-tier='diamond'] {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(rgba(14, 18, 34, 0.92), rgba(14, 18, 34, 0.92)) padding-box,
+    conic-gradient(
+        from var(--rank-angle),
+        #9dffd8,
+        #8fd3ff,
+        #c7a6ff,
+        #ff9ad5,
+        #9dffd8
+      )
+      border-box;
+  box-shadow:
+    0 0 18px -3px rgba(180, 205, 255, 0.7),
+    0 0 4px rgba(199, 166, 255, 0.5);
+  animation: rankBorder 5s linear infinite;
+}
+@keyframes rankBorder {
+  to {
+    --rank-angle: 360deg;
+  }
+}
+
+/* ---- Où les rangs s'affichent ---- */
+
+/* Jauges de progression: au métal du rang, plus jamais en or par défaut. */
+.vip-pill__bar,
+.vip-banner .meter span,
+.pcard__progress[data-tier] .meter span {
+  background: var(--tier-metal);
+}
+.vip-pill__bar {
+  opacity: 1;
+}
+
+.profile-plate[data-tier] {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tier) 55%, transparent),
+    0 10px 24px -14px rgba(0, 0, 0, 0.7);
+}
+.profile-plate__medal {
+  position: absolute;
+  right: -4px;
+  bottom: -2px;
+  display: none;
+}
+@media (max-width: 640px) {
+  /* En invité sur téléphone, la pastille de rang est masquée: le rang
+     s'affiche en médaillon sur le portrait. */
+  .profile-plate__medal {
+    display: block;
+  }
+}
+.profile-plate__tier {
+  font-size: 0.72rem;
+}
+
+.vip-banner {
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--tier) 16%, transparent),
+    color-mix(in srgb, var(--tier) 3%, transparent)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 40%, transparent);
+}
+.vip-banner__badge {
+  width: 60px;
+  height: 60px;
+  background: none;
+  box-shadow: none;
+}
+.vip-banner__rank {
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.vip-ladder li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.vip-ladder li[data-on='false'] .rank-emblem {
+  filter: grayscale(1) brightness(0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rank-emblem__shine,
+  .rank-emblem__rays,
+  .rank-emblem__sparkle,
+  .rank__label,
+  .rank-pill {
+    animation: none !important;
+  }
+}

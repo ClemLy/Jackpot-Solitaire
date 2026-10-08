@@ -1,7 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Check,
-  Crown,
   Gift,
   Layers,
   Lock,
@@ -9,7 +8,6 @@ import {
   Rocket,
   Sparkles,
   Coins,
-  Gem,
   Wine,
   Sun,
   Award,
@@ -51,6 +49,7 @@ import { Balance, Chip } from './ui';
 import { VictoryLayer } from './VictoryLayer';
 import { ConsumableIcon } from './icons';
 import { Portrait } from './Portrait';
+import { RankBadge, RankEmblem } from './Rank';
 import { economy, reportFailure } from '../state/economy';
 
 type Tab = CosmeticCategory | 'bonus';
@@ -203,12 +202,11 @@ function Preview({
 function Badges({ item }: { item: Cosmetic }) {
   const exclusive = item.minTier === 'platinum' || item.minTier === 'diamond';
   if (!exclusive && !item.grail) return null;
-  const tier = VIP_TIERS.find((t) => t.id === item.minTier);
   return (
     <span className="item__badges">
       {exclusive && (
-        <span className="tier-tag" data-tier={item.minTier}>
-          <Gem size={11} /> {tier?.label}
+        <span className="tier-tag rank-pill" data-tier={item.minTier}>
+          <RankBadge tier={item.minTier!} size={13} />
         </span>
       )}
       {item.grail && <span className="grail-tag">Graal</span>}
@@ -294,11 +292,18 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
     >
       <div className="vip-banner" data-tier={tier.id}>
         <span className="vip-banner__badge">
-          <Crown size={18} />
+          <RankEmblem tier={tier.id} size="100%" />
         </span>
         <div className="vip-banner__body">
           <div className="vip-banner__line">
-            <strong>Rang {tier.label}</strong>
+            <strong>
+              Rang{' '}
+              <RankBadge
+                tier={tier.id}
+                emblem={false}
+                className="vip-banner__rank"
+              />
+            </strong>
             {tier.discount > 0 ? (
               <span className="vip-banner__perk">
                 −{Math.round(tier.discount * 100)} % en boutique · roue du jour
@@ -326,6 +331,7 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
         <ol className="vip-ladder" aria-label="Rangs VIP">
           {VIP_TIERS.map((t) => (
             <li key={t.id} data-tier={t.id} data-on={meetsTier(lifetime, t.id)}>
+              <RankEmblem tier={t.id} size={14} compact />
               {t.label}
             </li>
           ))}

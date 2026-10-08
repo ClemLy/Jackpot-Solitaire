@@ -3,6 +3,9 @@
 // Le script lance un serveur Vite de developpement (pour acceder aux stores
 // exposes sur window en mode dev), pilote l'application avec Playwright, puis
 // enregistre les images dans screenshots/ et les icones dans public/.
+// Les comptes sont actives avec une adresse Supabase factice: les appels au
+// serveur sont interceptes et recoivent des amis de demonstration. Aucun
+// Supabase n'est necessaire.
 
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -15,6 +18,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const PORT = 4321;
 const BASE = `http://localhost:${PORT}`;
+const FAKE_SUPABASE = 'http://127.0.0.1:59999';
 const shotsDir = resolve(root, 'screenshots');
 const publicDir = resolve(root, 'public');
 mkdirSync(shotsDir, { recursive: true });
@@ -50,8 +54,13 @@ const richMeta = {
     sumWinMoves: 84 * 148,
   },
   gambling: { secured: 24480, bestSecuredRun: 6120, longestStreak: 6, vaultsOpened: 3 },
-  wallet: { balance: 8640, lifetimeEarned: 24480, spent: 16840 },
-  inventory: { owned: ['emerald', 'burgundy', 'confetti'], consumables: { insurance: 1, hint: 2, redeal: 0 } },
+  // Rang Platine: le joueur des captures a de quoi montrer.
+  wallet: { balance: 18640, lifetimeEarned: 72480, spent: 53840 },
+  inventory: {
+    owned: ['emerald', 'burgundy', 'confetti', 'magicien', 'cadre-laurel', 'carte-midnight', 'baron'],
+    consumables: { hint: 2, insurance: 1, redeal: 0, peek: 1, reshuffle: 0, joker: 1 },
+  },
+  equipped: { avatar: 'magicien', frame: 'cadre-rang-platinum', profileCard: 'carte-midnight', title: 'baron' },
   daily: {
     completedDates: Array.from({ length: 12 }, (_, i) => `2026-07-${String(i + 1).padStart(2, '0')}`),
     lastPlayed: null,
@@ -67,6 +76,73 @@ const richMeta = {
     regular: 1,
   },
 };
+
+// Amis de demonstration, renvoyes a la place du serveur.
+const FRIEND_CARD = {
+  pseudo: 'ReineDeCoeur',
+  avatar: 'reine-coeur',
+  frame: 'cadre-rang-diamond',
+  profileCard: 'carte-holo',
+  title: 'roi',
+  tier: 'diamond',
+  lifetimeEarned: 212400,
+  stats: { gamesPlayed: 412, gamesWon: 287, bestWinStreak: 19, bestScore: 2640, bestTimeMs: 118000 },
+  jackpot: { bestSecuredRun: 15240, longestStreak: 9, vaultsOpened: 14, progressiveWins: 2 },
+  achievements: { unlocked: 13, total: 14 },
+  collection: { owned: 41, total: 57 },
+  dailyDone: 96,
+  memberSince: '2026-02-11T09:00:00Z',
+};
+const mini = ({ pseudo, avatar, frame, tier, title }) => ({ pseudo, avatar, frame, tier, title });
+const FRIENDS = {
+  friends: [
+    mini(FRIEND_CARD),
+    { pseudo: 'LeRenard', avatar: 'renard', frame: 'cadre-flames', tier: 'gold', title: 'flambeur' },
+    { pseudo: 'Astro_7', avatar: 'astronaute', frame: 'cadre-neon', tier: 'silver', title: 'rookie' },
+    { pseudo: 'Valet', avatar: 'cowboy', frame: 'cadre-simple', tier: 'bronze', title: 'rookie' },
+  ],
+  incoming: [{ pseudo: 'Pirate42', avatar: 'pirate', frame: 'cadre-chips', tier: 'gold', title: 'baron' }],
+  outgoing: [],
+};
+
+async function mockServer(page) {
+  await page.route(`${FAKE_SUPABASE}/**`, async (route) => {
+    const cors = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': 'POST, OPTIONS',
+    };
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: cors });
+      return;
+    }
+    const op = route.request().postDataJSON()?.op;
+    const body =
+      op === 'friends'
+        ? FRIENDS
+        : op === 'friendCard'
+          ? { card: FRIEND_CARD, friend: true, self: false }
+          : { error: 'server', message: 'Indisponible pendant les captures.' };
+    await route.fulfill({
+      status: op === 'friends' || op === 'friendCard' ? 200 : 503,
+      contentType: 'application/json',
+      headers: cors,
+      body: JSON.stringify(body),
+    });
+  });
+}
+
+/** Joueur connecte: AsDePique, membre depuis mars. */
+async function signInDemo(page) {
+  await driveStore(page, () =>
+    window.__jackpot.account.setState({
+      status: 'online',
+      pseudo: 'AsDePique',
+      createdAt: '2026-03-14T10:00:00Z',
+      incoming: 1,
+    }),
+  );
+}
 
 async function generateIcons(browser) {
   const raw = readFileSync(resolve(publicDir, 'favicon.svg'), 'utf8')
@@ -134,22 +210,31 @@ const JACKPOT_WIN = {
     gain: 3900,
     potBefore: 5960,
     potAfter: 9860,
+    difficultyMultiplier: 1,
+    guaranteedMultiplier: 1,
     vaultEligible: false,
     tip: 0,
     dailyBonus: 0,
     moves: 131,
+    timeMs: 168000,
+    bets: [],
+    progressive: 0,
+    vegas: null,
+    unpaid: false,
   },
 };
 
 async function openPage(browser, options) {
   const context = await browser.newContext(options);
   const page = await context.newPage();
+  await mockServer(page);
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => Boolean(window.__jackpot), null, { timeout: 15000 });
   // Reglages stables (pas d'animation, pas de son) et donnees riches.
   await driveStore(page, (meta) => {
-    window.__jackpot.meta.getState().updateSettings({ reducedMotion: true, soundEnabled: false });
-    window.__jackpot.meta.setState(meta);
+    const store = window.__jackpot.meta;
+    store.getState().updateSettings({ reducedMotion: true, soundEnabled: false });
+    store.setState({ ...meta, equipped: { ...store.getState().equipped, ...meta.equipped } });
     window.__jackpot.game.getState().goHome();
   }, richMeta);
   return { context, page };
@@ -159,12 +244,17 @@ async function main() {
   const server = spawn('npx', ['vite', '--port', String(PORT), '--strictPort'], {
     cwd: root,
     stdio: 'ignore',
-    env: { ...process.env },
+    env: {
+      ...process.env,
+      VITE_SUPABASE_URL: FAKE_SUPABASE,
+      VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_captures',
+    },
   });
 
   try {
     await waitForServer(BASE);
-    const browser = await chromium.launch();
+    // PW_CHANNEL=chrome reutilise le Chrome installe, comme les tests e2e.
+    const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined });
 
     await generateIcons(browser);
 
@@ -175,7 +265,27 @@ async function main() {
     });
     let page = desk.page;
     await sleep(800);
+    // Invite: l'ecran de connexion.
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('account'));
+    await sleep(700);
+    await page.screenshot({ path: resolve(shotsDir, 'connexion.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().closeModal());
+
+    await signInDemo(page);
+    await sleep(500);
     await page.screenshot({ path: resolve(shotsDir, 'accueil.png') });
+
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('profile'));
+    await page.screenshot({ path: resolve(shotsDir, 'profil.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('friends'));
+    await page.locator('.player-list').first().waitFor();
+    await sleep(300);
+    await page.screenshot({ path: resolve(shotsDir, 'amis.png') });
+    await page.getByRole('button', { name: 'Voir la carte de ReineDeCoeur' }).click();
+    await page.locator('.friend-view .pcard').waitFor();
+    await sleep(500);
+    await page.screenshot({ path: resolve(shotsDir, 'carte-ami.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().closeModal());
 
     await driveStore(page, () =>
       window.__jackpot.game.getState().newGame({ mode: 'gambling', table: 'gold', difficulty: 'expert', seed: 'demo-jackpot' }),
@@ -208,7 +318,16 @@ async function main() {
     });
     page = phone.page;
     await sleep(800);
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('account'));
+    await sleep(700);
+    await page.screenshot({ path: resolve(shotsDir, 'mobile-connexion.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().closeModal());
+    await signInDemo(page);
+    await sleep(500);
     await page.screenshot({ path: resolve(shotsDir, 'mobile-accueil.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('profile'));
+    await page.screenshot({ path: resolve(shotsDir, 'mobile-profil.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().closeModal());
     await driveStore(page, () =>
       window.__jackpot.game.getState().newGame({ mode: 'gambling', table: 'silver', difficulty: 'expert', seed: 'demo-jackpot' }),
     );

@@ -94,20 +94,32 @@
   }
 }
 
+/* Couleur de chaque rang (--tier) et son métal en dégradé (--tier-metal). */
 [data-tier='bronze'] {
-  --tier: #dda476;
+  --tier: #e09a68;
+  --tier-metal: linear-gradient(135deg, #f2b587, #c97a45 55%, #8a4a24);
 }
 [data-tier='silver'] {
   --tier: #d3dae3;
+  --tier-metal: linear-gradient(135deg, #ffffff, #c3ccd6 55%, #7d8794);
 }
 [data-tier='gold'] {
   --tier: #f3d27c;
+  --tier-metal: linear-gradient(135deg, #fff1bf, #e3b95a 55%, #a4761f);
 }
 [data-tier='platinum'] {
   --tier: #b5e6e8;
+  --tier-metal: linear-gradient(135deg, #f4feff, #a9dde3 55%, #5f97a1);
 }
 [data-tier='diamond'] {
   --tier: #b4cdff;
+  --tier-metal: linear-gradient(
+    120deg,
+    #9dffd8,
+    #8fd3ff 30%,
+    #c7a6ff 65%,
+    #ff9ad5
+  );
 }
 
 .balance {

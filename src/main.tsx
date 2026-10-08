@@ -19,6 +19,7 @@ import './styles/board.css';
 import './styles/ui.css';
 import './styles/features.css';
 import './styles/accounts.css';
+import './styles/ranks.css';
 
 console.info(`Jackpot Solitaire: ${BUILD_TAG}`);
 
@@ -37,10 +38,12 @@ if (import.meta.env.DEV) {
     import('./state/game'),
     import('./state/meta'),
     import('./engine'),
-  ]).then(([game, meta, engine]) => {
+    import('./state/account'),
+  ]).then(([game, meta, engine, account]) => {
     (window as unknown as { __jackpot?: unknown }).__jackpot = {
       game: game.useGameStore,
       meta: meta.useMetaStore,
+      account: account.useAccountStore,
       engine,
     };
   });

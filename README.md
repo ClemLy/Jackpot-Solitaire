@@ -45,11 +45,25 @@ jeu sur la manche suivante ?
 | --- | --- |
 | ![Roue du jour](screenshots/roue.png) | ![Statistiques](screenshots/stats.png) |
 
+Les comptes, le profil et les amis :
+
+| Connexion | Mon profil |
+| --- | --- |
+| ![Écran de connexion](screenshots/connexion.png) | ![Mon profil](screenshots/profil.png) |
+
+| Amis | Carte d’un ami |
+| --- | --- |
+| ![Liste d'amis](screenshots/amis.png) | ![Carte de profil d'un ami](screenshots/carte-ami.png) |
+
 Sur téléphone, en portrait et en paysage :
 
 | Accueil | Partie | Victoire |
 | --- | --- | --- |
 | ![Accueil sur téléphone](screenshots/mobile-accueil.png) | ![Partie sur téléphone](screenshots/mobile-partie.png) | ![Victoire sur téléphone](screenshots/mobile-victoire.png) |
+
+| Connexion | Profil |
+| --- | --- |
+| ![Connexion sur téléphone](screenshots/mobile-connexion.png) | ![Profil sur téléphone](screenshots/mobile-profil.png) |
 
 ![Partie en paysage sur téléphone](screenshots/mobile-paysage.png)
 
@@ -222,6 +236,17 @@ offre des bonus, cumulés d’un rang à l’autre : Œil du croupier (Argent),
 Assurance (Or), Joker et missions +25 % (Platine), Seconde chance et
 missions +50 % (Diamant).
 
+Chaque rang a sa couleur et son emblème, de plus en plus travaillé : une
+médaille de bronze toute simple, une médaille d’argent polie à double
+anneau, une pièce d’or perlée à couronne sertie de rubis et traversée d’un
+reflet, un insigne de platine étoilé ceint de lauriers, puis un diamant à
+facettes prismatiques, rayons tournants et étincelles. Le nom du rang suit
+la même progression (uni, métallisé, brillant, reflet animé, prisme
+animé), tout comme le contour de ses pastilles. On le retrouve sur
+l’accueil, la plaque et la carte de profil, la liste d’amis et la boutique.
+Chaque rang débloque aussi son cadre de portrait (cercle d’argent, d’or, de
+platine, couronne de diamants).
+
 | Rang | Dès | Remise | Roue du jour | Ce qu’il ouvre |
 | --- | --- | --- | --- | --- |
 | Bronze | 0 | aucune | ×1 | La boutique de base |
@@ -293,6 +318,9 @@ perdre (cache vidé, autre ordinateur, téléphone).
   profil qui résume la progression (rang, victoires, réussite, records,
   collection, hauts faits). Tout se choisit dans « Profil » ; ce qui manque
   s’achète en boutique ou se débloque avec le rang.
+- **La plaque de profil**, en haut à gauche de l’accueil : portrait
+  encadré, pseudo et rang. En invité, elle propose de se connecter ; une
+  pastille signale les demandes d’amis reçues.
 - **Les amis** : on ajoute un joueur par son pseudo, il accepte ou refuse.
   Entre amis, chacun voit la carte de l’autre. Pas de multijoueur : c’est
   pour suivre la progression des autres. Un joueur qui n’est pas ami ne
@@ -393,8 +421,12 @@ src/
     sfx.ts       Sons synthétisés à la volée (Web Audio API)
     haptics.ts   Vibrations (Vibration API)
   components/  Interface React (plateau, bandeau, dock, boutique, roue,
-               missions, jokers, paris, tutoriel, écrans 404 et plantage)
-  styles/      Tokens et tapis, cartes, plateau, interface
+               missions, jokers, paris, tutoriel, écrans 404 et plantage,
+               connexion, profil, amis)
+    Portrait.tsx    Avatar dans son cadre (SVG, cadres animés)
+    ProfileCard.tsx Carte de profil et ligne d'ami
+    Rank.tsx        Emblèmes et étiquettes des rangs VIP
+  styles/      Tokens et tapis, cartes, plateau, interface, comptes, rangs
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
 server/        Fonction api : authentifie, rejoue et enregistre
 supabase/      Configuration, migration SQL (tables, verrous, quotas),
@@ -579,10 +611,15 @@ Après une modification de `src/core` ou de `server/`, redéployer avec
 Les captures (`screenshots/`) et les icônes PWA (`public/`) sont produites à
 partir du vrai rendu du jeu, piloté par Playwright : une partie réellement
 jouée coup par coup, sur ordinateur, téléphone en portrait et en paysage.
+Les écrans de compte (connexion, profil, amis) utilisent une adresse
+Supabase factice : les appels au serveur sont interceptés et reçoivent des
+amis de démonstration, aucun Supabase n’est nécessaire.
 
 ```bash
 npx playwright install chromium   # une seule fois
 npm run screenshots
+
+PW_CHANNEL=chrome npm run screenshots   # ou avec le Chrome déjà installé
 ```
 
 ## Vie privée

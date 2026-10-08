@@ -3,7 +3,6 @@ import {
   BarChart3,
   BookOpen,
   ChevronRight,
-  Crown,
   GraduationCap,
   Settings,
   ShoppingBag,
@@ -12,7 +11,9 @@ import {
   Users,
 } from 'lucide-react';
 import { accountsEnabled, useAccountStore } from '../state/account';
+import type { VipTierId } from '../state/catalog';
 import { Portrait } from './Portrait';
+import { RankBadge, RankEmblem } from './Rank';
 import { useGameStore, type GameMode } from '../state/game';
 import { pendingRewards, useMetaStore } from '../state/meta';
 import {
@@ -239,7 +240,7 @@ export function Home() {
             )}
           </button>
           <button
-            className="vip-pill"
+            className="vip-pill rank-pill"
             data-tier={tier.id}
             onClick={() => openModal('shop')}
             aria-label={`Rang VIP ${tier.label}`}
@@ -249,8 +250,7 @@ export function Home() {
                 : 'Rang maximum atteint'
             }
           >
-            <Crown size={15} />
-            <span>{tier.label}</span>
+            <RankBadge tier={tier.id} size={20} />
             <span
               className="vip-pill__bar"
               style={{ '--p': vipProgress(lifetime) } as CSSProperties}
@@ -422,7 +422,7 @@ function ProfilePlate({
 }: {
   avatar: string;
   frame: string;
-  tierId: string;
+  tierId: VipTierId;
   tierLabel: string;
 }) {
   const account = useAccountStore();
@@ -434,6 +434,7 @@ function ProfilePlate({
     <button
       className="profile-plate"
       data-state={guest ? 'guest' : 'online'}
+      data-tier={tierId}
       onClick={() => openModal(guest ? 'account' : 'profile')}
       aria-label={
         online
@@ -445,6 +446,14 @@ function ProfilePlate({
     >
       <span className="profile-plate__portrait">
         <Portrait avatar={avatar} frame={frame} size="100%" />
+        {guest && (
+          <RankEmblem
+            tier={tierId}
+            size={20}
+            compact
+            className="profile-plate__medal"
+          />
+        )}
         {online && account.incoming > 0 && (
           <span className="profile-plate__badge" aria-hidden="true">
             {account.incoming}
@@ -462,12 +471,11 @@ function ProfilePlate({
             Se connecter
           </span>
         ) : (
-          <span
+          <RankBadge
+            tier={tierId}
+            size={15}
             className="profile-plate__sub profile-plate__tier"
-            data-tier={tierId}
-          >
-            <Crown size={12} /> {tierLabel}
-          </span>
+          />
         )}
       </span>
       <ChevronRight
