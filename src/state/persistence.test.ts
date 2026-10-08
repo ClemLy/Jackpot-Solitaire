@@ -179,7 +179,7 @@ describe('rechargement du store', () => {
           inventory: null,
           settings: { difficulty: 'easy', volume: -4 },
         },
-        version: 3,
+        version: 4,
       }),
     );
     await useMetaStore.persist.rehydrate();

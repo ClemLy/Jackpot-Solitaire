@@ -56,7 +56,7 @@ export async function quietSave(page: Page, extra: object = {}): Promise<void> {
           ...extra,
         },
       },
-      version: 3,
+      version: 4,
     }),
   );
 }

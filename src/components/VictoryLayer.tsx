@@ -12,6 +12,10 @@ import { suitPath2D } from '../utils/suitPaths';
 
 // Effets de victoire, dessines sur canvas. Chaque effet est une petite
 // simulation: on l'appelle a chaque image avec le contexte et le temps ecoule.
+//
+// En partie, un effet ne s'arrete jamais de lui-meme: il tourne tant que le
+// bordereau de victoire est affiche (le calque disparait avec la phase
+// 'won'). Seul l'apercu de la boutique (preview) a une duree limitee.
 
 interface Scene {
   frame: (ctx: CanvasRenderingContext2D, t: number, dt: number) => boolean;
@@ -64,7 +68,20 @@ function bounceScene(width: number, height: number, preview: boolean): Scene {
   }[] = [];
   let launched = 0;
   let sinceLaunch = 0;
+  // En partie, chaque carte sortie de l'ecran laisse sa place a la suivante,
+  // a l'infini; l'apercu se contente de quelques cartes.
   const max = preview ? 14 : 52;
+  const launch = () => {
+    flyers.push({
+      x: width / 2 + (Math.random() - 0.5) * width * 0.55,
+      y: 70 + Math.random() * 50,
+      vx: (Math.random() - 0.5) * 9 || 3,
+      vy: -Math.random() * 4,
+      rank: RANKS[(12 - (launched % 13)) as number] as Rank,
+      suit: SUITS[Math.floor(launched / 13) % 4],
+    });
+    launched += 1;
+  };
 
   const drawCard = (f: (typeof flyers)[number]) => {
     const ink = color(f.suit) === 'red' ? '#C42A3D' : '#17191F';
@@ -90,20 +107,18 @@ function bounceScene(width: number, height: number, preview: boolean): Scene {
     frame: (ctx, t, dt) => {
       ctx2 = ctx;
       sinceLaunch += dt;
-      if (launched < max && sinceLaunch > 150) {
+      const room = preview ? launched < max : flyers.length < max;
+      if (room && sinceLaunch > 150) {
         sinceLaunch = 0;
-        flyers.push({
-          x: width / 2 + (Math.random() - 0.5) * width * 0.55,
-          y: 70 + Math.random() * 50,
-          vx: (Math.random() - 0.5) * 9,
-          vy: -Math.random() * 4,
-          rank: RANKS[(12 - (launched % 13)) as number] as Rank,
-          suit: SUITS[launched % 4],
-        });
-        launched += 1;
+        launch();
       }
       const k = dt / 16.67;
-      for (const f of flyers) {
+      for (let i = flyers.length - 1; i >= 0; i--) {
+        const f = flyers[i];
+        if (!preview && (f.x < -cw * 1.5 || f.x > width + cw * 0.5)) {
+          flyers.splice(i, 1);
+          continue;
+        }
         f.vy += 0.38 * k;
         f.x += f.vx * k;
         f.y += f.vy * k;
@@ -114,7 +129,7 @@ function bounceScene(width: number, height: number, preview: boolean): Scene {
         }
         drawCard(f);
       }
-      return t < (preview ? 3200 : 9000);
+      return !preview || t < 3200;
     },
   };
 }
@@ -146,7 +161,7 @@ function confettiScene(width: number, height: number, preview: boolean): Scene {
         p.y += p.vy * k;
         p.x += Math.sin(p.sway) * 1.2 * k;
         if (p.y < height + 30) alive = true;
-        else if (t < (preview ? 1800 : 5000)) {
+        else if (!preview || t < 1800) {
           p.y = -20;
           p.x = Math.random() * width;
           alive = true;
@@ -188,6 +203,14 @@ function coinsScene(width: number, height: number, preview: boolean): Scene {
       const k = dt / 16.67;
       let alive = false;
       for (const c of coins) {
+        // En partie, un jeton tombe hors de l'ecran repart du haut.
+        if (!preview && c.y - c.r > height + 20) {
+          c.x = Math.random() * width;
+          c.y = -40 - Math.random() * 200;
+          c.vx = (Math.random() - 0.5) * 2;
+          c.vy = Math.random() * 2;
+          c.bounces = 0;
+        }
         c.vy += 0.32 * k;
         c.x += c.vx * k;
         c.y += c.vy * k;
@@ -197,7 +220,7 @@ function coinsScene(width: number, height: number, preview: boolean): Scene {
           c.vy = -c.vy * 0.45;
           c.bounces += 1;
         }
-        if (c.y - c.r < height) alive = true;
+        if (!preview || c.y - c.r < height) alive = true;
         const sx = Math.max(0.12, Math.abs(Math.cos(c.spin)));
         ctx.save();
         ctx.translate(c.x, c.y);
@@ -270,7 +293,7 @@ function fireworksScene(
     frame: (ctx, t, dt) => {
       const k = dt / 16.67;
       since += dt;
-      const emitting = t < (preview ? 2400 : 7000);
+      const emitting = !preview || t < 2400;
       if (emitting && since > (preview ? 330 : 420)) {
         since = 0;
         rockets.push({
@@ -355,7 +378,7 @@ function champagneScene(
     frame: (ctx, t, dt) => {
       const k = dt / 16.67;
       since += dt;
-      const emitting = t < (preview ? 2200 : 6000);
+      const emitting = !preview || t < 2200;
       if (emitting && since > (preview ? 700 : 900)) {
         since = 0;
         pop(width * (0.15 + Math.random() * 0.7));
@@ -435,6 +458,7 @@ function goldbarsScene(width: number, height: number, preview: boolean): Scene {
   const bars: Bar[] = [];
   let since = 0;
   let dropped = 0;
+  let cycleEnd = 0;
   const max = preview ? 26 : 90;
   const drawBar = (b: Bar) => {
     ctx2.save();
@@ -480,6 +504,17 @@ function goldbarsScene(width: number, height: number, preview: boolean): Scene {
         });
         dropped += 1;
       }
+      // En partie: une fois le tas complet et apres une pause, on fait place
+      // nette et une nouvelle pluie de lingots commence.
+      if (!preview && dropped >= max && bars.every((b) => b.landed)) {
+        if (cycleEnd === 0) cycleEnd = t;
+        if (t - cycleEnd > 2500) {
+          bars.length = 0;
+          heights.fill(0);
+          dropped = 0;
+          cycleEnd = 0;
+        }
+      }
       let falling = false;
       for (const b of bars) {
         if (!b.landed) {
@@ -496,7 +531,7 @@ function goldbarsScene(width: number, height: number, preview: boolean): Scene {
         }
         drawBar(b);
       }
-      return dropped < max || falling || t < (preview ? 2600 : 7000);
+      return !preview || dropped < max || falling || t < 2600;
     },
   };
 }
@@ -539,6 +574,9 @@ function supernovaScene(
   };
   const bursts = preview ? [0, 900] : [0, 1300, 2600, 3900];
   let next = 0;
+  // En partie, apres la salve d'ouverture, une nouvelle explosion toutes les
+  // 2,6 secondes.
+  let nextLoop = bursts[bursts.length - 1] + 2600;
   const maxR = Math.hypot(width, height);
   return {
     trails: true,
@@ -547,6 +585,10 @@ function supernovaScene(
       while (next < bursts.length && t >= bursts[next]) {
         explode(t, next === 0 ? 260 : 160);
         next += 1;
+      }
+      if (!preview && next >= bursts.length && t >= nextLoop) {
+        explode(t, 160);
+        nextLoop += 2600;
       }
       for (let i = waves.length - 1; i >= 0; i--) {
         const age = (t - waves[i].t0) / 1100;
@@ -596,7 +638,9 @@ function supernovaScene(
         ctx.fillRect(s.x - r * 2, s.y - r * 0.25, r * 4, r * 0.5);
       }
       ctx.globalAlpha = 1;
-      return next < bursts.length || stars.length > 0 || waves.length > 0;
+      return (
+        !preview || next < bursts.length || stars.length > 0 || waves.length > 0
+      );
     },
   };
 }

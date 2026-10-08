@@ -20,6 +20,7 @@ import { comboMultiplier, drawVaultOutcome, vaultUnlocked } from './gambling';
 import { useMetaStore } from './meta';
 import {
   DAILY_BONUS,
+  DEFAULT_DIFFICULTY,
   INSURANCE_REFUND,
   findDifficulty,
   findStakeTable,
@@ -224,7 +225,10 @@ export function computeElapsed(state: {
   return Date.now() - state.startedAt;
 }
 
-const firstBoard = deal('bienvenue', 3);
+const firstBoard = deal(
+  'bienvenue',
+  findDifficulty(DEFAULT_DIFFICULTY).drawCount,
+);
 
 export const useGameStore = create<GameStore>()((set, get) => {
   /**
@@ -246,7 +250,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         });
         playSound('coins');
       } else {
-        playSound('whoosh');
+        playSound('bust');
       }
       set({ pot: 0, combo: 0, insured: false });
     }
@@ -416,7 +420,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     const wasGambling = isRiskingPot(state);
     const potLost = wasGambling ? state.pot : 0;
 
-    playSound('penalty');
+    playSound('lose');
     set({
       phase: 'lost',
       finalTimeMs: timeMs,
@@ -527,8 +531,8 @@ export const useGameStore = create<GameStore>()((set, get) => {
     overlay: 'none',
 
     mode: 'classic',
-    difficulty: 'expert',
-    drawCount: 3,
+    difficulty: DEFAULT_DIFFICULTY,
+    drawCount: findDifficulty(DEFAULT_DIFFICULTY).drawCount,
     seed: 'bienvenue',
 
     board: firstBoard,

@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyMove,
+  type ApplyResult,
   canAutoComplete,
   createRng,
   deal,
@@ -18,7 +19,11 @@ import {
   type Rng,
 } from './index';
 
-/** Tous les coups imaginables, legaux ou non. */
+/**
+ * Tous les coups imaginables, legaux ou non. Les deplacements entre colonnes
+ * ne partent que d'une carte visible: les autres sont forcement illegaux et
+ * ne feraient que ralentir le test.
+ */
 function candidateMoves(board: Board): Move[] {
   const moves: Move[] = [{ type: 'draw' }, { type: 'recycle' }];
   for (let f = 0; f < 4; f++) {
@@ -30,8 +35,10 @@ function candidateMoves(board: Board): Move[] {
   }
   for (let c = 0; c < 7; c++) {
     moves.push({ type: 'wasteToTableau', column: c });
+    const visible = board.tableau[c].filter((card) => card.faceUp).length;
     for (let to = 0; to < 7; to++) {
-      for (let count = 1; count <= board.tableau[c].length; count++) {
+      if (to === c) continue;
+      for (let count = 1; count <= visible; count++) {
         moves.push({ type: 'tableauToTableau', from: c, to, count });
       }
     }
@@ -39,8 +46,14 @@ function candidateMoves(board: Board): Move[] {
   return moves;
 }
 
-function legalMoves(board: Board): Move[] {
-  return candidateMoves(board).filter((m) => applyMove(board, m) !== null);
+/** Coups legaux avec leur resultat, calcule une seule fois. */
+function legalMoves(board: Board): { move: Move; result: ApplyResult }[] {
+  const legal: { move: Move; result: ApplyResult }[] = [];
+  for (const move of candidateMoves(board)) {
+    const result = applyMove(board, move);
+    if (result) legal.push({ move, result });
+  }
+  return legal;
 }
 
 function deepFreeze<T>(value: T): T {
@@ -51,40 +64,50 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-/** Verifie toutes les regles de structure d'un plateau de Klondike. */
-function assertConsistent(board: Board): void {
+/**
+ * Liste les regles de structure violees par un plateau (vide si tout va
+ * bien). Un seul expect par plateau: des milliers d'appels a expect par
+ * partie ralentissaient fortement le test sur les machines de la CI.
+ */
+function problemsOf(board: Board): string[] {
+  const problems: string[] = [];
   const all = [
     ...board.stock,
     ...board.waste,
     ...board.foundations.flat(),
     ...board.tableau.flat(),
   ];
-  expect(all).toHaveLength(52);
-  expect(new Set(all.map((c) => c.id)).size).toBe(52);
+  if (all.length !== 52) problems.push(`${all.length} cartes au lieu de 52`);
+  if (new Set(all.map((c) => c.id)).size !== all.length)
+    problems.push('carte en double');
+  if (board.stock.some((c) => c.faceUp)) problems.push('pioche visible');
+  if (board.waste.some((c) => !c.faceUp)) problems.push('talon cache');
 
-  expect(board.stock.every((c) => !c.faceUp)).toBe(true);
-  expect(board.waste.every((c) => c.faceUp)).toBe(true);
-
-  board.foundations.forEach((pile) => {
+  board.foundations.forEach((pile, f) => {
     pile.forEach((card, i) => {
-      expect(card.faceUp).toBe(true);
-      expect(card.rank).toBe(i + 1);
-      expect(card.suit).toBe(pile[0].suit);
+      if (!card.faceUp || card.rank !== i + 1 || card.suit !== pile[0].suit)
+        problems.push(`fondation ${f} invalide`);
     });
   });
   const suits = board.foundations.filter((p) => p.length).map((p) => p[0].suit);
-  expect(new Set(suits).size).toBe(suits.length);
+  if (new Set(suits).size !== suits.length)
+    problems.push('deux fondations de meme couleur');
 
-  board.tableau.forEach((column) => {
-    const firstUp = column.findIndex((c) => c.faceUp);
+  board.tableau.forEach((column, c) => {
     if (column.length === 0) return;
-    // Une colonne non vide a toujours sa carte du dessus visible...
-    expect(firstUp).toBeGreaterThanOrEqual(0);
-    // ...les cartes cachees forment le fond, sans trou...
-    expect(column.slice(firstUp).every((c) => c.faceUp)).toBe(true);
-    // ...et la partie visible est toujours une sequence valide.
-    expect(isValidRun(column.slice(firstUp))).toBe(true);
+    const firstUp = column.findIndex((card) => card.faceUp);
+    // Carte du dessus visible, cartes cachees au fond sans trou, et partie
+    // visible toujours en sequence valide.
+    if (firstUp < 0) problems.push(`colonne ${c} sans carte visible`);
+    else if (!isValidRun(column.slice(firstUp)))
+      problems.push(`colonne ${c} mal ordonnee`);
   });
+  return problems;
+}
+
+function assertConsistent(board: Board): void {
+  const problems = problemsOf(board);
+  if (problems.length > 0) expect(problems).toEqual([]);
 }
 
 function playRandomGame(
@@ -93,33 +116,33 @@ function playRandomGame(
   gentle: boolean,
   rng: Rng,
   maxMoves: number,
-  onBoard: (board: Board, step: number) => void,
+  /** Renvoie vrai pour arreter la partie ici. */
+  onBoard: (board: Board, step: number) => boolean | void,
 ): Board {
   let board = deal(seed, drawCount, { gentle });
   assertConsistent(board);
   for (let step = 0; step < maxMoves && !isWon(board); step++) {
-    const moves = legalMoves(board);
+    // Plateau gele: le moindre coup qui le modifierait leverait une erreur.
+    const moves = legalMoves(deepFreeze(board));
     if (moves.length === 0) break;
     // On favorise les coups qui font avancer (fondation, carte revelee),
     // pour explorer des fins de partie et pas seulement des pioches en
     // boucle. Le reste du temps, n'importe quel coup legal.
-    const progress = moves.filter((m) => {
-      const outcome = applyMove(board, m)!.outcome;
-      return outcome.toFoundation > 0 || outcome.revealed > 0;
-    });
+    const progress = moves.filter(
+      ({ result }) =>
+        result.outcome.toFoundation > 0 || result.outcome.revealed > 0,
+    );
     const pool = progress.length > 0 && rng.next() < 0.85 ? progress : moves;
-    const move = pool[rng.int(pool.length)];
-    const frozen = deepFreeze(board);
-    const result = applyMove(frozen, move);
-    expect(result).not.toBeNull();
-    board = result!.board;
+    board = pool[rng.int(pool.length)].result.board;
     assertConsistent(board);
-    onBoard(board, step);
+    if (onBoard(board, step)) break;
   }
   return board;
 }
 
-describe('parties aleatoires', () => {
+// Marge large: les machines de la CI sont nettement plus lentes qu'un poste
+// de developpement.
+describe('parties aleatoires', { timeout: 30_000 }, () => {
   const configs: [1 | 3, boolean][] = [
     [1, true],
     [1, false],
@@ -170,7 +193,7 @@ describe('parties aleatoires', () => {
     let checked = 0;
     for (let g = 0; g < 30; g++) {
       playRandomGame(`auto${g}`, 1, true, rng, 400, (board) => {
-        if (!canAutoComplete(board)) return;
+        if (!canAutoComplete(board)) return false;
         checked++;
         expect(board.tableau.every((col) => col.every((c) => c.faceUp))).toBe(
           true,
@@ -183,6 +206,8 @@ describe('parties aleatoires', () => {
           current = applyMove(current, move!)!.board;
         }
         expect(isWon(current)).toBe(true);
+        // La suite de cette partie n'apprendrait rien de plus.
+        return true;
       });
     }
     // Le test n'a de sens que s'il a croise des fins de partie.

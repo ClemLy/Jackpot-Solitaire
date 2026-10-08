@@ -568,7 +568,7 @@ export const useMetaStore = create<MetaState>()(
     },
     {
       name: 'jackpot-solitaire-meta-v1',
-      version: 3,
+      version: 4,
       storage: createSafeStorage(reportStorageProblem),
       partialize: (state) => ({
         settings: state.settings,
@@ -631,17 +631,19 @@ export function migrateMeta(persisted: unknown, version: number): unknown {
     };
   }
   if (version < 3) {
-    // Version 3: la pioche par defaut devient un niveau de difficulte. On
-    // garde l'experience de jeu a l'identique: la pioche 3 au hasard
-    // correspond au niveau Expert, la pioche 1 au hasard au niveau Normal.
+    // Version 3: la pioche par defaut devient un niveau de difficulte.
     const settings = (data.settings ?? {}) as Partial<Settings> & {
       defaultDraw?: 1 | 3;
     };
-    const { defaultDraw, ...rest } = settings;
-    data.settings = {
-      ...rest,
-      difficulty: defaultDraw === 1 ? 'normal' : 'expert',
-    };
+    const { defaultDraw: _defaultDraw, ...rest } = settings;
+    data.settings = rest;
+  }
+  if (version < 4) {
+    // Version 4: tout le monde demarre en Normal. La version 3 convertissait
+    // l'ancienne pioche 3 en Expert, ce qui laissait les joueurs historiques
+    // sur le niveau le plus dur sans l'avoir choisi.
+    const settings = (data.settings ?? {}) as Partial<Settings>;
+    data.settings = { ...settings, difficulty: DEFAULT_DIFFICULTY };
   }
   return data;
 }

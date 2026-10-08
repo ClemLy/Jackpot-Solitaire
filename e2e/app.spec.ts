@@ -117,7 +117,7 @@ test.describe('sauvegarde', () => {
           inventory: { owned: 'tout', consumables: { hint: -5 } },
           settings: { soundEnabled: false, reducedMotion: true, table: 999 },
         },
-        version: 3,
+        version: 4,
       }),
     );
     await page.goto('./');

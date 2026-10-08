@@ -103,19 +103,27 @@ describe('migration des sauvegardes', () => {
 
   it('ne touche pas une sauvegarde deja a jour', () => {
     const data = { wallet: { balance: 5, lifetimeEarned: 5, spent: 0 } };
-    expect(migrateMeta(data, 3)).toEqual(data);
+    expect(migrateMeta(data, 4)).toEqual(data);
   });
 
-  it('convertit la pioche par defaut en difficulte equivalente', () => {
+  it('remet tout le monde en Normal, pioche 3 comprise', () => {
     const draw3 = migrateMeta({ settings: { defaultDraw: 3 } }, 2) as {
       settings: Record<string, unknown>;
     };
-    expect(draw3.settings.difficulty).toBe('expert');
+    expect(draw3.settings.difficulty).toBe('normal');
     expect(draw3.settings).not.toHaveProperty('defaultDraw');
     const draw1 = migrateMeta({ settings: { defaultDraw: 1 } }, 2) as {
       settings: Record<string, unknown>;
     };
     expect(draw1.settings.difficulty).toBe('normal');
+    // Une sauvegarde v3 passee en Expert par l'ancienne migration repart
+    // aussi en Normal; ensuite, le choix du joueur est respecte.
+    const v3 = migrateMeta({ settings: { difficulty: 'expert' } }, 3) as {
+      settings: Record<string, unknown>;
+    };
+    expect(v3.settings.difficulty).toBe('normal');
+    const v4 = { settings: { difficulty: 'expert' } };
+    expect(migrateMeta(v4, 4)).toEqual(v4);
   });
 });
 
