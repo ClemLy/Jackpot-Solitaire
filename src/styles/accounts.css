@@ -59,36 +59,103 @@
   }
 }
 
-/* ---- Pastille de profil (accueil) ---- */
+/* ---- Plaque de profil (accueil) ---- */
 
-.profile-pill {
+.profile-plate {
   display: inline-flex;
+  flex: 0 1 auto;
   align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 14px 0 5px;
+  gap: 12px;
+  min-width: 0;
+  padding: 5px 12px 5px 5px;
   border-radius: 999px;
   background: var(--surface);
   backdrop-filter: blur(10px);
-  box-shadow: inset 0 0 0 1px var(--line-gold);
-  color: var(--gold-100);
-  font-size: 0.8rem;
-  font-weight: 800;
-  max-width: 190px;
-  transition: background-color 160ms ease;
+  box-shadow:
+    inset 0 0 0 1px var(--line-gold),
+    0 10px 24px -14px rgba(0, 0, 0, 0.7);
+  text-align: left;
+  transition:
+    background-color 160ms ease,
+    transform 140ms var(--ease-out);
 }
-.profile-pill__label {
+.profile-plate:active {
+  transform: scale(0.98);
+}
+@media (hover: hover) and (pointer: fine) {
+  .profile-plate:hover {
+    background: rgba(20, 27, 24, 0.85);
+  }
+  .profile-plate:hover .profile-plate__chev {
+    translate: 2px 0;
+    color: var(--gold-200);
+  }
+}
+.profile-plate__portrait {
+  position: relative;
+  flex: none;
+  width: 54px;
+  height: 54px;
+}
+.profile-plate__portrait .portrait {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+}
+.profile-plate__badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--crimson);
+  box-shadow: 0 0 0 2px #0b1a14;
+  color: var(--ivory);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+.profile-plate__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.profile-plate__name {
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  font-weight: 720;
+  line-height: 1.05;
+  color: var(--ivory);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.profile-pill[data-state='guest'] {
-  color: var(--text);
+.profile-plate__sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--text-2);
+  white-space: nowrap;
 }
-@media (hover: hover) and (pointer: fine) {
-  .profile-pill:hover {
-    background: rgba(20, 27, 24, 0.85);
-  }
+.profile-plate__tier {
+  color: var(--tier);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.profile-plate__cta {
+  color: var(--gold-200);
+}
+.profile-plate__chev {
+  flex: none;
+  color: var(--text-3);
+  transition:
+    translate 160ms ease,
+    color 160ms ease;
 }
 .link-btn__badge {
   display: inline-grid;
@@ -1089,13 +1156,27 @@ button.player-row__main:hover strong {
     position: static;
   }
 }
+.topbar:has(.profile-plate) .topbar__right {
+  flex: none;
+}
+
 @media (max-width: 640px) {
-  .profile-pill {
-    width: 40px;
-    padding: 0;
-    justify-content: center;
+  /* Le rang est deja sur la plaque: la pastille VIP laisse la place. */
+  .topbar:has(.profile-plate) .vip-pill {
+    display: none;
   }
-  .profile-pill__label {
+  .profile-plate {
+    gap: 9px;
+    padding-right: 14px;
+  }
+  .profile-plate__portrait {
+    width: 44px;
+    height: 44px;
+  }
+  .profile-plate__name {
+    font-size: 1rem;
+  }
+  .profile-plate__chev {
     display: none;
   }
 }

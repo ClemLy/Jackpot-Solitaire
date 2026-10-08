@@ -50,8 +50,12 @@ test.describe('nouveautes', () => {
     const bet = page.getByRole('switch', { name: /sans annuler/i });
     await bet.click();
     await expect(bet).toHaveAttribute('aria-checked', 'true');
-    // Toucher le tapis referme le panneau, sans annuler le pari.
-    await page.locator('.board__tableau').click({ position: { x: 5, y: 5 } });
+    // Toucher le tapis referme le panneau, sans annuler le pari. On touche le
+    // bas des colonnes, toujours vide: en haut, on jouerait une carte.
+    const tableau = page.locator('.board__tableau');
+    const box = await tableau.boundingBox();
+    if (!box) throw new Error('tableau absent');
+    await tableau.click({ position: { x: box.width / 2, y: box.height - 8 } });
     await expect(bet).toBeHidden();
     await expect(page.getByRole('button', { name: /1 pari/ })).toBeVisible();
     await page.getByRole('button', { name: /piocher une carte/i }).click();

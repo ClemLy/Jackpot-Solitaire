@@ -18,7 +18,7 @@ function freshPseudo(prefix: string): string {
 }
 
 async function openAuth(page: Page, tab: 'Connexion' | 'Créer un compte') {
-  await page.locator('.profile-pill').click();
+  await page.locator('.profile-plate').click();
   await page.getByRole('tab', { name: tab }).click();
 }
 
@@ -29,7 +29,7 @@ async function signUp(page: Page, pseudo: string) {
   await page.getByLabel('Confirme le mot de passe').fill(PASSWORD);
   await page.getByRole('button', { name: 'Créer mon compte' }).click();
   await expect(page.locator('.auth')).toHaveCount(0);
-  await expect(page.locator('.profile-pill')).toContainText(pseudo);
+  await expect(page.locator('.profile-plate')).toContainText(pseudo);
 }
 
 async function newPlayer(browser: Browser, pseudo: string): Promise<Page> {
@@ -60,12 +60,12 @@ test('inscription: la progression d’invite est reprise puis suit le compte', a
 
   // Le compte survit au rechargement: la session est restauree.
   await page.reload();
-  await expect(page.locator('.profile-pill')).toContainText(pseudo);
+  await expect(page.locator('.profile-plate')).toContainText(pseudo);
 
   // Deconnexion: on retrouve la sauvegarde d'invite de l'appareil.
-  await page.locator('.profile-pill').click();
+  await page.locator('.profile-plate').click();
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
-  await expect(page.locator('.profile-pill')).toContainText('Se connecter');
+  await expect(page.locator('.profile-plate')).toContainText('Se connecter');
 
   // Reconnexion: l'etat vient du serveur.
   await openAuth(page, 'Connexion');
@@ -75,7 +75,7 @@ test('inscription: la progression d’invite est reprise puis suit le compte', a
     .getByRole('dialog')
     .getByRole('button', { name: 'Se connecter' })
     .click();
-  await expect(page.locator('.profile-pill')).toContainText(pseudo);
+  await expect(page.locator('.profile-plate')).toContainText(pseudo);
   await expect(page.locator('.topbar .balance')).toContainText('4 321');
 });
 

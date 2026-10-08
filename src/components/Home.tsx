@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import {
   BarChart3,
   BookOpen,
+  ChevronRight,
   Crown,
   GraduationCap,
   Settings,
@@ -27,7 +28,6 @@ import { dailySeed, todayISO } from '../utils/seed';
 import type { Card } from '../engine';
 import { CardView } from './CardView';
 import { Balance, Chip, RollingNumber } from './ui';
-import { Logo } from './Logo';
 import { ModeDeck, type ModeCardData } from './ModeDeck';
 
 type ModeCard = Omit<ModeCardData, 'meta'>;
@@ -216,34 +216,13 @@ export function Home() {
   return (
     <div className="home scroll">
       <header className="topbar">
-        <div className="topbar__brand">
-          <Logo size={32} />
-          <span className="topbar__name">Jackpot Solitaire</span>
-        </div>
+        <ProfilePlate
+          avatar={avatar}
+          frame={frame}
+          tierId={tier.id}
+          tierLabel={tier.label}
+        />
         <div className="topbar__right">
-          {accountsEnabled && (
-            <button
-              className="profile-pill"
-              data-state={account.status}
-              onClick={() =>
-                openModal(account.status === 'online' ? 'profile' : 'account')
-              }
-              aria-label={
-                account.status === 'online'
-                  ? `Mon profil (${account.pseudo})`
-                  : 'Se connecter'
-              }
-            >
-              <Portrait avatar={avatar} frame={frame} size={30} />
-              <span className="profile-pill__label">
-                {account.status === 'online'
-                  ? account.pseudo
-                  : account.status === 'loading'
-                    ? 'Connexion…'
-                    : 'Se connecter'}
-              </span>
-            </button>
-          )}
           <button
             className="missions-pill"
             onClick={() => openModal('missions')}
@@ -428,5 +407,74 @@ function WheelGlyph() {
       <circle cx="12" cy="12" r="2.2" fill="currentColor" />
       <path d="M12 3v6.8M12 14.2V21M3 12h6.8M14.2 12H21M5.6 5.6l4.8 4.8M13.6 13.6l4.8 4.8M18.4 5.6l-4.8 4.8M10.4 13.6l-4.8 4.8" />
     </svg>
+  );
+}
+
+/**
+ * Plaque de profil de l'accueil: portrait encadre, pseudo et rang. En invite
+ * (comptes actives), elle invite a se connecter.
+ */
+function ProfilePlate({
+  avatar,
+  frame,
+  tierId,
+  tierLabel,
+}: {
+  avatar: string;
+  frame: string;
+  tierId: string;
+  tierLabel: string;
+}) {
+  const account = useAccountStore();
+  const openModal = useGameStore((s) => s.openModal);
+  const online = account.status === 'online';
+  const guest = accountsEnabled && !online;
+
+  return (
+    <button
+      className="profile-plate"
+      data-state={guest ? 'guest' : 'online'}
+      onClick={() => openModal(guest ? 'account' : 'profile')}
+      aria-label={
+        online
+          ? `Mon profil: ${account.pseudo}, rang ${tierLabel}`
+          : guest
+            ? 'Se connecter ou créer un compte'
+            : `Mon profil, rang ${tierLabel}`
+      }
+    >
+      <span className="profile-plate__portrait">
+        <Portrait avatar={avatar} frame={frame} size="100%" />
+        {online && account.incoming > 0 && (
+          <span className="profile-plate__badge" aria-hidden="true">
+            {account.incoming}
+          </span>
+        )}
+      </span>
+      <span className="profile-plate__text">
+        <strong className="profile-plate__name">
+          {online ? account.pseudo : 'Invité'}
+        </strong>
+        {account.status === 'loading' ? (
+          <span className="profile-plate__sub">Connexion…</span>
+        ) : guest ? (
+          <span className="profile-plate__sub profile-plate__cta">
+            Se connecter
+          </span>
+        ) : (
+          <span
+            className="profile-plate__sub profile-plate__tier"
+            data-tier={tierId}
+          >
+            <Crown size={12} /> {tierLabel}
+          </span>
+        )}
+      </span>
+      <ChevronRight
+        className="profile-plate__chev"
+        size={16}
+        aria-hidden="true"
+      />
+    </button>
   );
 }
