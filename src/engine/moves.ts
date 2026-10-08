@@ -1,4 +1,5 @@
 import type { ApplyResult, Board, Card, Move, MoveOutcome } from './types';
+import { shuffle, type Rng } from './rng';
 import {
   canPlaceOnFoundation,
   canPlaceOnTableau,
@@ -80,9 +81,25 @@ function hasValidIndexes(board: Board, move: Move): boolean {
   }
 }
 
+export interface ApplyOptions {
+  /**
+   * Joker: la carte (ou la sequence) deplacee peut se poser sur n'importe
+   * quelle colonne, sans regle de couleur ni de valeur. Les fondations, elles,
+   * restent strictes.
+   */
+  wild?: boolean;
+}
+
 /** Applique un coup et renvoie le nouveau plateau, ou null si le coup est illegal. */
-export function applyMove(board: Board, move: Move): ApplyResult | null {
+export function applyMove(
+  board: Board,
+  move: Move,
+  options: ApplyOptions = {},
+): ApplyResult | null {
   if (!hasValidIndexes(board, move)) return null;
+  const fitsTableau = (card: Card, column: number) =>
+    options.wild === true ||
+    canPlaceOnTableau(card, top(board.tableau[column]));
   switch (move.type) {
     case 'draw': {
       if (board.stock.length === 0) {
@@ -102,15 +119,17 @@ export function applyMove(board: Board, move: Move): ApplyResult | null {
     }
 
     case 'recycle': {
-      if (board.stock.length > 0 || board.waste.length === 0) {
-        return null;
-      }
+      if (!canRecycle(board)) return null;
       const stock = board.waste
         .slice()
         .reverse()
         .map((card) => ({ ...card, faceUp: false }));
+      const patch: Partial<Board> =
+        board.recyclesLeft === undefined
+          ? { stock, waste: [] }
+          : { stock, waste: [], recyclesLeft: board.recyclesLeft - 1 };
       return {
-        board: withBoard(board, { stock, waste: [] }),
+        board: withBoard(board, patch),
         outcome: { ...noOutcome(), recycled: true },
       };
     }
@@ -137,9 +156,7 @@ export function applyMove(board: Board, move: Move): ApplyResult | null {
     case 'wasteToTableau': {
       const card = top(board.waste);
       if (!card) return null;
-      if (!canPlaceOnTableau(card, top(board.tableau[move.column]))) {
-        return null;
-      }
+      if (!fitsTableau(card, move.column)) return null;
       const waste = board.waste.slice(0, -1);
       const column = [...board.tableau[move.column], card];
       return {
@@ -174,9 +191,7 @@ export function applyMove(board: Board, move: Move): ApplyResult | null {
     case 'foundationToTableau': {
       const card = top(board.foundations[move.foundation]);
       if (!card) return null;
-      if (!canPlaceOnTableau(card, top(board.tableau[move.column]))) {
-        return null;
-      }
+      if (!fitsTableau(card, move.column)) return null;
       const pile = board.foundations[move.foundation].slice(0, -1);
       const column = [...board.tableau[move.column], card];
       return {
@@ -197,9 +212,7 @@ export function applyMove(board: Board, move: Move): ApplyResult | null {
       const run = movableRun(source, startIndex);
       if (!run) return null;
       if (move.from === move.to) return null;
-      if (!canPlaceOnTableau(run[0], top(board.tableau[move.to]))) {
-        return null;
-      }
+      if (!fitsTableau(run[0], move.to)) return null;
       const { column: fromColumn, revealed } = flipTopIfNeeded(
         source.slice(0, startIndex),
       );
@@ -417,8 +430,28 @@ export function nextAutoCompleteMove(board: Board): Move | null {
   const direct = anyFoundationMove(board);
   if (direct) return direct;
   if (board.stock.length > 0) return { type: 'draw' };
-  if (board.waste.length > 0) return { type: 'recycle' };
+  if (canRecycle(board)) return { type: 'recycle' };
   return null;
+}
+
+/** Vrai si la pioche est vide et peut etre rechargee avec le talon. */
+export function canRecycle(board: Board): boolean {
+  return (
+    board.stock.length === 0 &&
+    board.waste.length > 0 &&
+    (board.recyclesLeft === undefined || board.recyclesLeft > 0)
+  );
+}
+
+/**
+ * Remelange: pioche et talon sont reunis, battus et reposes face cachee.
+ * Renvoie null s'il n'y a pas au moins deux cartes a melanger.
+ */
+export function reshuffleStock(board: Board, rng: Rng): Board | null {
+  const cards = [...board.stock, ...board.waste];
+  if (cards.length < 2) return null;
+  const stock = shuffle(cards, rng).map((card) => ({ ...card, faceUp: false }));
+  return { ...board, stock, waste: [] };
 }
 
 /**
@@ -436,7 +469,7 @@ function isProgressResult(result: ApplyResult): boolean {
 }
 
 /** Cle compacte et unique d'un plateau, pour deduplication dans la recherche. */
-function boardKey(board: Board): string {
+export function boardKey(board: Board): string {
   const enc = (c: Card) => c.id + (c.faceUp ? 'u' : 'd');
   const stock = board.stock.map((c) => c.id).join(',');
   const waste = board.waste.map((c) => c.id).join(',');
@@ -444,7 +477,7 @@ function boardKey(board: Board): string {
     .map((p) => (p.length > 0 ? p[p.length - 1].id : '-'))
     .join(',');
   const tableau = board.tableau.map((col) => col.map(enc).join(',')).join('|');
-  return `${stock}#${waste}#${foundations}#${tableau}`;
+  return `${stock}#${waste}#${foundations}#${tableau}#${board.recyclesLeft ?? ''}`;
 }
 
 /**
@@ -457,7 +490,7 @@ function enumerateMoves(board: Board): Move[] {
 
   if (board.stock.length > 0) {
     moves.push({ type: 'draw' });
-  } else if (board.waste.length > 0) {
+  } else if (canRecycle(board)) {
     moves.push({ type: 'recycle' });
   }
 
@@ -583,7 +616,7 @@ function searchProgress(board: Board): ProgressSearch {
 /** Coup de repli quand le verdict est incertain: piocher, recycler, ou rien. */
 function fallbackMove(board: Board): Move | null {
   if (board.stock.length > 0) return { type: 'draw' };
-  if (board.waste.length > 0) return { type: 'recycle' };
+  if (canRecycle(board)) return { type: 'recycle' };
   return null;
 }
 

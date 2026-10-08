@@ -20,14 +20,40 @@ import { WheelModal } from './components/WheelModal';
 import { NewGameModal } from './components/NewGameModal';
 import { ConfirmLeaveModal } from './components/ConfirmLeaveModal';
 import { SuitSprite } from './components/Suits';
+import { MissionsModal } from './components/MissionsModal';
+import { JokerBanner } from './components/Jokers';
+import { SideBetsPanel } from './components/SideBets';
+import { Tutorial } from './components/Tutorial';
+import { Stage } from './components/Modal';
+import { Chip } from './components/ui';
+import { findDifficulty } from './state/catalog';
+import { prepareWinnableDeal } from './state/dealer';
 
 function GameScreen() {
   return (
     <div className="game">
       <Hud />
+      <JokerBanner />
       <Board />
+      <SideBetsPanel />
       <Dock />
     </div>
+  );
+}
+
+/** Attente pendant que le croupier cherche une donne prouvee gagnable. */
+function PreparingOverlay() {
+  return (
+    <Stage label="Préparation de la donne">
+      <span className="preparing__chip" aria-hidden="true">
+        <Chip size="100%" />
+      </span>
+      <p className="stage__eyebrow">Donne garantie</p>
+      <h2 className="stage__title">Le croupier vérifie la donne</h2>
+      <p className="stage__text">
+        Il ne sert que des parties dont il a prouvé qu&rsquo;elles se gagnent.
+      </p>
+    </Stage>
   );
 }
 
@@ -39,6 +65,9 @@ export default function App() {
   const dealId = useGameStore((s) => s.dealId);
   const closeModal = useGameStore((s) => s.closeModal);
   const newGame = useGameStore((s) => s.newGame);
+  const preparing = useGameStore((s) => s.preparing);
+  const guaranteed = useMetaStore((s) => s.settings.guaranteed);
+  const difficulty = useMetaStore((s) => s.settings.difficulty);
 
   const table = useMetaStore((s) => s.settings.table);
   const cardBack = useMetaStore((s) => s.settings.cardBack);
@@ -68,6 +97,13 @@ export default function App() {
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [potAtRisk]);
+
+  // Donnes garanties: la prochaine est preparee a l'avance, en arriere-plan.
+  useEffect(() => {
+    if (!guaranteed) return;
+    const { drawCount, gentle } = findDifficulty(difficulty);
+    prepareWinnableDeal({ drawCount, gentle });
+  }, [guaranteed, difficulty]);
 
   // Une graine passee dans l'URL lance directement la donne correspondante.
   useEffect(() => {
@@ -104,7 +140,10 @@ export default function App() {
       {modal === 'tables' && <TablesModal onClose={closeModal} />}
       {modal === 'wheel' && <WheelModal onClose={closeModal} />}
       {modal === 'newgame' && <NewGameModal onClose={closeModal} />}
+      {modal === 'missions' && <MissionsModal onClose={closeModal} />}
       {modal === 'confirmLeave' && <ConfirmLeaveModal />}
+      {preparing && <PreparingOverlay />}
+      {route === 'game' && <Tutorial />}
 
       <Toaster />
     </div>

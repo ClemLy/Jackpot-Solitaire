@@ -19,6 +19,7 @@ import {
   type ConsumableId,
 } from './catalog';
 import { ACHIEVEMENTS } from './achievements';
+import { MISSIONS } from './missions';
 
 export type StorageProblem = 'read' | 'corrupt' | 'write';
 
@@ -117,6 +118,8 @@ export interface PersistedMetaShape {
     title: string;
     difficulty: string;
     reducedMotion: boolean;
+    haptics: boolean;
+    guaranteed: boolean;
   };
   stats: {
     gamesPlayed: number;
@@ -139,6 +142,41 @@ export interface PersistedMetaShape {
   wallet: { balance: number; lifetimeEarned: number; spent: number };
   inventory: { owned: string[]; consumables: Record<ConsumableId, number> };
   wheel: { lastSpin: string | null };
+  progressive: { pot: number; wins: number };
+  missions: { daily: PeriodShape; weekly: PeriodShape };
+  perks: { lastGift: string | null };
+  tutorial: { done: boolean };
+}
+
+interface PeriodShape {
+  key: string;
+  progress: Record<string, number>;
+  claimed: string[];
+}
+
+const MISSION_IDS = new Set(MISSIONS.map((m) => m.id));
+const PERIOD_KEY = /^\d{4}-(\d{2}-\d{2}|S\d{2})$/;
+
+/** Periode de missions valide, sinon celle par defaut (repart de zero). */
+function period(value: unknown, fallback: PeriodShape): PeriodShape {
+  if (!isRecord(value) || typeof value.key !== 'string') return fallback;
+  if (!PERIOD_KEY.test(value.key)) return fallback;
+  const progress: Record<string, number> = {};
+  if (isRecord(value.progress)) {
+    for (const [id, n] of Object.entries(value.progress)) {
+      if (MISSION_IDS.has(id)) progress[id] = count(n, 0);
+    }
+  }
+  const claimed = Array.isArray(value.claimed)
+    ? [
+        ...new Set(
+          value.claimed.filter(
+            (x): x is string => typeof x === 'string' && MISSION_IDS.has(x),
+          ),
+        ),
+      ]
+    : [];
+  return { key: value.key, progress, claimed };
 }
 
 /**
@@ -171,6 +209,8 @@ export function sanitizePersistedMeta<T extends PersistedMetaShape>(
     title: pick(s.title, isValidTitle, cs.title),
     difficulty: pick(s.difficulty, isValidDifficulty, cs.difficulty),
     reducedMotion: bool(s.reducedMotion, cs.reducedMotion),
+    haptics: bool(s.haptics, cs.haptics),
+    guaranteed: bool(s.guaranteed, cs.guaranteed),
   };
 
   const st = isRecord(p.stats) ? p.stats : {};
@@ -269,6 +309,32 @@ export function sanitizePersistedMeta<T extends PersistedMetaShape>(
         : null,
   };
 
+  const pr = isRecord(p.progressive) ? p.progressive : {};
+  const progressive = {
+    pot: Math.max(
+      current.progressive.pot,
+      count(pr.pot, current.progressive.pot),
+    ),
+    wins: count(pr.wins, current.progressive.wins),
+  };
+
+  const ms = isRecord(p.missions) ? p.missions : {};
+  const missions = {
+    daily: period(ms.daily, current.missions.daily),
+    weekly: period(ms.weekly, current.missions.weekly),
+  };
+
+  const pk = isRecord(p.perks) ? p.perks : {};
+  const perks = {
+    lastGift:
+      typeof pk.lastGift === 'string' && PERIOD_KEY.test(pk.lastGift)
+        ? pk.lastGift
+        : null,
+  };
+
+  const tu = isRecord(p.tutorial) ? p.tutorial : {};
+  const tutorial = { done: bool(tu.done, current.tutorial.done) };
+
   return {
     ...current,
     settings,
@@ -279,5 +345,9 @@ export function sanitizePersistedMeta<T extends PersistedMetaShape>(
     wallet,
     inventory,
     wheel,
+    progressive,
+    missions,
+    perks,
+    tutorial,
   } as T;
 }

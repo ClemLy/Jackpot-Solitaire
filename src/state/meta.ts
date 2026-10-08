@@ -11,8 +11,11 @@ import {
   COLLECTIBLES,
   WELCOME_GIFT,
   WHEEL_SEGMENTS,
+  PROGRESSIVE_SEED,
   discountedPrice,
   drawWheelSegment,
+  missionBonusFor,
+  weeklyGiftFor,
   findConsumable,
   findCosmetic,
   findDifficulty,
@@ -31,11 +34,24 @@ import {
 } from './catalog';
 import { ACHIEVEMENTS, satisfiedAchievements } from './achievements';
 import {
+  activeMissions,
+  advance,
+  emptyPeriod,
+  findMission,
+  isClaimable,
+  missionReward,
+  periodKey,
+  type MissionEvent,
+  type MissionScope,
+  type PeriodProgress,
+} from './missions';
+import {
   createSafeStorage,
   sanitizePersistedMeta,
   type StorageProblem,
 } from './persistence';
 import { setSoundEnabled, setSoundVolume } from '../audio/sfx';
+import { setHapticsEnabled } from '../audio/haptics';
 import { todayISO } from '../utils/seed';
 import { formatNumber } from '../utils/format';
 
@@ -52,6 +68,30 @@ export interface Settings {
   /** Difficulte des nouvelles donnes (pioche, donne et gains). */
   difficulty: DifficultyId;
   reducedMotion: boolean;
+  /** Vibrations sur mobile, quand l'appareil le permet. */
+  haptics: boolean;
+  /** Ne servir que des donnes dont on a prouve qu'elles sont gagnables. */
+  guaranteed: boolean;
+}
+
+/** Cagnotte du jackpot progressif, partagee par toutes les tables. */
+export interface ProgressiveState {
+  pot: number;
+  wins: number;
+}
+
+export interface MissionsState {
+  daily: PeriodProgress;
+  weekly: PeriodProgress;
+}
+
+export interface PerksState {
+  /** Semaine (cle ISO) du dernier coffret de rang recupere. */
+  lastGift: string | null;
+}
+
+export interface TutorialState {
+  done: boolean;
 }
 
 export interface Stats {
@@ -135,6 +175,10 @@ interface MetaState {
   wallet: Wallet;
   inventory: Inventory;
   wheel: WheelState;
+  progressive: ProgressiveState;
+  missions: MissionsState;
+  perks: PerksState;
+  tutorial: TutorialState;
   notices: Notice[];
 
   updateSettings: (patch: Partial<Settings>) => void;
@@ -147,6 +191,8 @@ interface MetaState {
   // Banque et boutique.
   credit: (amount: number) => void;
   spend: (amount: number) => boolean;
+  /** Rend une somme depensee (pari retire): ni gain, ni effet sur le rang. */
+  refund: (amount: number) => void;
   isOwned: (id: string) => boolean;
   buyCosmetic: (id: string) => PurchaseResult;
   buyConsumable: (id: ConsumableId) => PurchaseResult;
@@ -154,9 +200,56 @@ interface MetaState {
   canSpinWheel: () => boolean;
   spinWheel: (roll?: number) => SpinResult | null;
 
+  // Jackpot progressif.
+  feedProgressive: (amount: number) => void;
+  winProgressive: () => number;
+
+  // Missions et avantages de rang.
+  recordMission: (event: MissionEvent) => void;
+  claimMission: (scope: MissionScope, id: string) => number;
+  canClaimWeeklyGift: () => boolean;
+  claimWeeklyGift: () => ConsumableId[];
+
+  completeTutorial: () => void;
+
   notify: (notice: Omit<Notice, 'id'>) => void;
   consumeNotice: () => void;
   resetProgress: () => void;
+}
+
+/**
+ * Recompenses en attente: missions terminees non recuperees et coffret de
+ * rang disponible. Sert aux pastilles de l'accueil.
+ */
+export function pendingRewards(state: {
+  missions: MissionsState;
+  perks: PerksState;
+  wallet: Wallet;
+}): number {
+  let count = 0;
+  for (const scope of ['daily', 'weekly'] as const) {
+    const period = currentPeriod(state.missions[scope], scope);
+    for (const def of activeMissions(scope, period.key)) {
+      if (isClaimable(period, def)) count++;
+    }
+  }
+  if (
+    weeklyGiftFor(state.wallet.lifetimeEarned).length > 0 &&
+    state.perks.lastGift !== periodKey('weekly')
+  ) {
+    count++;
+  }
+  return count;
+}
+
+/** Periode a jour: une periode echue repart de zero. */
+export function currentPeriod(
+  period: PeriodProgress | undefined,
+  scope: MissionScope,
+  date = new Date(),
+): PeriodProgress {
+  const key = periodKey(scope, date);
+  return period && period.key === key ? period : emptyPeriod(scope, date);
 }
 
 const initialSettings: Settings = {
@@ -169,7 +262,18 @@ const initialSettings: Settings = {
   title: DEFAULT_TITLE,
   difficulty: DEFAULT_DIFFICULTY,
   reducedMotion: false,
+  haptics: true,
+  guaranteed: false,
 };
+
+const initialProgressive: ProgressiveState = {
+  pot: PROGRESSIVE_SEED,
+  wins: 0,
+};
+
+function initialMissions(): MissionsState {
+  return { daily: emptyPeriod('daily'), weekly: emptyPeriod('weekly') };
+}
 
 const initialStats: Stats = {
   gamesPlayed: 0,
@@ -280,6 +384,10 @@ export const useMetaStore = create<MetaState>()(
         wallet: initialWallet,
         inventory: initialInventory,
         wheel: { lastSpin: null },
+        progressive: initialProgressive,
+        missions: initialMissions(),
+        perks: { lastGift: null },
+        tutorial: { done: false },
         notices: [],
 
         updateSettings: (patch) => {
@@ -300,6 +408,7 @@ export const useMetaStore = create<MetaState>()(
               next.difficulty = state.settings.difficulty;
             setSoundEnabled(next.soundEnabled);
             setSoundVolume(next.volume);
+            setHapticsEnabled(next.haptics);
             return { settings: next };
           });
         },
@@ -373,7 +482,10 @@ export const useMetaStore = create<MetaState>()(
               longestStreak: Math.max(prev.gambling.longestStreak, runStreak),
             },
           });
-          if (amount > 0) get().credit(amount);
+          if (amount > 0) {
+            get().credit(amount);
+            get().recordMission({ kind: 'secure', amount });
+          }
           return grant(
             satisfiedAchievements({
               won: false,
@@ -400,6 +512,7 @@ export const useMetaStore = create<MetaState>()(
               vaultsOpened: prev.gambling.vaultsOpened + 1,
             },
           });
+          get().recordMission({ kind: 'vault' });
           return grant(['treasure-hunter']);
         },
 
@@ -439,6 +552,18 @@ export const useMetaStore = create<MetaState>()(
             },
           });
           return true;
+        },
+
+        refund: (amount) => {
+          if (!(amount > 0)) return;
+          const prev = get().wallet;
+          set({
+            wallet: {
+              ...prev,
+              balance: prev.balance + amount,
+              spent: Math.max(0, prev.spent - amount),
+            },
+          });
         },
 
         isOwned: (id) => {
@@ -517,6 +642,7 @@ export const useMetaStore = create<MetaState>()(
               ? { kind: 'chips', amount: Math.round(base.amount * boost) }
               : base;
           set({ wheel: { lastSpin: todayISO() } });
+          get().recordMission({ kind: 'wheel' });
           if (reward.kind === 'chips') {
             get().credit(reward.amount);
           } else {
@@ -533,6 +659,100 @@ export const useMetaStore = create<MetaState>()(
           }
           return { index, reward, boost: reward.kind === 'chips' ? boost : 1 };
         },
+
+        feedProgressive: (amount) => {
+          if (!(amount > 0)) return;
+          set((s) => ({
+            progressive: {
+              ...s.progressive,
+              pot: s.progressive.pot + Math.round(amount),
+            },
+          }));
+        },
+
+        winProgressive: () => {
+          const amount = get().progressive.pot;
+          set((s) => ({
+            progressive: {
+              pot: PROGRESSIVE_SEED,
+              wins: s.progressive.wins + 1,
+            },
+          }));
+          get().credit(amount);
+          return amount;
+        },
+
+        recordMission: (event) => {
+          const before = get().missions;
+          const next: MissionsState = { ...before };
+          const done: string[] = [];
+          for (const scope of ['daily', 'weekly'] as const) {
+            const period = currentPeriod(before[scope], scope);
+            const after = advance(period, scope, event);
+            next[scope] = after;
+            for (const id of Object.keys(after.progress)) {
+              const def = findMission(id);
+              if (
+                def &&
+                isClaimable(after, def) &&
+                (period.progress[id] ?? 0) < def.target
+              ) {
+                done.push(def.label);
+              }
+            }
+          }
+          set({ missions: next });
+          for (const label of done) {
+            get().notify({
+              kind: 'reward',
+              title: 'Mission accomplie',
+              text: `${label}. Récupère ta récompense dans Missions.`,
+            });
+          }
+        },
+
+        claimMission: (scope, id) => {
+          const period = currentPeriod(get().missions[scope], scope);
+          const def = findMission(id);
+          if (!def || def.scope !== scope || !isClaimable(period, def))
+            return 0;
+          const amount = missionReward(
+            def,
+            missionBonusFor(get().wallet.lifetimeEarned),
+          );
+          set((s) => ({
+            missions: {
+              ...s.missions,
+              [scope]: { ...period, claimed: [...period.claimed, id] },
+            },
+          }));
+          get().credit(amount);
+          return amount;
+        },
+
+        canClaimWeeklyGift: () => {
+          const state = get();
+          return (
+            weeklyGiftFor(state.wallet.lifetimeEarned).length > 0 &&
+            state.perks.lastGift !== periodKey('weekly')
+          );
+        },
+
+        claimWeeklyGift: () => {
+          if (!get().canClaimWeeklyGift()) return [];
+          const gift = weeklyGiftFor(get().wallet.lifetimeEarned);
+          set((s) => {
+            const consumables = { ...s.inventory.consumables };
+            for (const id of gift) consumables[id] = (consumables[id] ?? 0) + 1;
+            return {
+              inventory: { ...s.inventory, consumables },
+              perks: { lastGift: periodKey('weekly') },
+            };
+          });
+          return gift;
+        },
+
+        completeTutorial: () => set({ tutorial: { done: true } }),
 
         notify: (notice) => {
           set((s) => ({
@@ -553,6 +773,9 @@ export const useMetaStore = create<MetaState>()(
             wallet: initialWallet,
             inventory: initialInventory,
             wheel: { lastSpin: null },
+            progressive: initialProgressive,
+            missions: initialMissions(),
+            perks: { lastGift: null },
             notices: [],
             settings: {
               ...get().settings,
@@ -579,6 +802,10 @@ export const useMetaStore = create<MetaState>()(
         wallet: state.wallet,
         inventory: state.inventory,
         wheel: state.wheel,
+        progressive: state.progressive,
+        missions: state.missions,
+        perks: state.perks,
+        tutorial: state.tutorial,
       }),
       migrate: (persisted, version) => migrateMeta(persisted, version),
       // Une sauvegarde modifiee a la main ou abimee ne doit jamais faire
@@ -588,6 +815,7 @@ export const useMetaStore = create<MetaState>()(
         if (state) {
           setSoundEnabled(state.settings.soundEnabled);
           setSoundVolume(state.settings.volume);
+          setHapticsEnabled(state.settings.haptics);
         }
       },
     },

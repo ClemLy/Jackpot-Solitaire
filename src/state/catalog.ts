@@ -407,7 +407,13 @@ export const COLLECTIBLES: readonly Cosmetic[] = COSMETICS.filter(
 // Bonus consommables, achetes en boutique et utilises en partie.
 // ---------------------------------------------------------------------------
 
-export type ConsumableId = 'insurance' | 'hint' | 'redeal';
+export type ConsumableId =
+  'insurance' | 'hint' | 'redeal' | 'peek' | 'reshuffle' | 'joker';
+
+/** Bonus utilisables en pleine partie, depuis le plateau des jokers. */
+export type JokerId = 'peek' | 'reshuffle' | 'joker';
+
+export const JOKER_IDS: readonly JokerId[] = ['peek', 'reshuffle', 'joker'];
 
 export interface Consumable {
   id: ConsumableId;
@@ -435,6 +441,24 @@ export const CONSUMABLES: readonly Consumable[] = [
     hint: 'Donne bloquée en Jackpot ? Redistribue une nouvelle manche sans perdre ton magot.',
     price: 2500,
   },
+  {
+    id: 'peek',
+    label: 'Coup d’œil',
+    hint: 'Joker: regarde une carte cachée du tableau pendant quelques secondes.',
+    price: 300,
+  },
+  {
+    id: 'reshuffle',
+    label: 'Remélange',
+    hint: 'Joker: rebat la pioche et le talon pour un nouvel ordre de tirage.',
+    price: 600,
+  },
+  {
+    id: 'joker',
+    label: 'Joker',
+    hint: 'Joker: la prochaine carte que tu fais glisser peut se poser sur n’importe quelle colonne.',
+    price: 900,
+  },
 ] as const;
 
 export function findConsumable(id: ConsumableId): Consumable {
@@ -445,6 +469,43 @@ export function findConsumable(id: ConsumableId): Consumable {
 
 /** Part du magot rendue par une assurance quand la manche est perdue. */
 export const INSURANCE_REFUND = 0.5;
+
+// ---------------------------------------------------------------------------
+// Avantages de rang: un coffret offert chaque semaine, et un bonus sur les
+// recompenses de missions. Chaque rang cumule les cadeaux des precedents.
+// ---------------------------------------------------------------------------
+
+export interface RankPerk {
+  tier: VipTierId;
+  /** Bonus ajoute au coffret hebdomadaire a partir de ce rang. */
+  gift?: ConsumableId;
+  /** Bonus sur les jetons des missions (0,25 = +25 %). */
+  missionBonus?: number;
+}
+
+export const RANK_PERKS: readonly RankPerk[] = [
+  { tier: 'silver', gift: 'hint' },
+  { tier: 'gold', gift: 'insurance' },
+  { tier: 'platinum', gift: 'joker', missionBonus: 0.25 },
+  { tier: 'diamond', gift: 'redeal', missionBonus: 0.5 },
+];
+
+/** Contenu du coffret hebdomadaire pour un cumul de jetons gagnes. */
+export function weeklyGiftFor(lifetimeEarned: number): ConsumableId[] {
+  return RANK_PERKS.filter(
+    (p) => p.gift && meetsTier(lifetimeEarned, p.tier),
+  ).map((p) => p.gift!);
+}
+
+/** Bonus applique aux recompenses de missions pour ce rang. */
+export function missionBonusFor(lifetimeEarned: number): number {
+  let bonus = 0;
+  for (const p of RANK_PERKS) {
+    if (p.missionBonus && meetsTier(lifetimeEarned, p.tier))
+      bonus = p.missionBonus;
+  }
+  return bonus;
+}
 
 // ---------------------------------------------------------------------------
 // Rangs VIP: calcules sur le total de jetons gagnes depuis le debut. Chaque
@@ -682,6 +743,103 @@ export function isValidDifficulty(id: unknown): id is DifficultyId {
 
 /** Prime pour la premiere victoire du defi du jour. */
 export const DAILY_BONUS = 500;
+
+// ---------------------------------------------------------------------------
+// Mode Vegas: on paie la donne, chaque carte rangee rapporte des jetons.
+// ---------------------------------------------------------------------------
+
+/** Prix d'une donne a Vegas: un jeton par carte, comme a l'epoque. */
+export const VEGAS_STAKE = 52;
+
+/** Jetons rapportes par carte posee sur une fondation, selon la difficulte. */
+export function vegasCardValue(difficulty: DifficultyId): number {
+  return Math.round(5 * findDifficulty(difficulty).payout);
+}
+
+/** Rechargements de pioche permis: un seul passage en pioche 1, trois en pioche 3. */
+export function vegasRecycles(drawCount: 1 | 3): number {
+  return drawCount === 1 ? 0 : 2;
+}
+
+// ---------------------------------------------------------------------------
+// Mode Chrono: cinq minutes, et chaque seconde restante rapporte.
+// ---------------------------------------------------------------------------
+
+export const CHRONO_LIMIT_MS = 5 * 60 * 1000;
+
+/** Points par seconde restante a la victoire. */
+export const CHRONO_POINTS_PER_SECOND = 6;
+
+// ---------------------------------------------------------------------------
+// Donne garantie gagnable: plus facile, donc un peu moins payee.
+// ---------------------------------------------------------------------------
+
+export const GUARANTEED_PAYOUT = 0.75;
+
+// ---------------------------------------------------------------------------
+// Paris annexes du Jackpot: poses avant le premier coup de la manche,
+// payes a la victoire si la condition est tenue.
+// ---------------------------------------------------------------------------
+
+export type SideBetId = 'no-hint' | 'no-undo' | 'fast';
+
+export interface SideBet {
+  id: SideBetId;
+  label: string;
+  /** Cote: un pari gagne rapporte mise x (cote + 1). */
+  odds: number;
+  rule: string;
+}
+
+export const SIDE_BETS: readonly SideBet[] = [
+  {
+    id: 'no-hint',
+    label: 'Sans indice',
+    odds: 1,
+    rule: 'Gagner la manche sans demander le moindre indice.',
+  },
+  {
+    id: 'no-undo',
+    label: 'Sans annuler',
+    odds: 2,
+    rule: 'Gagner la manche sans jamais annuler un coup.',
+  },
+  {
+    id: 'fast',
+    label: 'Moins de 3 min',
+    odds: 3,
+    rule: 'Gagner la manche en moins de trois minutes.',
+  },
+];
+
+export const FAST_BET_MS = 3 * 60 * 1000;
+
+export function findSideBet(id: SideBetId): SideBet {
+  return SIDE_BETS.find((b) => b.id === id) ?? SIDE_BETS[0];
+}
+
+/** Mise d'un pari annexe: 10 % de la mise de la table, 50 jetons au minimum. */
+export function sideBetStake(table: StakeTableId): number {
+  return Math.max(50, Math.round(findStakeTable(table).stake * 0.1));
+}
+
+// ---------------------------------------------------------------------------
+// Jackpot progressif: une cagnotte qui grossit a chaque manche jouee et
+// revient a qui reussit l'exploit.
+// ---------------------------------------------------------------------------
+
+export const PROGRESSIVE_SEED = 5000;
+
+/** Part ajoutee a la cagnotte a chaque manche Jackpot distribuee. */
+export function progressiveContribution(table: StakeTableId): number {
+  return 25 + Math.round(findStakeTable(table).stake * 0.05);
+}
+
+/** Part des paris annexes perdus qui rejoint la cagnotte. */
+export const PROGRESSIVE_BET_SHARE = 0.25;
+
+export const PROGRESSIVE_RULE =
+  'Gagne une manche Jackpot en Expert, à une table avec mise, sans annuler, sans indice ni joker, et sur une donne non garantie.';
 
 export type WheelReward =
   { kind: 'chips'; amount: number } | { kind: 'item'; item: ConsumableId };

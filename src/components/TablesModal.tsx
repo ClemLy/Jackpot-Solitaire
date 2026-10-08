@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import { useGameStore } from '../state/game';
 import { useMetaStore } from '../state/meta';
 import {
+  PROGRESSIVE_RULE,
   STAKE_TABLES,
   VIP_TIERS,
   meetsTier,
@@ -11,7 +12,7 @@ import {
 } from '../state/catalog';
 import { playSound } from '../audio/sfx';
 import { formatMultiplier, formatNumber } from '../utils/format';
-import { Balance, Chip, DifficultyPicker } from './ui';
+import { Balance, Chip, DifficultyPicker, RollingNumber } from './ui';
 
 const STACK_TONES = [
   ['black'],
@@ -28,6 +29,7 @@ export function TablesModal({ onClose }: { onClose: () => void }) {
   const current = useGameStore((s) => s.stakeTable);
   const balance = useMetaStore((s) => s.wallet.balance);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
+  const progressive = useMetaStore((s) => s.progressive.pot);
   const defaultDifficulty = useMetaStore((s) => s.settings.difficulty);
   const [difficulty, setDifficulty] = useState<DifficultyId>(defaultDifficulty);
 
@@ -42,6 +44,13 @@ export function TablesModal({ onClose }: { onClose: () => void }) {
         Ta mise quitte la banque et entre dans le magot. Encaisse pour la
         récupérer avec tes gains, perds la série et elle s&rsquo;envole.
       </p>
+      <div className="progressive-banner">
+        <span className="progressive-banner__label">Jackpot progressif</span>
+        <span className="progressive-banner__value">
+          <Chip size={20} /> <RollingNumber value={progressive} />
+        </span>
+        <span className="progressive-banner__rule">{PROGRESSIVE_RULE}</span>
+      </div>
       <div className="stake-grid">
         {STAKE_TABLES.map((t, i) => {
           const locked = !meetsTier(lifetime, t.minTier);

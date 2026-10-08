@@ -17,6 +17,7 @@ import './styles/global.css';
 import './styles/cards.css';
 import './styles/board.css';
 import './styles/ui.css';
+import './styles/features.css';
 
 console.info(`Jackpot Solitaire: ${BUILD_TAG}`);
 

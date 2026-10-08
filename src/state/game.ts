@@ -2,38 +2,58 @@ import { create } from 'zustand';
 import {
   applyMove,
   canAutoComplete,
+  canRecycle,
+  createRng,
   deal,
   endGameBonuses,
   findHint,
   isDeadlock,
   isWon,
   nextAutoCompleteMove,
+  reshuffleStock,
   scoreForOutcome,
   autoMoveFromTableau,
   autoMoveFromWaste,
   SCORE,
+  type ApplyOptions,
   type Board,
+  type DealConfig,
   type EndBonuses,
   type Move,
 } from '../engine';
 import { comboMultiplier, drawVaultOutcome, vaultUnlocked } from './gambling';
 import { useMetaStore } from './meta';
 import {
+  CHRONO_LIMIT_MS,
+  CHRONO_POINTS_PER_SECOND,
   DAILY_BONUS,
   DEFAULT_DIFFICULTY,
+  FAST_BET_MS,
+  GUARANTEED_PAYOUT,
   INSURANCE_REFUND,
+  PROGRESSIVE_BET_SHARE,
+  VEGAS_STAKE,
   findDifficulty,
+  findSideBet,
   findStakeTable,
   meetsTier,
+  progressiveContribution,
+  sideBetStake,
   tipForWin,
+  vegasCardValue,
+  vegasRecycles,
   type DifficultyId,
+  type JokerId,
+  type SideBetId,
   type StakeTableId,
 } from './catalog';
+import { prepareWinnableDeal, takeWinnableDeal } from './dealer';
 import { playSound } from '../audio/sfx';
 import { dailySeed, randomSeed, sanitizeSeed, todayISO } from '../utils/seed';
 import { formatNumber } from '../utils/format';
 
-export type GameMode = 'classic' | 'gambling' | 'zen' | 'chrono' | 'daily';
+export type GameMode =
+  'classic' | 'gambling' | 'zen' | 'chrono' | 'daily' | 'vegas';
 
 export const MODE_LABEL: Record<GameMode, string> = {
   classic: 'Classique',
@@ -41,6 +61,7 @@ export const MODE_LABEL: Record<GameMode, string> = {
   daily: 'Défi du jour',
   chrono: 'Chrono',
   zen: 'Zen',
+  vegas: 'Vegas',
 };
 export type Route = 'home' | 'game';
 export type Modal =
@@ -52,6 +73,7 @@ export type Modal =
   | 'shop'
   | 'tables'
   | 'wheel'
+  | 'missions'
   | 'confirmLeave';
 export type Overlay = 'none' | 'win' | 'vault' | 'lost';
 
@@ -59,6 +81,24 @@ interface Snapshot {
   board: Board;
   score: number;
   moves: number;
+}
+
+/** Resultat d'un pari annexe, a la fin de la manche. */
+export interface BetResult {
+  id: SideBetId;
+  stake: number;
+  won: boolean;
+  /** Jetons rendus a la banque (mise comprise), 0 si perdu. */
+  payout: number;
+}
+
+/** Bilan d'une partie de Vegas. */
+export interface VegasSummary {
+  stake: number;
+  cards: number;
+  cardValue: number;
+  earned: number;
+  net: number;
 }
 
 export interface WinSummary {
@@ -71,6 +111,8 @@ export interface WinSummary {
   tableMultiplier: number;
   /** Multiplicateur du niveau de difficulte. */
   difficultyMultiplier: number;
+  /** Multiplicateur de la donne garantie (1 si donne au hasard). */
+  guaranteedMultiplier: number;
   gain: number;
   potBefore: number;
   potAfter: number;
@@ -79,15 +121,23 @@ export interface WinSummary {
   tip: number;
   dailyBonus: number;
   moves: number;
+  bets: BetResult[];
+  /** Jackpot progressif remporte sur cette manche (0 sinon). */
+  progressive: number;
+  vegas: VegasSummary | null;
 }
 
 export interface LostSummary {
+  reason: 'deadlock' | 'time';
   finalScore: number;
   timeMs: number;
   wasGambling: boolean;
   potLost: number;
   /** Jetons rendus par l'assurance si la perte est confirmee. */
   refund: number;
+  /** Mises des paris annexes perdues avec la manche. */
+  betsLost: number;
+  vegas: VegasSummary | null;
 }
 
 export interface NewGameOptions {
@@ -96,6 +146,8 @@ export interface NewGameOptions {
   seed?: string;
   table?: StakeTableId;
 }
+
+export type Phase = 'idle' | 'playing' | 'won' | 'lost';
 
 interface GameStore {
   route: Route;
@@ -106,15 +158,22 @@ interface GameStore {
   difficulty: DifficultyId;
   drawCount: 1 | 3;
   seed: string;
+  /** Donne prouvee gagnable (option des reglages). */
+  guaranteed: boolean;
+  /** Vrai pendant que le croupier cherche une donne gagnable. */
+  preparing: boolean;
+  /** Partie guidee du tutoriel. */
+  tutorial: boolean;
 
   board: Board;
-  phase: 'idle' | 'playing' | 'won' | 'lost';
+  phase: Phase;
   score: number;
   moves: number;
   invalidMoves: number;
   undoCount: number;
   hintCount: number;
   usedHint: boolean;
+  usedJoker: boolean;
   startedAt: number | null;
   finalTimeMs: number;
   history: Snapshot[];
@@ -125,6 +184,19 @@ interface GameStore {
   combo: number;
   stakeTable: StakeTableId;
   insured: boolean;
+  /** Paris annexes poses sur la manche en cours. */
+  sideBets: SideBetId[];
+  sideBetStake: number;
+  /** Mise payee pour la donne de Vegas en cours (0 une fois soldee). */
+  vegasStake: number;
+
+  /** Joker arme: le prochain glisser peut aller sur n'importe quelle colonne. */
+  jokerArmed: boolean;
+  /** Coup d'oeil en attente: le joueur doit toucher une carte cachee. */
+  peekMode: boolean;
+  /** Carte cachee actuellement devoilee par un coup d'oeil. */
+  peekCard: string | null;
+
   /** Incremente a chaque distribution: declenche l'animation de donne. */
   dealId: number;
   /** Vrai si le dernier indice a ete offert par un Oeil du croupier. */
@@ -153,6 +225,8 @@ interface GameStore {
   // Cycle de vie de la partie.
   newGame: (options?: NewGameOptions) => void;
   restartSameSeed: () => void;
+  startTutorial: () => void;
+  endTutorial: () => void;
 
   // Demande une action qui quitterait ou relancerait la partie: si un magot
   // est en jeu en mode Jackpot, on demande confirmation avant de l'executer,
@@ -172,8 +246,15 @@ interface GameStore {
   clearHint: () => void;
   startAutoComplete: () => void;
 
-  // Gambling.
+  // Jokers.
+  playJoker: (id: JokerId) => boolean;
+  cancelJoker: () => void;
+  peekAt: (cardId: string) => boolean;
+
+  // Jackpot.
+  toggleSideBet: (id: SideBetId) => boolean;
   cashOut: () => void;
+  cashOutHalf: (insure?: boolean) => void;
   doubleOrNothing: (insure?: boolean) => void;
   secondChance: () => void;
   gambleFromScore: () => void;
@@ -185,12 +266,48 @@ interface GameStore {
 
 let autoTimer: ReturnType<typeof setTimeout> | null = null;
 let shakeTimer: ReturnType<typeof setTimeout> | null = null;
+let chronoTimer: ReturnType<typeof setTimeout> | null = null;
+let peekTimer: ReturnType<typeof setTimeout> | null = null;
+/** Jeton de la derniere demande de donne garantie: ignore les reponses perimees. */
+let prepToken = 0;
+
+/** Duree pendant laquelle un coup d'oeil montre la carte. */
+export const PEEK_MS = 2600;
+
+/** Graine de la partie guidee: une donne douce ou les premiers coups sont evidents. */
+export const TUTORIAL_SEED = 'tutoriel-croupier';
 
 function stopAutoTimer(): void {
   if (autoTimer) {
     clearTimeout(autoTimer);
     autoTimer = null;
   }
+}
+
+function stopChrono(): void {
+  if (chronoTimer) {
+    clearTimeout(chronoTimer);
+    chronoTimer = null;
+  }
+}
+
+function stopTimers(): void {
+  stopAutoTimer();
+  stopChrono();
+  if (peekTimer) {
+    clearTimeout(peekTimer);
+    peekTimer = null;
+  }
+}
+
+/** Le mode compte-t-il des points (et donc des penalites) ? */
+export function isScoring(mode: GameMode): boolean {
+  return mode !== 'zen' && mode !== 'vegas';
+}
+
+/** Annuler est interdit a Vegas: on pourrait sinon espionner la pioche. */
+export function canUndoIn(mode: GameMode): boolean {
+  return mode !== 'vegas';
 }
 
 function isRiskingPot(state: GameStore): boolean {
@@ -215,6 +332,53 @@ function insuranceRefund(state: GameStore): number {
   return state.insured ? Math.round(state.pot * INSURANCE_REFUND) : 0;
 }
 
+/** Les paris annexes ne se posent qu'avant le premier coup de la manche. */
+export function betsOpen(state: {
+  mode: GameMode;
+  phase: Phase;
+  moves: number;
+  preparing: boolean;
+}): boolean {
+  return (
+    state.mode === 'gambling' &&
+    state.phase === 'playing' &&
+    state.moves === 0 &&
+    !state.preparing
+  );
+}
+
+/** Multiplicateur total des gains: difficulte et donne garantie. */
+function payoutOf(state: { difficulty: DifficultyId; guaranteed: boolean }) {
+  return (
+    findDifficulty(state.difficulty).payout *
+    (state.guaranteed ? GUARANTEED_PAYOUT : 1)
+  );
+}
+
+/** Valeur d'une carte rangee a Vegas pour la partie en cours. */
+export function vegasValueOf(state: {
+  difficulty: DifficultyId;
+  guaranteed: boolean;
+}): number {
+  const base = vegasCardValue(state.difficulty);
+  return state.guaranteed
+    ? Math.max(1, Math.round(base * GUARANTEED_PAYOUT))
+    : base;
+}
+
+export function foundationCount(board: Board): number {
+  return board.foundations.reduce((n, pile) => n + pile.length, 0);
+}
+
+function dealConfig(mode: GameMode, difficulty: DifficultyId): DealConfig {
+  const { drawCount, gentle } = findDifficulty(difficulty);
+  return {
+    drawCount,
+    gentle,
+    recycles: mode === 'vegas' ? vegasRecycles(drawCount) : undefined,
+  };
+}
+
 export function computeElapsed(state: {
   phase: string;
   startedAt: number | null;
@@ -223,6 +387,15 @@ export function computeElapsed(state: {
   if (state.phase === 'won' || state.phase === 'lost') return state.finalTimeMs;
   if (state.startedAt === null) return 0;
   return Date.now() - state.startedAt;
+}
+
+/** Temps restant en Chrono (le compte a rebours demarre au premier coup). */
+export function chronoRemaining(state: {
+  phase: string;
+  startedAt: number | null;
+  finalTimeMs: number;
+}): number {
+  return Math.max(0, CHRONO_LIMIT_MS - computeElapsed(state));
 }
 
 const firstBoard = deal(
@@ -256,6 +429,66 @@ export const useGameStore = create<GameStore>()((set, get) => {
     }
   }
 
+  /** Paie les cartes rangees d'une donne de Vegas, une seule fois. */
+  function settleVegas(): VegasSummary | null {
+    const state = get();
+    if (state.mode !== 'vegas' || state.vegasStake <= 0) return null;
+    const cards = foundationCount(state.board);
+    const cardValue = vegasValueOf(state);
+    const earned = cards * cardValue;
+    useMetaStore.getState().credit(earned);
+    set({ vegasStake: 0 });
+    return {
+      stake: state.vegasStake,
+      cards,
+      cardValue,
+      earned,
+      net: earned - state.vegasStake,
+    };
+  }
+
+  /** Les paris annexes d'une manche perdue: une part nourrit la cagnotte. */
+  function loseSideBets(): number {
+    const state = get();
+    const lost = state.sideBets.length * state.sideBetStake;
+    if (lost > 0) {
+      useMetaStore.getState().feedProgressive(lost * PROGRESSIVE_BET_SHARE);
+    }
+    set({ sideBets: [] });
+    return lost;
+  }
+
+  /**
+   * Quitter une manche encore en cours: Vegas paie les cartes deja rangees,
+   * les paris annexes sont perdus et les missions comptent les cartes posees.
+   */
+  function closeRound(): void {
+    const state = get();
+    if (state.phase !== 'playing') return;
+    const vegas = settleVegas();
+    if (vegas && vegas.earned > 0) {
+      useMetaStore.getState().notify({
+        kind: 'reward',
+        title: 'Vegas: cartes payées',
+        text: `${vegas.cards} cartes rangées, ${formatNumber(vegas.earned)} jetons pour ta banque.`,
+      });
+    }
+    loseSideBets();
+    if (state.moves > 0) {
+      useMetaStore.getState().recordMission({
+        kind: 'game',
+        won: false,
+        mode: state.mode,
+        difficulty: state.difficulty,
+        timeMs: computeElapsed(state),
+        undoCount: state.undoCount,
+        usedHint: state.usedHint,
+        foundationCards: foundationCount(state.board),
+        vegasNet: vegas?.net,
+      });
+    }
+  }
+
   /** Distribue une nouvelle donne et remet a zero l'etat vivant de la partie. */
   function dealRound(
     mode: GameMode,
@@ -264,9 +497,12 @@ export const useGameStore = create<GameStore>()((set, get) => {
     keepPot: boolean,
     extra: Partial<GameStore> = {},
   ): void {
-    stopAutoTimer();
-    const { drawCount, gentle } = findDifficulty(difficulty);
-    const board = deal(seed, drawCount, { gentle });
+    stopTimers();
+    const config = dealConfig(mode, difficulty);
+    const board = deal(seed, config.drawCount, {
+      gentle: config.gentle,
+      recycles: config.recycles,
+    });
     useMetaStore.getState().recordDeal();
     playSound('shuffle');
     set((state) => ({
@@ -275,8 +511,11 @@ export const useGameStore = create<GameStore>()((set, get) => {
       modal: 'none',
       mode,
       difficulty,
-      drawCount,
+      drawCount: config.drawCount,
       seed,
+      guaranteed: false,
+      preparing: false,
+      tutorial: false,
       board,
       phase: 'playing',
       score: 0,
@@ -285,6 +524,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       undoCount: 0,
       hintCount: 0,
       usedHint: false,
+      usedJoker: false,
       startedAt: null,
       finalTimeMs: 0,
       history: [],
@@ -293,6 +533,12 @@ export const useGameStore = create<GameStore>()((set, get) => {
       pot: keepPot ? state.pot : 0,
       combo: keepPot ? state.combo : 0,
       insured: keepPot ? state.insured : false,
+      sideBets: [],
+      sideBetStake: sideBetStake(extra.stakeTable ?? state.stakeTable),
+      vegasStake: 0,
+      jokerArmed: false,
+      peekMode: false,
+      peekCard: null,
       dealId: state.dealId + 1,
       freeHint: false,
       win: null,
@@ -303,21 +549,74 @@ export const useGameStore = create<GameStore>()((set, get) => {
       shake: null,
       ...extra,
     }));
+    if (mode === 'gambling') {
+      useMetaStore
+        .getState()
+        .feedProgressive(progressiveContribution(get().stakeTable));
+    }
+    if (get().guaranteed) prepareWinnableDeal(config);
+  }
+
+  /**
+   * Point d'entree de toute nouvelle donne. Avec l'option "donne garantie",
+   * une graine tiree au hasard est remplacee par une donne prouvee gagnable,
+   * cherchee en arriere-plan pendant que le croupier "prepare" la table.
+   * Une graine imposee (defi du jour, lien partage, saisie) est respectee.
+   */
+  function startRound(
+    mode: GameMode,
+    difficulty: DifficultyId,
+    seed: string | null,
+    keepPot: boolean,
+    extra: Partial<GameStore> = {},
+    beforeDeal?: () => boolean,
+  ): void {
+    const wantsGuarantee =
+      seed === null &&
+      mode !== 'daily' &&
+      useMetaStore.getState().settings.guaranteed;
+    if (!wantsGuarantee) {
+      if (beforeDeal && !beforeDeal()) return;
+      dealRound(mode, difficulty, seed ?? randomSeed(), keepPot, extra);
+      return;
+    }
+    const token = ++prepToken;
+    set({ preparing: true, route: 'game', overlay: 'none', modal: 'none' });
+    void takeWinnableDeal(dealConfig(mode, difficulty)).then((found) => {
+      if (token !== prepToken) return;
+      set({ preparing: false });
+      if (beforeDeal && !beforeDeal()) {
+        set({ route: 'home', phase: 'idle' });
+        return;
+      }
+      dealRound(mode, difficulty, found ?? randomSeed(), keepPot, {
+        ...extra,
+        guaranteed: found !== null,
+      });
+    });
   }
 
   /** Fin de partie gagnee: bonus, score final, stats, et logique gambling. */
   function handleWin(): void {
-    stopAutoTimer();
+    stopTimers();
     const state = get();
-    const scoring = state.mode !== 'zen';
+    const scoring = isScoring(state.mode);
     const timeMs = computeElapsed(state);
-    const bonuses = scoring
-      ? endGameBonuses({
-          elapsedSeconds: timeMs / 1000,
-          invalidMoves: state.invalidMoves,
-          undoCount: state.undoCount,
-        })
-      : { speed: 0, precision: 0, total: 0 };
+    let bonuses: EndBonuses = { speed: 0, precision: 0, total: 0 };
+    if (scoring) {
+      bonuses = endGameBonuses({
+        elapsedSeconds: timeMs / 1000,
+        invalidMoves: state.invalidMoves,
+        undoCount: state.undoCount,
+      });
+      if (state.mode === 'chrono') {
+        // Au Chrono, le bonus de vitesse est remplace par les secondes
+        // restantes au compte a rebours.
+        const speed =
+          Math.floor(chronoRemaining(state) / 1000) * CHRONO_POINTS_PER_SECOND;
+        bonuses = { ...bonuses, speed, total: speed + bonuses.precision };
+      }
+    }
     const baseScore = state.score;
     const roundScore = baseScore + bonuses.total;
     const meta = useMetaStore.getState();
@@ -344,14 +643,14 @@ export const useGameStore = create<GameStore>()((set, get) => {
     const table = findStakeTable(state.stakeTable);
     const tableMultiplier = state.mode === 'gambling' ? table.multiplier : 1;
     const difficultyMultiplier = findDifficulty(state.difficulty).payout;
+    const guaranteedMultiplier = state.guaranteed ? GUARANTEED_PAYOUT : 1;
+    const payout = payoutOf(state);
     let gain = roundScore;
     const potBefore = pot;
 
     if (state.mode === 'gambling') {
       multiplier = comboMultiplier(combo);
-      gain = Math.round(
-        roundScore * multiplier * tableMultiplier * difficultyMultiplier,
-      );
+      gain = Math.round(roundScore * multiplier * tableMultiplier * payout);
       // Le magot lui-meme ne descend jamais sous zero: un score negatif
       // rogne la mise mais ne rend jamais la banque debitrice.
       pot = Math.max(0, pot + gain);
@@ -359,23 +658,70 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (table.id === 'diamond') meta.unlock('high-stakes');
     }
 
-    // Hors Jackpot, une victoire verse un pourboire direct a la banque.
-    const tip = tipForWin(state.mode, roundScore, difficultyMultiplier);
+    // Paris annexes: payes directement a la banque si la condition tient.
+    const bets: BetResult[] = state.sideBets.map((id) => {
+      const ok =
+        id === 'no-hint'
+          ? !state.usedHint
+          : id === 'no-undo'
+            ? state.undoCount === 0
+            : timeMs < FAST_BET_MS;
+      const won = ok ? state.sideBetStake * (findSideBet(id).odds + 1) : 0;
+      return { id, stake: state.sideBetStake, won: ok, payout: won };
+    });
+    const betPayout = bets.reduce((n, b) => n + b.payout, 0);
+    const betsLost = bets.filter((b) => !b.won).length * state.sideBetStake;
+    if (betPayout > 0) meta.credit(betPayout);
+    if (betsLost > 0) meta.feedProgressive(betsLost * PROGRESSIVE_BET_SHARE);
+
+    // Jackpot progressif: l'exploit, sans la moindre aide.
+    const progressiveWon =
+      state.mode === 'gambling' &&
+      state.difficulty === 'expert' &&
+      table.stake > 0 &&
+      !state.guaranteed &&
+      state.undoCount === 0 &&
+      !state.usedHint &&
+      !state.usedJoker;
+    const progressive = progressiveWon ? meta.winProgressive() : 0;
+
+    // Hors Jackpot et Vegas, une victoire verse un pourboire a la banque.
+    const tip =
+      state.mode === 'vegas' ? 0 : tipForWin(state.mode, roundScore, payout);
     const dailyBonus = firstDailyWin ? DAILY_BONUS : 0;
     meta.credit(tip + dailyBonus);
 
+    const vegas = settleVegas();
     const vaultEligible = state.mode === 'gambling' && vaultUnlocked(combo);
 
-    playSound('win');
+    meta.recordMission({
+      kind: 'game',
+      won: true,
+      mode: state.mode,
+      difficulty: state.difficulty,
+      timeMs,
+      undoCount: state.undoCount,
+      usedHint: state.usedHint,
+      foundationCards: 52,
+      vegasNet: vegas?.net,
+    });
+    if (state.mode === 'gambling') {
+      meta.recordMission({ kind: 'streak', length: combo });
+    }
+
+    playSound(progressive > 0 ? 'jackpot' : 'win');
     set({
       phase: 'won',
       finalTimeMs: timeMs,
       score: roundScore,
       pot,
       combo,
+      sideBets: [],
       overlay: 'win',
       autoAvailable: false,
       autoCompleting: false,
+      jokerArmed: false,
+      peekMode: false,
       hint: null,
       win: {
         roundScore,
@@ -384,6 +730,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         multiplier,
         tableMultiplier,
         difficultyMultiplier,
+        guaranteedMultiplier,
         gain,
         potBefore,
         potAfter: pot,
@@ -391,17 +738,24 @@ export const useGameStore = create<GameStore>()((set, get) => {
         tip,
         dailyBonus,
         moves: state.moves,
+        bets,
+        progressive,
+        vegas,
       },
     });
   }
 
-  /** Partie mathematiquement bloquee: plus aucun coup ne peut jamais aider. */
-  function handleLost(): void {
-    stopAutoTimer();
+  /**
+   * Partie perdue: donne mathematiquement bloquee, ou temps ecoule au
+   * Chrono.
+   */
+  function handleLost(reason: LostSummary['reason'] = 'deadlock'): void {
+    stopTimers();
     const state = get();
-    const timeMs = computeElapsed(state);
+    const timeMs = reason === 'time' ? CHRONO_LIMIT_MS : computeElapsed(state);
+    const meta = useMetaStore.getState();
 
-    useMetaStore.getState().resolveGame({
+    meta.resolveGame({
       won: false,
       timeMs,
       moves: state.moves,
@@ -412,6 +766,20 @@ export const useGameStore = create<GameStore>()((set, get) => {
       usedHint: state.usedHint,
       isDaily: state.mode === 'daily',
       dailyDate: state.mode === 'daily' ? todayISO() : undefined,
+    });
+
+    const vegas = settleVegas();
+    const betsLost = loseSideBets();
+    meta.recordMission({
+      kind: 'game',
+      won: false,
+      mode: state.mode,
+      difficulty: state.difficulty,
+      timeMs,
+      undoCount: state.undoCount,
+      usedHint: state.usedHint,
+      foundationCards: foundationCount(state.board),
+      vegasNet: vegas?.net,
     });
 
     // Le magot reste en suspens tant que le joueur n'a pas choisi: une
@@ -427,25 +795,43 @@ export const useGameStore = create<GameStore>()((set, get) => {
       overlay: 'lost',
       autoAvailable: false,
       autoCompleting: false,
+      jokerArmed: false,
+      peekMode: false,
       hint: null,
       lost: {
+        reason,
         finalScore: state.score,
         timeMs,
         wasGambling,
         potLost,
         refund: wasGambling ? insuranceRefund(state) : 0,
+        betsLost,
+        vegas,
       },
     });
   }
 
-  /** Applique un coup valide, met a jour score, sons et signaux. */
-  function commitMove(move: Move): boolean {
+  /** Lance le compte a rebours du Chrono, des le premier coup. */
+  function armChrono(): void {
     const state = get();
-    if (state.phase !== 'playing') return false;
-    const result = applyMove(state.board, move);
+    if (state.mode !== 'chrono' || state.startedAt === null || chronoTimer)
+      return;
+    const dealId = state.dealId;
+    chronoTimer = setTimeout(() => {
+      chronoTimer = null;
+      const now = get();
+      if (now.dealId === dealId && now.phase === 'playing') handleLost('time');
+    }, chronoRemaining(state));
+  }
+
+  /** Applique un coup valide, met a jour score, sons et signaux. */
+  function commitMove(move: Move, options: ApplyOptions = {}): boolean {
+    const state = get();
+    if (state.phase !== 'playing' || state.preparing) return false;
+    const result = applyMove(state.board, move, options);
     if (!result) return false;
 
-    const scoring = state.mode !== 'zen';
+    const scoring = isScoring(state.mode);
     const delta = scoring
       ? scoreForOutcome(result.outcome, state.drawCount)
       : 0;
@@ -476,6 +862,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       // l'arrete au lieu de piocher en boucle.
       autoCompleting: state.autoCompleting && autoAvailable,
     });
+    armChrono();
 
     if (isWon(result.board)) {
       handleWin();
@@ -510,12 +897,11 @@ export const useGameStore = create<GameStore>()((set, get) => {
         return;
       }
       const move = nextAutoCompleteMove(state.board);
-      if (!move) {
+      if (!move || !commitMove(move)) {
         set({ autoCompleting: false });
         stopAutoTimer();
         return;
       }
-      commitMove(move);
       if (get().phase === 'playing' && get().autoCompleting) {
         scheduleAutoStep();
       }
@@ -523,6 +909,42 @@ export const useGameStore = create<GameStore>()((set, get) => {
       // plusieurs cartes sont en vol en meme temps, ce qui donne une jolie
       // cascade de rangement.
     }, 130);
+  }
+
+  /** Un coup a ete tente par glisser: normal d'abord, joker ensuite. */
+  function tryDragMove(move: Move): boolean {
+    if (commitMove(move)) return true;
+    const state = get();
+    const toTableau =
+      move.type === 'wasteToTableau' ||
+      move.type === 'tableauToTableau' ||
+      move.type === 'foundationToTableau';
+    if (!state.jokerArmed || !toTableau) return false;
+    if ((useMetaStore.getState().inventory.consumables.joker ?? 0) <= 0) {
+      set({ jokerArmed: false });
+      return false;
+    }
+    if (!commitMove(move, { wild: true })) return false;
+    useMetaStore.getState().useConsumable('joker');
+    playSound('stamp');
+    if (get().phase === 'playing') set({ jokerArmed: false, usedJoker: true });
+    else set({ usedJoker: true });
+    return true;
+  }
+
+  /** Mise de la donne de Vegas: debitee avant de distribuer. */
+  function payVegasStake(): boolean {
+    const meta = useMetaStore.getState();
+    if (!meta.spend(VEGAS_STAKE)) {
+      meta.notify({
+        kind: 'error',
+        title: 'Pas assez de jetons',
+        text: `Une donne de Vegas coûte ${VEGAS_STAKE} jetons.`,
+      });
+      return false;
+    }
+    playSound('chip');
+    return true;
   }
 
   return {
@@ -534,6 +956,9 @@ export const useGameStore = create<GameStore>()((set, get) => {
     difficulty: DEFAULT_DIFFICULTY,
     drawCount: findDifficulty(DEFAULT_DIFFICULTY).drawCount,
     seed: 'bienvenue',
+    guaranteed: false,
+    preparing: false,
+    tutorial: false,
 
     board: firstBoard,
     phase: 'idle',
@@ -543,6 +968,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     undoCount: 0,
     hintCount: 0,
     usedHint: false,
+    usedJoker: false,
     startedAt: null,
     finalTimeMs: 0,
     history: [],
@@ -553,6 +979,14 @@ export const useGameStore = create<GameStore>()((set, get) => {
     combo: 0,
     stakeTable: 'free',
     insured: false,
+    sideBets: [],
+    sideBetStake: sideBetStake('free'),
+    vegasStake: 0,
+
+    jokerArmed: false,
+    peekMode: false,
+    peekCard: null,
+
     dealId: 0,
     freeHint: false,
     win: null,
@@ -589,8 +1023,10 @@ export const useGameStore = create<GameStore>()((set, get) => {
     },
 
     goHome: () => {
+      closeRound();
       settleBust();
-      stopAutoTimer();
+      stopTimers();
+      prepToken++;
       set({
         route: 'home',
         overlay: 'none',
@@ -599,7 +1035,12 @@ export const useGameStore = create<GameStore>()((set, get) => {
         // 'lost' restee active continuerait de faire tourner l'animation de
         // victoire (ou l'ecran de defaite) par dessus l'accueil.
         phase: 'idle',
+        preparing: false,
+        tutorial: false,
         autoCompleting: false,
+        jokerArmed: false,
+        peekMode: false,
+        peekCard: null,
         win: null,
         lost: null,
       });
@@ -608,15 +1049,34 @@ export const useGameStore = create<GameStore>()((set, get) => {
     newGame: (options) => {
       const meta = useMetaStore.getState();
       const state = get();
-      settleBust();
       const mode = options?.mode ?? state.mode;
       const difficulty = options?.difficulty ?? meta.settings.difficulty;
-      let seed = sanitizeSeed(options?.seed) ?? undefined;
-      if (!seed) {
-        seed = mode === 'daily' ? dailySeed() : randomSeed();
+      let seed = sanitizeSeed(options?.seed);
+      if (!seed && mode === 'daily') seed = dailySeed();
+
+      if (mode === 'vegas') {
+        // On verifie la mise avant de quitter quoi que ce soit.
+        if (useMetaStore.getState().wallet.balance < VEGAS_STAKE) {
+          payVegasStake();
+          return;
+        }
+        closeRound();
+        settleBust();
+        startRound(
+          mode,
+          difficulty,
+          seed,
+          false,
+          { vegasStake: VEGAS_STAKE },
+          payVegasStake,
+        );
+        return;
       }
+
+      closeRound();
+      settleBust();
       if (mode !== 'gambling') {
-        dealRound(mode, difficulty, seed, false);
+        startRound(mode, difficulty, seed, false);
         return;
       }
       // Mode Jackpot: on s'assoit a une table. La mise quitte la banque et
@@ -634,7 +1094,8 @@ export const useGameStore = create<GameStore>()((set, get) => {
         table = findStakeTable('free');
       }
       if (table.stake > 0) playSound('chip');
-      dealRound(mode, difficulty, seed, false, {
+      set({ stakeTable: table.id });
+      startRound(mode, difficulty, seed, false, {
         stakeTable: table.id,
         pot: table.stake,
       });
@@ -642,8 +1103,23 @@ export const useGameStore = create<GameStore>()((set, get) => {
 
     restartSameSeed: () => {
       const state = get();
+      get().newGame({
+        mode: state.mode,
+        difficulty: state.difficulty,
+        seed: state.seed,
+        table: state.stakeTable,
+      });
+    },
+
+    startTutorial: () => {
+      closeRound();
       settleBust();
-      dealRound(state.mode, state.difficulty, state.seed, false);
+      dealRound('classic', 'easy', TUTORIAL_SEED, false, { tutorial: true });
+    },
+
+    endTutorial: () => {
+      useMetaStore.getState().completeTutorial();
+      set({ tutorial: false });
     },
 
     clickStock: () => {
@@ -651,8 +1127,11 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (state.phase !== 'playing') return;
       if (state.board.stock.length > 0) {
         commitMove({ type: 'draw' });
-      } else if (state.board.waste.length > 0) {
+      } else if (canRecycle(state.board)) {
         commitMove({ type: 'recycle' });
+      } else if (state.board.waste.length > 0) {
+        // Vegas: plus aucun passage permis dans la pioche.
+        playSound('invalid');
       }
     },
 
@@ -679,11 +1158,11 @@ export const useGameStore = create<GameStore>()((set, get) => {
       }
     },
 
-    applyDragMove: (move) => commitMove(move),
+    applyDragMove: (move) => tryDragMove(move),
 
     reportInvalid: (cardId) => {
       const state = get();
-      const scoring = state.mode !== 'zen';
+      const scoring = isScoring(state.mode);
       playSound('invalid');
       const nonce = Date.now();
       set({
@@ -705,8 +1184,9 @@ export const useGameStore = create<GameStore>()((set, get) => {
     undo: () => {
       const state = get();
       if (state.phase !== 'playing' || state.history.length === 0) return;
+      if (!canUndoIn(state.mode)) return;
       const previous = state.history[state.history.length - 1];
-      const scoring = state.mode !== 'zen';
+      const scoring = isScoring(state.mode);
       playSound('whoosh');
       // Annuler reprend la main: on coupe un rangement automatique en cours.
       stopAutoTimer();
@@ -734,7 +1214,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         handleLost();
         return;
       }
-      const scoring = state.mode !== 'zen';
+      const scoring = isScoring(state.mode);
       // Un Oeil du croupier en reserve offre l'indice sans penalite.
       const free = scoring && useMetaStore.getState().useConsumable('hint');
       playSound('button');
@@ -756,6 +1236,96 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (state.autoCompleting) return; // deja en cours: pas de second timer
       set({ autoCompleting: true });
       scheduleAutoStep();
+    },
+
+    playJoker: (id) => {
+      const state = get();
+      if (state.phase !== 'playing' || state.preparing) return false;
+      const meta = useMetaStore.getState();
+      if ((meta.inventory.consumables[id] ?? 0) <= 0) return false;
+
+      if (id === 'peek') {
+        const hidden = state.board.tableau.some((col) =>
+          col.some((c) => !c.faceUp),
+        );
+        if (!hidden) return false;
+        set({ peekMode: true, jokerArmed: false, hint: null });
+        playSound('button');
+        return true;
+      }
+
+      if (id === 'joker') {
+        set({ jokerArmed: true, peekMode: false, hint: null });
+        playSound('chip');
+        return true;
+      }
+
+      // Remelange.
+      const shuffled = reshuffleStock(
+        state.board,
+        createRng(`${state.seed}-${state.moves}-${Date.now()}`),
+      );
+      if (!shuffled) return false;
+      meta.useConsumable('reshuffle');
+      playSound('shuffle');
+      set({
+        board: shuffled,
+        usedJoker: true,
+        jokerArmed: false,
+        peekMode: false,
+        hint: null,
+        history: [
+          ...state.history,
+          { board: state.board, score: state.score, moves: state.moves },
+        ],
+        autoAvailable: canAutoComplete(shuffled),
+      });
+      return true;
+    },
+
+    cancelJoker: () => set({ jokerArmed: false, peekMode: false }),
+
+    peekAt: (cardId) => {
+      const state = get();
+      if (!state.peekMode || state.phase !== 'playing') return false;
+      const hidden = state.board.tableau.some((col) =>
+        col.some((c) => c.id === cardId && !c.faceUp),
+      );
+      if (!hidden) return false;
+      if (!useMetaStore.getState().useConsumable('peek')) {
+        set({ peekMode: false });
+        return false;
+      }
+      playSound('flip');
+      set({ peekMode: false, peekCard: cardId, usedJoker: true });
+      if (peekTimer) clearTimeout(peekTimer);
+      peekTimer = setTimeout(() => {
+        peekTimer = null;
+        if (get().peekCard === cardId) {
+          set({ peekCard: null });
+          playSound('flip');
+        }
+      }, PEEK_MS);
+      return true;
+    },
+
+    toggleSideBet: (id) => {
+      const state = get();
+      if (!betsOpen(state)) return false;
+      const meta = useMetaStore.getState();
+      if (state.sideBets.includes(id)) {
+        meta.refund(state.sideBetStake);
+        set({ sideBets: state.sideBets.filter((b) => b !== id) });
+        playSound('chip');
+        return true;
+      }
+      if (!meta.spend(state.sideBetStake)) {
+        playSound('invalid');
+        return false;
+      }
+      playSound('chip');
+      set({ sideBets: [...state.sideBets, id] });
+      return true;
     },
 
     cashOut: () => {
@@ -780,15 +1350,26 @@ export const useGameStore = create<GameStore>()((set, get) => {
       });
     },
 
+    cashOutHalf: (insure = false) => {
+      const state = get();
+      if (!awaitingDecision(state)) return;
+      const half = Math.floor(state.pot / 2);
+      if (half <= 0) return;
+      useMetaStore.getState().secureBank(half, state.combo);
+      playSound('coins');
+      const insured =
+        insure && useMetaStore.getState().useConsumable('insurance');
+      set({ pot: state.pot - half });
+      startRound('gambling', state.difficulty, null, true, { insured });
+    },
+
     doubleOrNothing: (insure = false) => {
       const state = get();
       if (!awaitingDecision(state)) return;
       // L'assurance couvre uniquement la manche qui s'ouvre.
       const insured =
         insure && useMetaStore.getState().useConsumable('insurance');
-      dealRound('gambling', state.difficulty, randomSeed(), true, {
-        insured,
-      });
+      startRound('gambling', state.difficulty, null, true, { insured });
     },
 
     secondChance: () => {
@@ -797,22 +1378,17 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (!useMetaStore.getState().useConsumable('redeal')) return;
       // Le magot et la serie sont conserves tels quels: la manche bloquee
       // est simplement effacee et remplacee par une donne neuve.
-      dealRound('gambling', state.difficulty, randomSeed(), true);
+      startRound('gambling', state.difficulty, null, true);
     },
 
     gambleFromScore: () => {
       const state = get();
       // Seule une victoire notee hors Jackpot peut devenir une mise.
-      if (
-        state.phase !== 'won' ||
-        state.mode === 'gambling' ||
-        state.mode === 'zen'
-      )
-        return;
-      const seed = randomSeed();
+      if (state.phase !== 'won' || !isScoring(state.mode)) return;
+      if (state.mode === 'gambling') return;
       // On transforme la victoire actuelle en premiere manche d'une serie.
       set({ mode: 'gambling', pot: state.score, combo: 1 });
-      dealRound('gambling', state.difficulty, seed, true, {
+      startRound('gambling', state.difficulty, null, true, {
         stakeTable: 'free',
         insured: false,
       });

@@ -32,6 +32,10 @@ export interface Board {
   readonly tableau: Card[][];
   /** Nombre de cartes tirees a chaque pioche (1 ou 3). */
   readonly drawCount: 1 | 3;
+  /**
+   * Rechargements de la pioche encore permis (mode Vegas). Absent: illimite.
+   */
+  readonly recyclesLeft?: number;
 }
 
 /** Emplacements possibles pour cibler un coup. */

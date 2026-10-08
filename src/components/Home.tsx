@@ -3,12 +3,16 @@ import {
   BarChart3,
   BookOpen,
   Crown,
+  GraduationCap,
   Settings,
   ShoppingBag,
+  Target,
 } from 'lucide-react';
 import { useGameStore, type GameMode } from '../state/game';
-import { useMetaStore } from '../state/meta';
+import { pendingRewards, useMetaStore } from '../state/meta';
 import {
+  CHRONO_LIMIT_MS,
+  VEGAS_STAKE,
   findCosmetic,
   nextVipTier,
   vipProgress,
@@ -18,7 +22,7 @@ import { formatDuration, formatNumber, percent } from '../utils/format';
 import { dailySeed, todayISO } from '../utils/seed';
 import type { Card } from '../engine';
 import { CardView } from './CardView';
-import { Balance, Chip } from './ui';
+import { Balance, Chip, RollingNumber } from './ui';
 import { Logo } from './Logo';
 import { ModeDeck, type ModeCardData } from './ModeDeck';
 
@@ -26,7 +30,8 @@ type ModeCard = Omit<ModeCardData, 'meta'>;
 
 // Les modes sont presentes comme des cartes posees sur le tapis. Le coin de
 // chaque carte porte un petit clin d'oeil: le jour du mois pour le defi,
-// trois minutes pour le chrono, zero pression pour le zen.
+// cinq minutes pour le chrono, zero pression pour le zen, le sept porte-
+// bonheur pour Vegas.
 function modeCards(today: Date): ModeCard[] {
   return [
     {
@@ -46,9 +51,16 @@ function modeCards(today: Date): ModeCard[] {
     {
       mode: 'chrono',
       title: 'Chrono',
-      desc: 'Chaque seconde grignote ton bonus de vitesse.',
+      desc: `${CHRONO_LIMIT_MS / 60000} minutes pour tout ranger. Chaque seconde restante rapporte.`,
       suit: 'clubs',
-      index: '3',
+      index: String(CHRONO_LIMIT_MS / 60000),
+    },
+    {
+      mode: 'vegas',
+      title: 'Vegas',
+      desc: `La donne coûte ${VEGAS_STAKE} jetons, chaque carte rangée en rapporte.`,
+      suit: 'diamonds',
+      index: '7',
     },
     {
       mode: 'zen',
@@ -140,6 +152,12 @@ export function Home() {
   const daily = useMetaStore((s) => s.daily);
   const canSpin = useMetaStore((s) => s.wheel.lastSpin !== todayISO());
   const titleId = useMetaStore((s) => s.settings.title);
+  const balance = useMetaStore((s) => s.wallet.balance);
+  const progressive = useMetaStore((s) => s.progressive.pot);
+  const pending = useMetaStore(pendingRewards);
+  const tutorialDone = useMetaStore((s) => s.tutorial.done);
+  const completeTutorial = useMetaStore((s) => s.completeTutorial);
+  const startTutorial = useGameStore((s) => s.startTutorial);
   const title = findCosmetic(titleId);
 
   const tier = vipTierFor(lifetime);
@@ -165,6 +183,14 @@ export function Home() {
         return stats.bestTimeMs
           ? `Record ${formatDuration(stats.bestTimeMs)}`
           : 'Contre la montre';
+      case 'vegas':
+        return balance >= VEGAS_STAKE ? (
+          <span className="with-chip">
+            <Chip size={13} /> {VEGAS_STAKE} la donne
+          </span>
+        ) : (
+          <span data-tone="warn">{VEGAS_STAKE} jetons requis</span>
+        );
       default:
         return 'Sans pression';
     }
@@ -188,6 +214,21 @@ export function Home() {
           <span className="topbar__name">Jackpot Solitaire</span>
         </div>
         <div className="topbar__right">
+          <button
+            className="missions-pill"
+            onClick={() => openModal('missions')}
+            aria-label={
+              pending > 0
+                ? `Missions, ${pending} récompense${pending > 1 ? 's' : ''} à récupérer`
+                : 'Missions'
+            }
+          >
+            <Target size={15} />
+            <span className="missions-pill__label">Missions</span>
+            {pending > 0 && (
+              <span className="missions-pill__badge">{pending}</span>
+            )}
+          </button>
           <button
             className="vip-pill"
             data-tier={tier.id}
@@ -220,6 +261,28 @@ export function Home() {
       </header>
 
       <main className="home__main">
+        {!tutorialDone && stats.gamesPlayed === 0 && (
+          <section className="welcome" aria-label="Bienvenue">
+            <span className="welcome__icon" aria-hidden="true">
+              <GraduationCap size={22} />
+            </span>
+            <div className="welcome__text">
+              <strong>Première visite ?</strong>
+              <span>
+                Le croupier te montre les bases en une minute, sur une vraie
+                donne.
+              </span>
+            </div>
+            <div className="welcome__actions">
+              <button className="btn btn--gold" onClick={startTutorial}>
+                Suivre le tutoriel
+              </button>
+              <button className="btn btn--quiet" onClick={completeTutorial}>
+                Plus tard
+              </button>
+            </div>
+          </section>
+        )}
         <section className="hero">
           <div className="hero__copy">
             <h1 className="brand">
@@ -255,6 +318,17 @@ export function Home() {
                 {canSpin ? 'Roue du jour' : 'Roue demain'}
               </button>
             </div>
+            <button
+              className="progressive"
+              onClick={() => openModal('tables')}
+              title="Gagne une manche Jackpot en Expert, à une table avec mise, sans aucune aide"
+            >
+              <span className="progressive__label">Jackpot progressif</span>
+              <span className="progressive__value">
+                <Chip size={18} />
+                <RollingNumber value={progressive} />
+              </span>
+            </button>
             {records.length > 0 && (
               <p className="hero__records">
                 Ton meilleur: {records.join(', ')}.
@@ -277,6 +351,9 @@ export function Home() {
         />
 
         <nav className="home__links" aria-label="Menu">
+          <button className="link-btn" onClick={() => openModal('missions')}>
+            <Target size={18} /> Missions
+          </button>
           <button className="link-btn" onClick={() => openModal('shop')}>
             <ShoppingBag size={18} /> Boutique
           </button>

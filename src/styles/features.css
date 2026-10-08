@@ -1,0 +1,1103 @@
+/* ---------------------------------------------------------------------------
+   Modes Vegas et Chrono, missions, jokers, paris annexes, jackpot progressif,
+   donne garantie et tutoriel. Memes materiaux que le reste: feutre, or,
+   papier ivoire, encre de tampon.
+--------------------------------------------------------------------------- */
+
+/* ---- Accueil: pilule Missions, invitation au tutoriel ---- */
+
+.missions-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 800;
+  transition: background-color 160ms ease;
+}
+.missions-pill__badge {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--crimson);
+  color: var(--ivory);
+  font-size: 0.7rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 2px rgba(10, 14, 12, 0.9);
+  animation: badgePop 420ms var(--ease-spring);
+}
+@keyframes badgePop {
+  from {
+    transform: scale(0.4);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .missions-pill:hover {
+    background: rgba(20, 27, 24, 0.85);
+  }
+}
+
+.welcome {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 18px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--line-gold),
+    var(--shadow-2);
+  animation: sysRise 520ms var(--ease-out) both;
+}
+.welcome__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--metal);
+  color: var(--on-gold);
+}
+.welcome__text {
+  display: grid;
+  gap: 2px;
+}
+.welcome__text strong {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+}
+.welcome__text span {
+  font-size: 0.86rem;
+  color: var(--text-2);
+}
+.welcome__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- Jackpot progressif ---- */
+
+.progressive {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 8px 16px 8px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #17120a, #0d0b07);
+  box-shadow:
+    inset 0 0 0 1px rgba(227, 185, 90, 0.5),
+    inset 0 0 18px rgba(227, 185, 90, 0.12),
+    0 10px 26px -16px rgba(227, 185, 90, 0.9);
+  text-align: left;
+}
+.progressive__label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 241, 191, 0.7);
+}
+.progressive__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 760;
+  font-size: 1.3rem;
+  color: var(--gold-100);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-shadow: 0 0 14px rgba(243, 210, 124, 0.45);
+}
+@media (hover: hover) and (pointer: fine) {
+  .progressive:hover .progressive__value {
+    color: #fff6da;
+  }
+}
+
+.progressive-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    'label rule'
+    'value rule';
+  align-items: center;
+  gap: 2px 18px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, #17120a, #0d0b07);
+  box-shadow: inset 0 0 0 1px rgba(227, 185, 90, 0.45);
+}
+.progressive-banner__label {
+  grid-area: label;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 241, 191, 0.7);
+}
+.progressive-banner__value {
+  grid-area: value;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 760;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--gold-100);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-shadow: 0 0 14px rgba(243, 210, 124, 0.4);
+}
+.progressive-banner__rule {
+  grid-area: rule;
+  padding-left: 18px;
+  border-left: 1px solid rgba(227, 185, 90, 0.25);
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+/* ---- Cartes de mode: une cinquieme, Vegas ---- */
+
+@media (min-width: 1081px) {
+  .mode-deck {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+.mode-card:nth-child(5) {
+  --tilt: -1.4deg;
+  margin-top: 6px;
+}
+.mode-card [data-tone='warn'] {
+  color: var(--crimson);
+  font-weight: 800;
+}
+.emblem--vegas {
+  display: block;
+  width: 30px;
+  height: 30px;
+  animation: vegasSpin 6s linear infinite;
+}
+@keyframes vegasSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 1080px) and (min-width: 861px) {
+  .mode-deck {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 860px) {
+  /* Cinq cartes sur deux colonnes: la derniere se centre. */
+  .mode-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 7px);
+    --from-x: 0%;
+  }
+}
+
+.mode-note {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(227, 185, 90, 0.08);
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.mode-note > :first-child {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+.mode-note strong {
+  color: var(--neg);
+}
+
+/* ---- Bandeau de partie ---- */
+
+.hud__stat .value[data-state='warn'] {
+  color: #ffc46b;
+}
+.hud__stat .value[data-state='danger'] {
+  color: var(--neg);
+  animation: chronoPulse 1s ease-in-out infinite;
+}
+@keyframes chronoPulse {
+  50% {
+    transform: scale(1.08);
+  }
+}
+.hud__stat--vegas .value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--gold-100);
+}
+.hud__stat .value[data-empty='true'] {
+  color: var(--neg);
+}
+.pot__bets {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  color: var(--gold-100);
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+}
+
+/* Pioche epuisee a Vegas. */
+.pile--stock[data-spent='true'] .pile__mark-icon {
+  color: var(--neg);
+  opacity: 0.7;
+}
+
+/* Coup d'oeil: les cartes cachees invitent a etre touchees. */
+.card.is-peekable {
+  cursor: pointer;
+  animation: peekGlow 1.4s ease-in-out infinite;
+}
+.card.is-peekable .card__back {
+  box-shadow:
+    0 0 0 2px rgba(243, 210, 124, 0.85),
+    0 0 18px rgba(243, 210, 124, 0.45);
+}
+@keyframes peekGlow {
+  50% {
+    filter: brightness(1.15);
+  }
+}
+.card.is-peeking {
+  z-index: 400 !important;
+  transform: translateY(-8px) scale(1.06);
+  transition: transform 260ms var(--ease-out);
+}
+.card.is-peeking .card__front {
+  box-shadow:
+    0 0 0 2px var(--gold-300),
+    0 14px 30px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- Jokers ---- */
+
+.dock__btn[data-active='true'] {
+  background: rgba(227, 185, 90, 0.16);
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+}
+
+.joker-tray {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  translate: -50% 0;
+  width: min(380px, calc(100vw - 24px));
+  padding: 12px;
+  border-radius: 20px;
+  background: rgba(14, 19, 17, 0.97);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 0 0 1px var(--line-gold),
+    var(--shadow-3);
+  animation: trayIn 260ms var(--ease-out);
+  z-index: 10;
+}
+@keyframes trayIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+.joker-tray__title {
+  margin: 2px 4px 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.joker-tray__list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.joker {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.joker__icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--metal);
+  color: var(--on-gold);
+}
+.joker[data-empty='true'] .joker__icon {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-2);
+}
+.joker__count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--crimson);
+  color: var(--ivory);
+  font-size: 0.66rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 2px #0e1311;
+}
+.joker__body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.joker__name {
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+.joker__hint {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+.joker__action {
+  --btn-h: 36px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+}
+
+.game {
+  position: relative;
+}
+
+/* Bandeau et paris flottent au-dessus du plateau: les faire apparaitre ou
+   disparaitre ne doit jamais deplacer les cartes. */
+.joker-banner {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 58px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 8px 8px 8px 14px;
+  border-radius: 999px;
+  background: rgba(14, 19, 17, 0.92);
+  box-shadow:
+    inset 0 0 0 1px var(--line-gold),
+    var(--shadow-1);
+  color: var(--gold-100);
+  font-size: 0.84rem;
+  font-weight: 700;
+  animation: trayIn 260ms var(--ease-out);
+}
+.joker-banner > span {
+  color: var(--text);
+}
+.joker-banner__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---- Paris annexes ---- */
+
+.side-bets {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+  translate: -50% 0;
+  z-index: 20;
+  width: min(560px, calc(100% - 24px));
+  padding: 10px 12px 12px;
+  border-radius: 18px;
+  background: rgba(10, 14, 12, 0.86);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 0 0 1px var(--line-gold),
+    var(--shadow-2);
+  animation: trayIn 320ms var(--ease-out);
+}
+.side-bets__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin: 0 2px 8px;
+}
+.side-bets__head strong {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  color: var(--gold-100);
+}
+.side-bets__head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.side-bets__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.side-bet {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-align: left;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 140ms var(--ease-out);
+}
+.side-bet:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.side-bet:disabled {
+  opacity: 0.4;
+}
+.side-bet[aria-checked='true'] {
+  background: rgba(227, 185, 90, 0.14);
+  box-shadow: inset 0 0 0 1.5px var(--gold-300);
+}
+.side-bet__check {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  color: var(--on-gold);
+}
+.side-bet[aria-checked='true'] .side-bet__check {
+  background: var(--metal);
+  box-shadow: none;
+}
+.side-bet__label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.side-bet__odds {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--gold-200);
+}
+
+/* ---- Bordereaux: paris, jackpot progressif, moitie a l'abri ---- */
+
+.stamp--grey {
+  --rot: 3deg;
+  --stamp-ink: #5b5f66;
+}
+
+.ticket__bets {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--rule);
+  opacity: 0.3;
+  transition: opacity 300ms ease;
+}
+.ticket__bets.is-in {
+  opacity: 1;
+}
+.ticket__bets-title {
+  font-size: 0.8rem;
+  font-weight: 750;
+  color: var(--ink-2);
+}
+.ticket__bet {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.ticket__bet[data-won='true'] svg,
+.ticket__bet[data-won='true'] .ticket__bet-value {
+  color: #1d7a52;
+}
+.ticket__bet[data-won='false'] {
+  color: var(--ink-2);
+}
+.ticket__bet[data-won='false'] svg,
+.ticket__bet[data-won='false'] .ticket__bet-value {
+  color: #b8263a;
+}
+.ticket__bet-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.ticket__progressive {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin-top: 14px;
+  padding: 14px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #17120a, #0d0b07);
+  color: var(--gold-100);
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity 300ms ease,
+    transform 500ms var(--ease-spring);
+}
+.ticket__progressive.is-in {
+  opacity: 1;
+  transform: none;
+}
+.ticket__progressive--top {
+  margin: 6px 0 12px;
+}
+.ticket__progressive-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 241, 191, 0.75);
+}
+.ticket__progressive-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  font-family: var(--font-display);
+  font-weight: 780;
+  font-size: clamp(2rem, 8vw, 2.6rem);
+  line-height: 1.1;
+  text-shadow: 0 0 22px rgba(243, 210, 124, 0.6);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.ticket__progressive-note {
+  font-size: 0.74rem;
+  color: rgba(255, 241, 191, 0.6);
+}
+
+.half-cash {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  text-align: left;
+  color: var(--text);
+  background: rgba(16, 22, 19, 0.88);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+  transition:
+    background-color 200ms ease,
+    transform 140ms var(--ease-out);
+}
+.half-cash:active {
+  transform: scale(0.99);
+}
+@media (hover: hover) and (pointer: fine) {
+  .half-cash:hover {
+    background: rgba(28, 36, 32, 0.92);
+  }
+}
+.half-cash__split {
+  display: inline-flex;
+}
+.half-cash__split > * + * {
+  margin-left: -6px;
+}
+.half-cash__text {
+  display: grid;
+  gap: 1px;
+}
+.half-cash__text strong {
+  font-size: 0.9rem;
+}
+.half-cash__text small {
+  font-size: 0.76rem;
+  color: var(--text-2);
+}
+
+/* ---- Donne garantie en preparation ---- */
+
+.preparing__chip {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 6px auto 14px;
+  animation: preparingSpin 1.1s linear infinite;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45));
+}
+@keyframes preparingSpin {
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+/* ---- Missions et coffret de rang ---- */
+
+.chest {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: rgba(227, 185, 90, 0.08);
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+}
+.chest[data-state='locked'] {
+  grid-template-columns: auto 1fr;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.chest__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--metal);
+  color: var(--on-gold);
+}
+.chest[data-state='locked'] .chest__icon {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-3);
+}
+.chest[data-state='ready'] .chest__icon {
+  animation: chestWiggle 2.4s ease-in-out infinite;
+}
+@keyframes chestWiggle {
+  0%,
+  80%,
+  100% {
+    transform: rotate(0);
+  }
+  85% {
+    transform: rotate(-8deg);
+  }
+  90% {
+    transform: rotate(8deg);
+  }
+  95% {
+    transform: rotate(-4deg);
+  }
+}
+.chest__body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.chest__body > span {
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+.chest__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chest__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--gold-100);
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+}
+.chest__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 750;
+  color: var(--pos);
+}
+.chest[data-opened='true'] .chest__icon {
+  animation: badgePop 500ms var(--ease-spring);
+}
+
+.missions-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin: 6px 2px 10px;
+}
+.missions-head h3 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+.missions-head span {
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+.missions {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.mission {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition:
+    background-color 240ms ease,
+    box-shadow 240ms ease;
+}
+.mission[data-state='ready'] {
+  background: rgba(227, 185, 90, 0.1);
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+}
+.mission[data-state='claimed'] {
+  opacity: 0.6;
+}
+.mission[data-flash='true'] {
+  animation: missionFlash 900ms var(--ease-out);
+}
+@keyframes missionFlash {
+  30% {
+    background: rgba(116, 224, 169, 0.18);
+  }
+}
+.mission__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.06);
+}
+.mission[data-state='ready'] .mission__icon {
+  background: var(--metal);
+  color: var(--on-gold);
+}
+.mission[data-state='claimed'] .mission__icon {
+  color: var(--pos);
+}
+.mission__body {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 10px;
+  min-width: 0;
+}
+.mission__label {
+  grid-column: 1 / -1;
+  font-weight: 750;
+  font-size: 0.92rem;
+}
+.mission__meter {
+  margin: 4px 0 0;
+}
+.mission__count {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.mission__reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  font-size: 0.86rem;
+  color: var(--gold-100);
+  font-variant-numeric: tabular-nums;
+}
+.mission__claim {
+  --btn-h: 36px;
+  padding: 0 14px;
+  font-size: 0.86rem;
+}
+.mission__done {
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: var(--text-3);
+}
+
+.vip-perks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 2px 0 4px;
+  font-size: 0.76rem;
+}
+.vip-perks__now {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--gold-100);
+}
+.vip-perks__next {
+  color: var(--text-3);
+}
+
+.rule-tuto {
+  margin-top: 14px;
+}
+
+/* ---- Tutoriel ---- */
+
+.tuto {
+  position: fixed;
+  inset: 0;
+  z-index: 450;
+  pointer-events: none;
+}
+.tuto__veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 10, 7, 0.55);
+}
+.tuto__spot {
+  position: absolute;
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 2px var(--gold-300),
+    0 0 0 9999px rgba(4, 10, 7, 0.55);
+  transition:
+    top 380ms var(--ease-out),
+    left 380ms var(--ease-out),
+    width 380ms var(--ease-out),
+    height 380ms var(--ease-out);
+}
+.tuto__spot[data-wait='true'] {
+  animation: spotPulse 1.6s ease-in-out infinite;
+}
+@keyframes spotPulse {
+  50% {
+    box-shadow:
+      0 0 0 4px var(--gold-200),
+      0 0 0 9999px rgba(4, 10, 7, 0.55);
+  }
+}
+.tuto__bubble {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  width: min(420px, calc(100vw - 32px));
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: var(--ivory);
+  color: var(--ink);
+  box-shadow: var(--shadow-3);
+  pointer-events: auto;
+  animation: sysRise 380ms var(--ease-out) both;
+}
+.tuto__bubble[data-place='center'] {
+  top: 50%;
+  translate: -50% -50%;
+}
+.tuto__step {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8f6418;
+}
+.tuto__title {
+  font-family: var(--font-display);
+  font-size: 1.22rem;
+  line-height: 1.15;
+}
+.tuto__text {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #3a3d44;
+}
+.tuto__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+.tuto__actions .btn--quiet {
+  color: #6b6e75;
+}
+.tuto__waiting {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #8f6418;
+  animation: chronoPulse 1.4s ease-in-out infinite;
+}
+
+/* ---- Petits ecrans ---- */
+
+@media (max-width: 640px) {
+  .missions-pill {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .missions-pill__label {
+    display: none;
+  }
+  .missions-pill__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.64rem;
+  }
+  .welcome {
+    grid-template-columns: auto 1fr;
+  }
+  .welcome__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .side-bets__list {
+    grid-template-columns: 1fr;
+  }
+  .side-bet {
+    grid-template-columns: auto 1fr auto;
+    padding: 7px 10px;
+  }
+  .side-bet__check {
+    grid-row: auto;
+  }
+  .joker-banner {
+    font-size: 0.78rem;
+    border-radius: 16px;
+  }
+  .progressive-banner {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'label'
+      'value'
+      'rule';
+  }
+  .progressive-banner__rule {
+    margin-top: 6px;
+    padding: 8px 0 0;
+    border-left: none;
+    border-top: 1px solid rgba(227, 185, 90, 0.25);
+  }
+  .mission {
+    grid-template-columns: 1fr auto;
+  }
+  .mission__icon {
+    display: none;
+  }
+  .chest {
+    grid-template-columns: auto 1fr;
+  }
+  .chest > .btn,
+  .chest > .chest__done {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emblem--vegas,
+  .preparing__chip,
+  .card.is-peekable,
+  .chest[data-state='ready'] .chest__icon,
+  .tuto__spot[data-wait='true'] {
+    animation: none;
+  }
+}
+
+/* ---- Bordereaux longs: les boutons restent toujours a portee ----
+   Avec les paris, le jackpot progressif et la moitie a l'abri, un bordereau
+   peut depasser la hauteur de l'ecran. Le papier defile alors sous les
+   boutons, epingles en bas avec un fondu. */
+
+@media not ((orientation: landscape) and (max-height: 540px)) {
+  .stage[data-variant='ticket'] .stage__actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+  }
+  .stage[data-variant='ticket'][data-overflow='true'] .stage__actions {
+    margin-top: -14px;
+    padding: 22px 0 max(4px, env(safe-area-inset-bottom));
+    background: linear-gradient(
+      to top,
+      rgba(3, 7, 5, 0.94) 72%,
+      rgba(3, 7, 5, 0)
+    );
+  }
+  .stage[data-variant='ticket'] .stage__skip {
+    position: sticky;
+    bottom: 0;
+  }
+}
+
+/* Un seul bouton dans une rangee de deux: il prend toute la largeur. */
+.stage__duo:has(> :only-child) {
+  grid-template-columns: 1fr;
+}

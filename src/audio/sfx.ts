@@ -11,6 +11,8 @@
 // - Les notes restent dans la gamme de do majeur pentatonique, pour que les
 //   sons qui se chevauchent sonnent toujours juste ensemble.
 
+import { haptic } from './haptics';
+
 export const SOUND_NAMES = [
   'flip',
   'place',
@@ -625,6 +627,8 @@ function render(name: SoundName, out: Out, t: number): void {
 }
 
 export function playSound(name: SoundName): void {
+  // Les vibrations accompagnent les sons qui comptent, meme son coupe.
+  haptic(name);
   if (!enabled) return;
   // Le son n'est jamais critique: une erreur audio (contexte refuse, noeud
   // non supporte) ne doit surtout pas interrompre le coup en cours, qui

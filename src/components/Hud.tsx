@@ -7,12 +7,30 @@ import {
   Sparkles,
   Undo2,
   ShieldCheck,
+  WandSparkles,
 } from 'lucide-react';
-import { useGameStore, computeElapsed, MODE_LABEL } from '../state/game';
+import {
+  useGameStore,
+  betsOpen,
+  canUndoIn,
+  chronoRemaining,
+  computeElapsed,
+  foundationCount,
+  isScoring,
+  vegasValueOf,
+  MODE_LABEL,
+} from '../state/game';
 import { useMetaStore } from '../state/meta';
-import { findDifficulty, findStakeTable } from '../state/catalog';
+import {
+  JOKER_IDS,
+  findDifficulty,
+  findStakeTable,
+  vegasRecycles,
+} from '../state/catalog';
+import { playSound } from '../audio/sfx';
 import { formatDuration, formatMultiplier } from '../utils/format';
 import { Chip, RollingNumber } from './ui';
+import { JokerTray } from './Jokers';
 
 /** Rafraichit l'affichage regulierement tant que la partie est en cours. */
 function useElapsed(): number {
@@ -61,26 +79,61 @@ function ScoreValue({ score }: { score: number }) {
   );
 }
 
+/** Compte a rebours du Chrono: couleur d'alerte et tic-tac a la fin. */
+function ChronoValue({ remaining }: { remaining: number }) {
+  const seconds = Math.ceil(remaining / 1000);
+  const state = seconds <= 10 ? 'danger' : seconds <= 30 ? 'warn' : 'calm';
+  const last = useRef(seconds);
+  useEffect(() => {
+    if (seconds !== last.current && seconds <= 10 && seconds > 0) {
+      playSound('tick');
+    }
+    last.current = seconds;
+  }, [seconds]);
+  return (
+    <span className="value" data-state={state}>
+      {formatDuration(seconds * 1000)}
+    </span>
+  );
+}
+
 export function Hud() {
   const mode = useGameStore((s) => s.mode);
   const difficulty = useGameStore((s) => s.difficulty);
+  const guaranteed = useGameStore((s) => s.guaranteed);
   const score = useGameStore((s) => s.score);
   const moves = useGameStore((s) => s.moves);
   const pot = useGameStore((s) => s.pot);
   const combo = useGameStore((s) => s.combo);
   const stakeTable = useGameStore((s) => s.stakeTable);
   const insured = useGameStore((s) => s.insured);
+  const bets = useGameStore((s) => s.sideBets.length);
+  const betsPending = useGameStore(betsOpen);
+  const vegasEarned = useGameStore((s) =>
+    s.mode === 'vegas' ? foundationCount(s.board) * vegasValueOf(s) : 0,
+  );
+  const recyclesLeft = useGameStore((s) => s.board.recyclesLeft);
+  const phase = useGameStore((s) => s.phase);
+  const startedAt = useGameStore((s) => s.startedAt);
+  const finalTimeMs = useGameStore((s) => s.finalTimeMs);
   const goHome = useGameStore((s) => s.goHome);
   const requestLeave = useGameStore((s) => s.requestLeave);
 
   const elapsed = useElapsed();
-  const scoring = mode !== 'zen';
+  const scoring = isScoring(mode);
   const table = findStakeTable(stakeTable);
   const gambling = mode === 'gambling';
+  const vegas = mode === 'vegas';
+  const chrono = mode === 'chrono';
 
   const level = findDifficulty(difficulty);
   const sub = [level.label, `Pioche ${level.drawCount}`];
+  if (vegas) {
+    const passes = vegasRecycles(level.drawCount) + 1;
+    sub.push(passes === 1 ? '1 passage' : `${passes} passages`);
+  }
   if (gambling && table.id !== 'free') sub.push(table.label);
+  if (guaranteed) sub.push('Donne garantie');
 
   return (
     <header className="hud">
@@ -107,16 +160,39 @@ export function Hud() {
               <ScoreValue score={score} />
             </div>
           )}
-          {scoring && (
-            <div className="hud__stat" data-chrono={mode === 'chrono'}>
-              <span className="label">Temps</span>
-              <span className="value">{formatDuration(elapsed)}</span>
+          {vegas && (
+            <div className="hud__stat hud__stat--vegas">
+              <span className="label">Gains</span>
+              <span className="value">
+                <Chip size={13} />{' '}
+                <RollingNumber value={vegasEarned} duration={320} />
+              </span>
+            </div>
+          )}
+          {(scoring || vegas) && (
+            <div className="hud__stat" data-chrono={chrono}>
+              <span className="label">{chrono ? 'Reste' : 'Temps'}</span>
+              {chrono ? (
+                <ChronoValue
+                  remaining={chronoRemaining({ phase, startedAt, finalTimeMs })}
+                />
+              ) : (
+                <span className="value">{formatDuration(elapsed)}</span>
+              )}
             </div>
           )}
           <div className="hud__stat">
             <span className="label">Coups</span>
             <span className="value">{moves}</span>
           </div>
+          {vegas && recyclesLeft !== undefined && (
+            <div className="hud__stat">
+              <span className="label">Recharges</span>
+              <span className="value" data-empty={recyclesLeft === 0}>
+                {recyclesLeft}
+              </span>
+            </div>
+          )}
         </div>
 
         {gambling && (
@@ -133,6 +209,14 @@ export function Hud() {
             {table.multiplier > 1 && (
               <span className="pot__mult">
                 ×{formatMultiplier(table.multiplier)}
+              </span>
+            )}
+            {bets > 0 && !betsPending && (
+              <span
+                className="pot__bets"
+                title="Paris annexes en jeu sur cette manche"
+              >
+                {bets} pari{bets > 1 ? 's' : ''}
               </span>
             )}
             {insured && (
@@ -165,22 +249,33 @@ export function Dock() {
   const openModal = useGameStore((s) => s.openModal);
   const requestLeave = useGameStore((s) => s.requestLeave);
   const freeHints = useMetaStore((s) => s.inventory.consumables.hint);
+  const jokers = useMetaStore((s) =>
+    JOKER_IDS.reduce((n, id) => n + (s.inventory.consumables[id] ?? 0), 0),
+  );
+  const jokerActive = useGameStore((s) => s.jokerArmed || s.peekMode);
+  const [tray, setTray] = useState(false);
 
-  const scoring = mode !== 'zen';
+  const scoring = isScoring(mode);
   const playing = phase === 'playing';
+  const undoAllowed = canUndoIn(mode);
 
   return (
     <nav className="dock" aria-label="Actions de partie">
+      {tray && playing && <JokerTray onClose={() => setTray(false)} />}
       <button
         className="dock__btn"
         onClick={requestHint}
         disabled={!playing}
         aria-label={
-          freeHints > 0
+          freeHints > 0 && scoring
             ? `Demander un indice (${freeHints} offert${freeHints > 1 ? 's' : ''})`
             : 'Demander un indice'
         }
-        title={freeHints > 0 ? 'Œil du croupier: indice offert' : undefined}
+        title={
+          freeHints > 0 && scoring
+            ? 'Œil du croupier: indice offert'
+            : undefined
+        }
       >
         <Lightbulb size={20} />
         <span className="dock__label">Indice</span>
@@ -196,12 +291,32 @@ export function Dock() {
       <button
         className="dock__btn"
         onClick={undo}
-        disabled={!playing || !canUndo}
-        aria-label="Annuler le dernier coup"
+        disabled={!playing || !canUndo || !undoAllowed}
+        aria-label={
+          undoAllowed ? 'Annuler le dernier coup' : 'Pas d’annulation à Vegas'
+        }
+        title={undoAllowed ? undefined : 'Pas d’annulation à Vegas'}
       >
         <Undo2 size={20} />
         <span className="dock__label">Annuler</span>
         {scoring && <span className="dock__cost">-15</span>}
+      </button>
+      <button
+        className="dock__btn"
+        data-joker-toggle
+        data-active={tray || jokerActive ? 'true' : undefined}
+        onClick={() => setTray((t) => !t)}
+        disabled={!playing}
+        aria-expanded={tray}
+        aria-label={`Jokers (${jokers} en réserve)`}
+      >
+        <WandSparkles size={20} />
+        <span className="dock__label">Jokers</span>
+        {jokers > 0 && (
+          <span className="dock__cost" data-free="true">
+            {jokers}
+          </span>
+        )}
       </button>
       {autoAvailable && !autoCompleting && playing && (
         <button

@@ -2,11 +2,23 @@ import { useState, type ReactNode } from 'react';
 import { Modal } from './Modal';
 import { SCORE } from '../engine';
 import {
+  CHRONO_LIMIT_MS,
+  CHRONO_POINTS_PER_SECOND,
   CONSUMABLES,
   DAILY_BONUS,
+  GUARANTEED_PAYOUT,
+  PROGRESSIVE_RULE,
+  PROGRESSIVE_SEED,
+  RANK_PERKS,
+  SIDE_BETS,
   STAKE_TABLES,
+  VEGAS_STAKE,
   VIP_TIERS,
+  findConsumable,
+  vegasCardValue,
 } from '../state/catalog';
+import { GraduationCap } from 'lucide-react';
+import { useGameStore } from '../state/game';
 import { formatMultiplier, formatNumber } from '../utils/format';
 
 interface Item {
@@ -34,6 +46,20 @@ interface Section {
   id: string;
   label: string;
   content: ReactNode;
+}
+
+/** Relance la partie guidee depuis les regles. */
+function TutorialButton() {
+  const startTutorial = useGameStore((s) => s.startTutorial);
+  const requestLeave = useGameStore((s) => s.requestLeave);
+  return (
+    <button
+      className="btn btn--ghost rule-tuto"
+      onClick={() => requestLeave(startTutorial)}
+    >
+      <GraduationCap size={18} /> Revoir le tutoriel
+    </button>
+  );
 }
 
 const SECTIONS: Section[] = [
@@ -108,8 +134,19 @@ const SECTIONS: Section[] = [
         </p>
         <h3>Chrono</h3>
         <p>
-          Mêmes règles que le classique, mais le temps est ton adversaire: le
-          bonus de vitesse fond à chaque seconde.
+          {CHRONO_LIMIT_MS / 60000} minutes pour tout ranger, à compter du
+          premier coup. Chaque seconde restante à la victoire rapporte{' '}
+          {CHRONO_POINTS_PER_SECOND} points. Si le compte à rebours tombe à
+          zéro, la partie est perdue.
+        </p>
+        <h3>Vegas</h3>
+        <p>
+          Le score des casinos d&rsquo;antan: la donne coûte {VEGAS_STAKE}{' '}
+          jetons, et chaque carte posée sur une fondation en rapporte selon la
+          difficulté (de {vegasCardValue('easy')} en Facile à{' '}
+          {vegasCardValue('expert')} en Expert). Un seul passage dans la pioche
+          en pioche 1, trois en pioche 3, et pas d&rsquo;annulation. Quitter en
+          cours de route paie les cartes déjà rangées.
         </p>
         <h3>Zen</h3>
         <p>
@@ -258,6 +295,32 @@ const SECTIONS: Section[] = [
             ),
           }))}
         />
+        <h3>Mettre la moitié à l&rsquo;abri</h3>
+        <p>
+          Entre encaisser et doubler, une troisième voie: la moitié du magot
+          rejoint ta banque, l&rsquo;autre moitié reste en jeu et ta série
+          continue.
+        </p>
+        <h3>Les paris annexes</h3>
+        <p>
+          Avant ton premier coup de chaque manche, tu peux poser des paris sur
+          la façon dont tu vas gagner. Chaque pari coûte 10 % de la mise de la
+          table (50 jetons au minimum) et paie à la victoire si la condition est
+          tenue. Perdus avec la manche.
+        </p>
+        <RuleList
+          items={SIDE_BETS.map((b) => ({
+            tone: 'gold' as const,
+            mark: `${b.odds}:1`,
+            text: `${b.label}: ${b.rule.toLowerCase()}`,
+          }))}
+        />
+        <h3>Le jackpot progressif</h3>
+        <p>
+          Une cagnotte commune qui grossit à chaque manche jouée et avec les
+          paris perdus. {PROGRESSIVE_RULE} Elle repart ensuite de{' '}
+          {formatNumber(PROGRESSIVE_SEED)} jetons.
+        </p>
         <h3>Le coffre-fort mystère</h3>
         <p>
           Trois victoires de suite en quitte ou double débloquent le coffre.
@@ -318,18 +381,39 @@ const SECTIONS: Section[] = [
             })),
           ]}
         />
+        <h3>Les missions</h3>
+        <p>
+          Trois missions par jour et trois par semaine, les mêmes pour tout le
+          monde. Termine-les puis récupère ta récompense dans l&rsquo;écran
+          Missions, avant qu&rsquo;elles ne se renouvellent.
+        </p>
         <h3>Les rangs VIP</h3>
         <p>
           Ton rang dépend du total de jetons gagnés depuis le début (les achats
-          ne le font jamais baisser). Chaque rang offre une remise en boutique
-          et ouvre de nouveaux objets.
+          ne le font jamais baisser). Chaque rang offre une remise en boutique,
+          ouvre de nouveaux objets et, dès le rang Argent, un coffret de bonus
+          chaque semaine.
         </p>
         <RuleList
-          items={VIP_TIERS.map((t) => ({
-            tone: 'gold' as const,
-            mark: t.label[0],
-            text: `${t.label}: dès ${formatNumber(t.threshold)} jetons gagnés${t.discount > 0 ? `, ${Math.round(t.discount * 100)} % de remise` : ''}.`,
-          }))}
+          items={VIP_TIERS.map((t) => {
+            const perk = RANK_PERKS.find((p) => p.tier === t.id);
+            const extras = [
+              t.discount > 0
+                ? `${Math.round(t.discount * 100)} % de remise`
+                : '',
+              perk?.gift
+                ? `+ ${findConsumable(perk.gift).label} chaque semaine`
+                : '',
+              perk?.missionBonus
+                ? `missions +${Math.round(perk.missionBonus * 100)} %`
+                : '',
+            ].filter(Boolean);
+            return {
+              tone: 'gold' as const,
+              mark: t.label[0],
+              text: `${t.label}: dès ${formatNumber(t.threshold)} jetons gagnés${extras.length ? `, ${extras.join(', ')}` : ''}.`,
+            };
+          })}
         />
       </div>
     ),
@@ -353,6 +437,15 @@ const SECTIONS: Section[] = [
               text: 'Difficulté: de Facile (×0,5) à Expert (×3), elle règle la pioche, la donne et les jetons gagnés. À choisir dans les réglages ou les options de partie.',
             },
             {
+              text: 'Jokers: Coup d’œil pour regarder une carte cachée, Remélange pour rebattre la pioche, Joker pour poser une carte sur n’importe quelle colonne. Bouton Jokers en bas de l’écran.',
+            },
+            {
+              text: `Donnes garanties gagnables: à activer dans les réglages. Le croupier ne sert que des donnes dont il a prouvé qu’elles se gagnent (gains ×${formatMultiplier(GUARANTEED_PAYOUT)}).`,
+            },
+            {
+              text: 'Vibrations: sur les téléphones qui le permettent, un petit retour tactile aux moments clés.',
+            },
+            {
               text: 'Graine partageable: rejoue une donne précise ou envoie-la à un ami via un lien.',
             },
             {
@@ -367,6 +460,7 @@ const SECTIONS: Section[] = [
           quittent jamais ton navigateur. Le jeu s&rsquo;installe et fonctionne
           même sans connexion.
         </div>
+        <TutorialButton />
       </div>
     ),
   },

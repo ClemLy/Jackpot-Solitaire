@@ -1,5 +1,5 @@
 import { Home as HomeIcon, LifeBuoy, ShieldCheck } from 'lucide-react';
-import { useGameStore, MODE_LABEL } from '../state/game';
+import { useGameStore, isScoring, MODE_LABEL } from '../state/game';
 import { useMetaStore } from '../state/meta';
 import {
   discountedPrice,
@@ -25,12 +25,17 @@ export function LostOverlay() {
 
   const playerTitle = findCosmetic(titleId)?.label ?? 'Jackpot Solitaire';
   if (!lost) return null;
-  const scoring = mode !== 'zen';
+  const scoring = isScoring(mode);
+  const timeUp = lost.reason === 'time';
   const redealPrice = discountedPrice(findConsumable('redeal').price, lifetime);
   const canBuyRedeal = redeals <= 0 && balance >= redealPrice;
 
   return (
-    <Stage variant="ticket" label="Donne bloquée" tone="red">
+    <Stage
+      variant="ticket"
+      label={timeUp ? 'Temps écoulé' : 'Donne bloquée'}
+      tone="red"
+    >
       <div className="ticket">
         <div className="ticket__head">
           <span className="ticket__house">{playerTitle}</span>
@@ -38,13 +43,16 @@ export function LostOverlay() {
             {MODE_LABEL[mode]} · {formatDuration(lost.timeMs)}
           </span>
         </div>
-        <h2 className="ticket__title">Donne bloquée</h2>
+        <h2 className="ticket__title">
+          {timeUp ? 'Temps écoulé' : 'Donne bloquée'}
+        </h2>
         <span className="stamp stamp--big" aria-hidden="true">
-          Bloquée
+          {timeUp ? '00:00' : 'Bloquée'}
         </span>
         <p className="ticket__text">
-          Plus aucune carte ne pourra jamais bouger, quoi que tu fasses. Même
-          les meilleurs n&rsquo;auraient pas pu la terminer.
+          {timeUp
+            ? 'Les cinq minutes sont passées. Une prochaine donne, et cette fois le chrono ne te rattrapera pas.'
+            : 'Plus aucune carte ne pourra jamais bouger, quoi que tu fasses. Même les meilleurs n’auraient pas pu la terminer.'}
         </p>
 
         {scoring && (
@@ -65,6 +73,15 @@ export function LostOverlay() {
                 </span>
               </div>
             )}
+            {lost.betsLost > 0 && (
+              <div className="tally__line tally__line--loss is-in">
+                <span>Paris annexes perdus</span>
+                <span className="tally__leader" aria-hidden="true" />
+                <span className="tally__value">
+                  −{formatNumber(lost.betsLost)}
+                </span>
+              </div>
+            )}
             {lost.refund > 0 && (
               <div className="tally__line tally__line--gain is-in">
                 <span>
@@ -76,6 +93,35 @@ export function LostOverlay() {
                 </span>
               </div>
             )}
+          </div>
+        )}
+
+        {lost.vegas && (
+          <div className="tally">
+            <div className="tally__line is-in">
+              <span>Prix de la donne</span>
+              <span className="tally__leader" aria-hidden="true" />
+              <span className="tally__value">
+                −{formatNumber(lost.vegas.stake)}
+              </span>
+            </div>
+            <div className="tally__line tally__line--gain is-in">
+              <span>
+                {lost.vegas.cards} cartes × {lost.vegas.cardValue}
+              </span>
+              <span className="tally__leader" aria-hidden="true" />
+              <span className="tally__value">
+                +{formatNumber(lost.vegas.earned)}
+              </span>
+            </div>
+            <div className="tally__line tally__line--total is-in">
+              <span>Bilan de la donne</span>
+              <span className="tally__leader" aria-hidden="true" />
+              <span className="tally__value">
+                {lost.vegas.net >= 0 ? '+' : '−'}
+                {formatNumber(Math.abs(lost.vegas.net))}
+              </span>
+            </div>
           </div>
         )}
       </div>

@@ -11,6 +11,7 @@ import { useMetaStore } from '../state/meta';
 import { playSound } from '../audio/sfx';
 import type { Suit } from '../engine';
 import { SuitIcon } from './Suits';
+import { Chip } from './ui';
 
 interface Spring {
   base: number;
@@ -81,6 +82,13 @@ function Emblem({ mode, suit }: { mode: GameMode; suit: Suit }) {
         />
         <circle cx="16" cy="18" r="1.6" fill="currentColor" />
       </svg>
+    );
+  }
+  if (mode === 'vegas') {
+    return (
+      <span className="emblem emblem--vegas" aria-hidden="true">
+        <Chip size="100%" tone="red" />
+      </span>
     );
   }
   return (

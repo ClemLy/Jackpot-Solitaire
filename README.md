@@ -95,6 +95,15 @@ Pour le confort :
 
   Une donne adoucie remonte les cartes basses vers le haut des colonnes :
   les As sont moins souvent enterrés sous les cartes cachées.
+- Donnes garanties gagnables (option) : un solveur vérifie chaque donne
+  dans un Web Worker avant de la servir, et prépare la suivante à l’avance.
+  Plus confortable, donc gains ×0,75. Le défi du jour n’est pas concerné.
+- Trois jokers à utiliser en pleine partie : Coup d’œil (regarder une carte
+  cachée), Remélange (rebattre la pioche), Joker (poser une carte sur
+  n’importe quelle colonne).
+- Un tutoriel guidé sur une vraie donne, proposé à la première visite et
+  rejouable depuis les règles.
+- Vibrations sur les téléphones qui le permettent, aux moments clés.
 - Graine de partie : rejouer une donne précise, ou l’envoyer par un lien
   `?seed=...`.
 
@@ -110,7 +119,11 @@ Toutes les règles sont aussi expliquées dans le jeu (bouton Règles).
 - **Classique** : le Klondike tranquille, avec score, indices et annuler.
 - **Défi du jour** : la même donne pour tout le monde ce jour-là, avec une
   prime à la première victoire.
-- **Chrono** : mêmes règles, mais le bonus de vitesse fond à chaque seconde.
+- **Chrono** : cinq minutes pour tout ranger, à partir du premier coup.
+  Chaque seconde restante rapporte 6 points ; à zéro, la partie est perdue.
+- **Vegas** : la donne coûte 52 jetons, chaque carte rangée en rapporte de
+  3 (Facile) à 15 (Expert). Un passage dans la pioche en pioche 1, trois en
+  pioche 3, et pas d’annulation. Quitter paie les cartes déjà rangées.
 - **Zen** : ni score, ni chrono, ni pénalité.
 
 ## Score et mode Jackpot
@@ -133,6 +146,18 @@ difficulté. Après chaque victoire :
 - **Encaisser** : le magot rejoint la banque, définitivement.
 - **Quitte ou double** : on rejoue aussitôt en risquant tout. Une manche
   perdue ou abandonnée, et le magot retombe à zéro.
+- **Mettre la moitié à l’abri** : la moitié part à la banque, l’autre reste
+  en jeu et la série continue.
+
+Avant son premier coup, chaque manche accepte des **paris annexes** : sans
+indice (paie 1 pour 1), sans annuler (2 pour 1), en moins de trois minutes
+(3 pour 1). Chaque pari coûte 10 % de la mise de la table, 50 jetons au
+minimum.
+
+Le **jackpot progressif** grossit à chaque manche distribuée et avec une
+part des paris perdus. Il revient à qui gagne une manche en Expert, à une
+table avec mise, sans annuler, sans indice ni joker, sur une donne non
+garantie ; il repart ensuite de 5 000 jetons.
 
 Trois victoires d’affilée ouvrent le coffre-fort : un multiplicateur
 surprise sur tout le magot, souvent généreux, parfois piégé (×0,5).
@@ -174,15 +199,23 @@ D’où viennent les jetons :
   - Les pièces maîtresses (badge Graal) coûtent de 160 000 à 1 000 000 de
     jetons et sont réservées au rang Diamant.
 - **Les tables à mise**, pour faire fructifier sa banque.
-- **Trois bonus** :
+- **Six bonus** :
+  - Coup d’œil, Remélange et Joker : les jokers décrits plus haut.
   - Œil du croupier : un indice offert, sans pénalité.
   - Assurance : activée avant un quitte ou double, elle rend la moitié du
     magot si la manche est perdue ou abandonnée.
   - Seconde chance : sur une donne bloquée en Jackpot, redistribue une
     manche neuve sans perdre le magot.
 
+**Les missions** : trois par jour et trois par semaine, tirées de la date
+(les mêmes pour tout le monde), de 100 à 2 500 jetons chacune. On récupère
+la récompense à la main, avant le renouvellement.
+
 Le rang VIP dépend du total de jetons gagnés depuis le début ; les achats ne
-le font jamais baisser.
+le font jamais baisser. Dès le rang Argent, un **coffret hebdomadaire**
+offre des bonus, cumulés d’un rang à l’autre : Œil du croupier (Argent),
+Assurance (Or), Joker et missions +25 % (Platine), Seconde chance et
+missions +50 % (Diamant).
 
 | Rang | Dès | Remise | Roue du jour | Ce qu’il ouvre |
 | --- | --- | --- | --- | --- |
@@ -285,6 +318,8 @@ src/
     moves.ts     Coups, déplacement automatique, indices, fin automatique,
                  détection de blocage
     scoring.ts   Score et bonus de fin de partie
+    solver.ts    Solveur : prouve qu'une donne se gagne (donnes garanties)
+    dealer.ts    Recherche d'une donne gagnable
   state/       État applicatif (Zustand)
     game.ts      Partie en cours : coups, annuler, chrono, Jackpot, mises,
                  assurance, navigation
@@ -294,11 +329,14 @@ src/
     gambling.ts  Règles chiffrées du mode Jackpot
     persistence.ts  Stockage local qui ne plante jamais, validation de la
                     sauvegarde champ par champ
+    missions.ts  Missions quotidiennes et hebdomadaires
+    dealer.ts    Donnes garanties préparées dans un Web Worker
     achievements.ts
   audio/
     sfx.ts       Sons synthétisés à la volée (Web Audio API)
+    haptics.ts   Vibrations (Vibration API)
   components/  Interface React (plateau, bandeau, dock, boutique, roue,
-               écrans 404 et plantage)
+               missions, jokers, paris, tutoriel, écrans 404 et plantage)
   styles/      Tokens et tapis, cartes, plateau, interface
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
 e2e/           Tests de bout en bout (Playwright)
@@ -342,16 +380,21 @@ Quatre étages :
   blocage, fin automatique, indices, score. Des **parties aléatoires**
   (`fuzz.test.ts`) jouent des milliers de coups au hasard et vérifient après
   chacun que les 52 cartes sont toutes là, que les fondations et colonnes
-  restent valides et que le plateau d’origine n’est jamais modifié.
+  restent valides et que le plateau d’origine n’est jamais modifié. Le
+  solveur est vérifié en rejouant chacune de ses solutions jusqu’à la
+  victoire ; pioche limitée, joker et remélange ont leurs propres tests.
 - **Économie et parcours de jeu** : pourboires par difficulté, gains du
   Jackpot (série, table, difficulté), quitte ou double, coffre-fort,
   défaite, assurance, seconde chance, annuler, indices, et les garde-fous
   (pas d’encaissement en pleine partie, pas de double encaissement, une
-  seule ouverture de coffre).
+  seule ouverture de coffre). Vegas, Chrono, moitié à l’abri, paris annexes,
+  jackpot progressif et ses conditions, jokers, missions, coffret de rang,
+  donnes garanties et tutoriel ont chacun leur parcours complet.
 - **Sauvegarde** : stockage plein ou bloqué, JSON corrompu mis de côté,
   sauvegarde bricolée (soldes négatifs, objets inconnus, types faux).
 - **Interface** : écran de plantage, page 404, notifications d’erreur,
-  réglages, pioche au clavier, confirmation avant de fermer l’onglet.
+  réglages, pioche au clavier, confirmation avant de fermer l’onglet,
+  missions, paris, jokers, compte à rebours, tutoriel.
 
 Les tests de bout en bout tournent sur le build de production servi sous
 `/Jackpot-Solitaire/`, sur ordinateur et téléphone : ils échouent à la

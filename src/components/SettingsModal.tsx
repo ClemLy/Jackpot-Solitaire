@@ -2,6 +2,9 @@ import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
 import { playSound, unlockAudio } from '../audio/sfx';
 import { DifficultyPicker } from './ui';
+import { haptic, hapticsSupported } from '../audio/haptics';
+import { GUARANTEED_PAYOUT } from '../state/catalog';
+import { formatMultiplier } from '../utils/format';
 
 function Switch({
   label,
@@ -70,6 +73,18 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           />
         </label>
 
+        {hapticsSupported() && (
+          <Switch
+            label="Vibrations"
+            hint="Un petit retour sous les doigts: coup refusé, pile complète, victoire."
+            value={settings.haptics}
+            onChange={(v) => {
+              update({ haptics: v });
+              if (v) haptic('complete');
+            }}
+          />
+        )}
+
         <Switch
           label="Animations réduites"
           hint="Coupe les vols de cartes et les effets, pour un rendu plus calme."
@@ -90,6 +105,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             onChange={(difficulty) => update({ difficulty })}
           />
         </div>
+
+        <Switch
+          label="Donnes garanties gagnables"
+          hint={`Le croupier ne sert que des donnes dont il a prouvé la victoire. Plus confortable, donc gains ×${formatMultiplier(GUARANTEED_PAYOUT)}. Hors défi du jour.`}
+          value={settings.guaranteed}
+          onChange={(v) => update({ guaranteed: v })}
+        />
 
         <p className="fineprint">
           Réglages, statistiques, banque et achats restent stockés uniquement

@@ -6,6 +6,7 @@ import { formatMultiplier, formatNumber } from '../utils/format';
 import { Stage } from './Modal';
 import { Chip, RollingNumber } from './ui';
 import { InsuranceToggle } from './Insurance';
+import { HalfCashOut } from './WinOverlay';
 
 type Phase = 'closed' | 'spinning' | 'open';
 
@@ -133,6 +134,7 @@ export function VaultOverlay() {
   const pot = useGameStore((s) => s.pot);
   const openVault = useGameStore((s) => s.openVault);
   const cashOut = useGameStore((s) => s.cashOut);
+  const cashOutHalf = useGameStore((s) => s.cashOutHalf);
   const doubleOrNothing = useGameStore((s) => s.doubleOrNothing);
   const reduced = useMetaStore((s) => s.settings.reducedMotion);
 
@@ -231,6 +233,13 @@ export function VaultOverlay() {
                 </span>
               </button>
             </div>
+            {Math.floor(pot / 2) > 0 && (
+              <HalfCashOut
+                half={Math.floor(pot / 2)}
+                remaining={pot - Math.floor(pot / 2)}
+                onClick={() => cashOutHalf(insure)}
+              />
+            )}
           </div>
         </>
       )}

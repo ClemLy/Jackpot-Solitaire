@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Vault, Home as HomeIcon } from 'lucide-react';
-import { useGameStore, MODE_LABEL } from '../state/game';
-import { findDifficulty, findStakeTable, findCosmetic } from '../state/catalog';
+import { Check, Home as HomeIcon, Vault, X } from 'lucide-react';
+import { useGameStore, isScoring, MODE_LABEL } from '../state/game';
+import {
+  VEGAS_STAKE,
+  findDifficulty,
+  findSideBet,
+  findStakeTable,
+  findCosmetic,
+} from '../state/catalog';
 import { useMetaStore } from '../state/meta';
 import { playSound } from '../audio/sfx';
 import {
@@ -78,19 +84,22 @@ export function WinOverlay() {
   const difficulty = useGameStore((s) => s.difficulty);
   const finalTimeMs = useGameStore((s) => s.finalTimeMs);
   const cashOut = useGameStore((s) => s.cashOut);
+  const cashOutHalf = useGameStore((s) => s.cashOutHalf);
   const doubleOrNothing = useGameStore((s) => s.doubleOrNothing);
   const gambleFromScore = useGameStore((s) => s.gambleFromScore);
   const enterVault = useGameStore((s) => s.enterVault);
   const newGame = useGameStore((s) => s.newGame);
   const goHome = useGameStore((s) => s.goHome);
   const reduced = useMetaStore((s) => s.settings.reducedMotion);
+  const balance = useMetaStore((s) => s.wallet.balance);
 
   const [insure, setInsure] = useState(false);
   const [stage, setStage] = useState(0);
   const [skipped, setSkipped] = useState(reduced);
 
-  const scoring = mode !== 'zen';
+  const scoring = isScoring(mode);
   const gambling = mode === 'gambling';
+  const vegas = mode === 'vegas';
   const table = findStakeTable(stakeTable);
 
   // Sequence du decompte, une ligne apres l'autre, facon machine a sous.
@@ -111,13 +120,24 @@ export function WinOverlay() {
       }
       if (win.difficultyMultiplier !== 1)
         list.push({ key: 'difficulty', delay: 650, sound: 'stamp' });
+      if (win.guaranteedMultiplier !== 1)
+        list.push({ key: 'guaranteed', delay: 650, sound: 'stamp' });
       if (gambling) list.push({ key: 'pot', delay: 1100, sound: 'coins' });
     }
-    if (!gambling && win.tip + win.dailyBonus > 0)
+    if (win.vegas) {
+      list.push({ key: 'vegas-stake', delay: 550 });
+      list.push({ key: 'vegas-cards', delay: 650 });
+      list.push({ key: 'vegas-net', delay: 900, sound: 'coins' });
+    }
+    if (win.bets.length > 0)
+      list.push({ key: 'bets', delay: 900, sound: 'chip' });
+    if (win.progressive > 0)
+      list.push({ key: 'progressive', delay: 1600, sound: 'jackpot' });
+    if (!gambling && !vegas && win.tip + win.dailyBonus > 0)
       list.push({ key: 'reward', delay: 900, sound: 'coins' });
     list.push({ key: 'actions', delay: 200 });
     return list;
-  }, [win, scoring, gambling]);
+  }, [win, scoring, gambling, vegas]);
 
   const done = skipped || stage >= steps.length - 1;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -141,6 +161,11 @@ export function WinOverlay() {
     skipped || steps.findIndex((s) => s.key === key) <= stage;
   const instant = skipped;
   const reward = win.tip + win.dailyBonus;
+  const half = Math.floor(win.potAfter / 2);
+  const showMults =
+    gambling ||
+    win.difficultyMultiplier !== 1 ||
+    win.guaranteedMultiplier !== 1;
 
   return (
     <Stage
@@ -160,7 +185,30 @@ export function WinOverlay() {
         </div>
         <h2 className="ticket__title">Victoire</h2>
 
-        {scoring ? (
+        {win.progressive > 0 && (
+          <div
+            className={`ticket__progressive ticket__progressive--top${reached('progressive') ? ' is-in' : ''}`}
+          >
+            <span className="ticket__progressive-label">
+              Jackpot progressif
+            </span>
+            <span className="ticket__progressive-value">
+              <Chip size="0.8em" />
+              <Count
+                to={win.progressive}
+                prefix="+"
+                active={reached('progressive')}
+                instant={instant}
+                duration={1400}
+              />
+            </span>
+            <span className="ticket__progressive-note">
+              Versé directement dans ta banque
+            </span>
+          </div>
+        )}
+
+        {scoring && (
           <div className="tally">
             <TallyLine
               show={reached('base')}
@@ -175,7 +223,7 @@ export function WinOverlay() {
             />
             <TallyLine
               show={reached('speed')}
-              label="Bonus de vitesse"
+              label={mode === 'chrono' ? 'Bonus chrono' : 'Bonus de vitesse'}
               value={
                 <Count
                   to={win.bonuses.speed}
@@ -205,14 +253,14 @@ export function WinOverlay() {
               label="Score de la manche"
               value={formatNumber(win.roundScore)}
             />
-            {(gambling || win.difficultyMultiplier !== 1) && (
+            {showMults && (
               <div className="tally__mults">
-                {win.multiplier !== 1 && reached('combo') && (
+                {gambling && win.multiplier !== 1 && reached('combo') && (
                   <span className="stamp">
                     ×{formatMultiplier(win.multiplier)} <small>série</small>
                   </span>
                 )}
-                {win.tableMultiplier !== 1 && reached('table') && (
+                {gambling && win.tableMultiplier !== 1 && reached('table') && (
                   <span className="stamp stamp--blue">
                     ×{formatMultiplier(win.tableMultiplier)}{' '}
                     <small>{table.label}</small>
@@ -224,10 +272,54 @@ export function WinOverlay() {
                     <small>{findDifficulty(difficulty).label}</small>
                   </span>
                 )}
+                {win.guaranteedMultiplier !== 1 && reached('guaranteed') && (
+                  <span className="stamp stamp--grey">
+                    ×{formatMultiplier(win.guaranteedMultiplier)}{' '}
+                    <small>garantie</small>
+                  </span>
+                )}
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {win.vegas && (
+          <div className="tally">
+            <TallyLine
+              show={reached('vegas-stake')}
+              label="Prix de la donne"
+              value={`−${formatNumber(win.vegas.stake)}`}
+            />
+            <TallyLine
+              show={reached('vegas-cards')}
+              label={`${win.vegas.cards} cartes × ${formatNumber(win.vegas.cardValue)}`}
+              value={
+                <Count
+                  to={win.vegas.earned}
+                  prefix="+"
+                  active={reached('vegas-cards')}
+                  instant={instant}
+                />
+              }
+            />
+            <TallyLine
+              show={reached('vegas-net')}
+              total
+              label="Bilan de la donne"
+              value={`${win.vegas.net >= 0 ? '+' : '−'}${formatNumber(Math.abs(win.vegas.net))}`}
+            />
+            {win.guaranteedMultiplier !== 1 && reached('vegas-net') && (
+              <div className="tally__mults">
+                <span className="stamp stamp--grey">
+                  ×{formatMultiplier(win.guaranteedMultiplier)}{' '}
+                  <small>garantie</small>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!scoring && !vegas && (
           <p className="ticket__text">
             Une partie tout en douceur. Rien à compter, juste le plaisir.
           </p>
@@ -257,7 +349,28 @@ export function WinOverlay() {
           </div>
         )}
 
-        {!gambling && reward > 0 && (
+        {win.bets.length > 0 && (
+          <div className={`ticket__bets${reached('bets') ? ' is-in' : ''}`}>
+            <span className="ticket__bets-title">Paris annexes</span>
+            {win.bets.map((bet) => (
+              <span
+                key={bet.id}
+                className="ticket__bet"
+                data-won={bet.won ? 'true' : 'false'}
+              >
+                {bet.won ? <Check size={14} /> : <X size={14} />}
+                <span>{findSideBet(bet.id).label}</span>
+                <span className="ticket__bet-value">
+                  {bet.won
+                    ? `+${formatNumber(bet.payout)}`
+                    : `−${formatNumber(bet.stake)}`}
+                </span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {!gambling && !vegas && reward > 0 && (
           <div className={`ticket__reward${reached('reward') ? ' is-in' : ''}`}>
             <Chip size={18} />
             <span>
@@ -307,6 +420,13 @@ export function WinOverlay() {
                 </span>
               </button>
             </div>
+            {half > 0 && (
+              <HalfCashOut
+                half={half}
+                remaining={win.potAfter - half}
+                onClick={() => cashOutHalf(insure)}
+              />
+            )}
           </>
         ) : (
           <>
@@ -314,8 +434,18 @@ export function WinOverlay() {
               <button
                 className="btn btn--emerald btn--lg"
                 onClick={() => newGame({ mode })}
+                disabled={vegas && balance < VEGAS_STAKE}
               >
-                Nouvelle donne
+                {vegas ? (
+                  <>
+                    Rejouer
+                    <span className="btn__amount">
+                      <Chip size={16} /> {VEGAS_STAKE}
+                    </span>
+                  </>
+                ) : (
+                  'Nouvelle donne'
+                )}
               </button>
               {scoring && (
                 <button
@@ -334,6 +464,36 @@ export function WinOverlay() {
       </div>
       {!done && <p className="stage__skip">Touchez pour passer</p>}
     </Stage>
+  );
+}
+
+/**
+ * Troisieme voie entre encaisser et doubler: la moitie du magot part a la
+ * banque, l'autre moitie reste en jeu pour la manche suivante.
+ */
+export function HalfCashOut({
+  half,
+  remaining,
+  onClick,
+}: {
+  half: number;
+  remaining: number;
+  onClick: () => void;
+}) {
+  return (
+    <button className="half-cash" onClick={onClick}>
+      <span className="half-cash__split" aria-hidden="true">
+        <Chip size={18} />
+        <Chip size={18} tone="red" />
+      </span>
+      <span className="half-cash__text">
+        <strong>Mettre la moitié à l’abri et rejouer</strong>
+        <small>
+          +{formatNumber(half)} à la banque · {formatNumber(remaining)} restent
+          en jeu
+        </small>
+      </span>
+    </button>
   );
 }
 

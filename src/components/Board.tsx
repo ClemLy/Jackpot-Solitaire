@@ -8,10 +8,11 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { Ban, RotateCcw } from 'lucide-react';
 import {
   canPlaceOnFoundation,
   canPlaceOnTableau,
+  canRecycle,
   movableRun,
   top,
   type Card,
@@ -243,6 +244,10 @@ export function Board() {
   const autoFromTableau = useGameStore((s) => s.autoFromTableau);
   const applyDragMove = useGameStore((s) => s.applyDragMove);
   const reportInvalid = useGameStore((s) => s.reportInvalid);
+  const jokerArmed = useGameStore((s) => s.jokerArmed);
+  const peekMode = useGameStore((s) => s.peekMode);
+  const peekCard = useGameStore((s) => s.peekCard);
+  const peekAt = useGameStore((s) => s.peekAt);
 
   const [dragCards, setDragCards] = useState<Card[] | null>(null);
   const [drop, setDrop] = useState<{ target: DropTarget; ok: boolean } | null>(
@@ -389,9 +394,11 @@ export function Board() {
       }
       if (source.kind === 'tableau' && source.column === target.index)
         return false;
+      // Joker arme: toutes les colonnes acceptent la carte.
+      if (jokerArmed) return true;
       return canPlaceOnTableau(head, top(board.tableau[target.index]));
     },
-    [board],
+    [board, jokerArmed],
   );
 
   const buildMove = useCallback(
@@ -676,6 +683,8 @@ export function Board() {
   };
 
   const stockEmpty = board.stock.length === 0;
+  // Vegas: une fois les passages epuises, la pioche ne se recharge plus.
+  const stockSpent = stockEmpty && board.waste.length > 0 && !canRecycle(board);
 
   /** Ecarts d'une colonne selon le nombre de cartes cachees et visibles. */
   const fanFor = (column: Card[]) => {
@@ -706,12 +715,22 @@ export function Board() {
             role="button"
             tabIndex={0}
             aria-label={
-              stockEmpty ? 'Recharger la pioche' : 'Piocher une carte'
+              stockSpent
+                ? 'Pioche épuisée'
+                : stockEmpty
+                  ? 'Recharger la pioche'
+                  : 'Piocher une carte'
             }
+            data-spent={stockSpent ? 'true' : undefined}
           >
             <div className="pile__slot">
-              {stockEmpty && board.waste.length > 0 && (
-                <RotateCcw className="pile__mark-icon" strokeWidth={2.2} />
+              {stockSpent ? (
+                <Ban className="pile__mark-icon" strokeWidth={2.2} />
+              ) : (
+                stockEmpty &&
+                board.waste.length > 0 && (
+                  <RotateCcw className="pile__mark-icon" strokeWidth={2.2} />
+                )
               )}
             </div>
             {(() => {
@@ -826,6 +845,28 @@ export function Board() {
                   <span className="pile__mark">K</span>
                 </div>
                 {column.map((card, i) => {
+                  if (!card.faceUp && (peekMode || peekCard === card.id)) {
+                    // Coup d'oeil: les cartes cachees se touchent, et celle
+                    // choisie se montre quelques secondes.
+                    const peeking = peekCard === card.id;
+                    return (
+                      <CardView
+                        key={card.id}
+                        card={peeking ? { ...card, faceUp: true } : card}
+                        style={positions[i]}
+                        peekable={peekMode}
+                        peeking={peeking}
+                        onPointerDown={
+                          peekMode
+                            ? (e) => {
+                                e.preventDefault();
+                                peekAt(card.id);
+                              }
+                            : undefined
+                        }
+                      />
+                    );
+                  }
                   const run = card.faceUp ? movableRun(column, i) : null;
                   const draggable = run !== null;
                   return renderCard(

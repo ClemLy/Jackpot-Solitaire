@@ -70,6 +70,8 @@ export interface DealOptions {
    * pile de cartes cachees.
    */
   gentle?: boolean;
+  /** Rechargements de pioche permis (mode Vegas). Absent: illimite. */
+  recycles?: number;
 }
 
 /**
@@ -113,6 +115,9 @@ export function deal(
     foundations: [[], [], [], []],
     tableau: options.gentle ? soften(tableau, rng) : tableau,
     drawCount,
+    ...(options.recycles !== undefined
+      ? { recyclesLeft: options.recycles }
+      : {}),
   };
 }
 

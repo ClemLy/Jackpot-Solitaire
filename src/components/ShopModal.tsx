@@ -2,13 +2,11 @@ import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Check,
   Crown,
-  Eye,
+  Gift,
   Layers,
-  LifeBuoy,
   Lock,
   Play,
   Rocket,
-  Shield,
   Sparkles,
   Coins,
   Gem,
@@ -32,8 +30,11 @@ import {
   nextVipTier,
   vipProgress,
   vipTierFor,
+  RANK_PERKS,
+  findConsumable,
+  missionBonusFor,
+  weeklyGiftFor,
   type Consumable,
-  type ConsumableId,
   type Cosmetic,
   type CosmeticCategory,
 } from '../state/catalog';
@@ -43,6 +44,7 @@ import type { Card } from '../engine';
 import { CardView } from './CardView';
 import { Balance, Chip } from './ui';
 import { VictoryLayer } from './VictoryLayer';
+import { ConsumableIcon } from './icons';
 
 type Tab = CosmeticCategory | 'bonus';
 
@@ -107,12 +109,6 @@ const FX_ICON: Record<string, ReactNode> = {
   champagne: <Wine size={30} />,
   goldbars: <Award size={30} />,
   supernova: <Sun size={30} />,
-};
-
-const BONUS_ICON: Record<ConsumableId, ReactNode> = {
-  hint: <Eye size={30} />,
-  insurance: <Shield size={30} />,
-  redeal: <LifeBuoy size={30} />,
 };
 
 function Preview({ item }: { item: Cosmetic }) {
@@ -287,6 +283,7 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
           >
             <span />
           </div>
+          <PerkLine lifetime={lifetime} />
           <div className="vip-banner__next">
             {next
               ? `Encore ${formatNumber(next.threshold - lifetime)} jetons gagnés pour le rang ${next.label}: −${Math.round(next.discount * 100)} %, roue ×${formatMultiplier(next.wheelBoost)} et ${nextUnlocks} objets exclusifs.`
@@ -413,7 +410,7 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
                 >
                   <div className="preview preview--fx">
                     <span className="preview__medal">
-                      {BONUS_ICON[item.id]}
+                      <ConsumableIcon id={item.id} size={30} />
                     </span>
                     {count > 0 && (
                       <span className="preview__count">×{count}</span>
@@ -443,5 +440,38 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
         />
       )}
     </Modal>
+  );
+}
+
+/** Avantages concrets du rang: coffret de la semaine et bonus de missions. */
+function PerkLine({ lifetime }: { lifetime: number }) {
+  const gift = weeklyGiftFor(lifetime);
+  const bonus = missionBonusFor(lifetime);
+  const next = nextVipTier(lifetime);
+  const nextPerk = next ? RANK_PERKS.find((p) => p.tier === next.id) : null;
+  if (gift.length === 0 && !nextPerk) return null;
+  return (
+    <div className="vip-perks">
+      {gift.length > 0 ? (
+        <span className="vip-perks__now">
+          <Gift size={14} /> Coffret de la semaine:{' '}
+          {gift.map((id) => findConsumable(id).label).join(', ')}
+          {bonus > 0 && <> · missions +{Math.round(bonus * 100)} %</>}
+        </span>
+      ) : (
+        <span className="vip-perks__now">
+          <Gift size={14} /> Dès le rang Argent: un coffret de bonus chaque
+          semaine.
+        </span>
+      )}
+      {nextPerk?.gift && next && gift.length > 0 && (
+        <span className="vip-perks__next">
+          Rang {next.label}: + {findConsumable(nextPerk.gift).label}
+          {nextPerk.missionBonus
+            ? `, missions +${Math.round(nextPerk.missionBonus * 100)} %`
+            : ''}
+        </span>
+      )}
+    </div>
   );
 }

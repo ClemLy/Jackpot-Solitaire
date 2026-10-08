@@ -4,8 +4,13 @@ import { Modal } from './Modal';
 import { useGameStore, MODE_LABEL, type GameMode } from '../state/game';
 import { useMetaStore } from '../state/meta';
 import {
+  CHRONO_LIMIT_MS,
   STAKE_TABLES,
+  VEGAS_STAKE,
+  findDifficulty,
   meetsTier,
+  vegasCardValue,
+  vegasRecycles,
   type DifficultyId,
   type StakeTableId,
 } from '../state/catalog';
@@ -16,9 +21,16 @@ import {
   shareUrl,
 } from '../utils/seed';
 import { formatNumber } from '../utils/format';
-import { DifficultyPicker } from './ui';
+import { Chip, DifficultyPicker } from './ui';
 
-const MODES: GameMode[] = ['classic', 'gambling', 'daily', 'chrono', 'zen'];
+const MODES: GameMode[] = [
+  'classic',
+  'gambling',
+  'daily',
+  'chrono',
+  'vegas',
+  'zen',
+];
 
 export function NewGameModal({ onClose }: { onClose: () => void }) {
   const current = useGameStore((s) => ({
@@ -69,7 +81,11 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
           <button className="btn btn--ghost" onClick={onClose}>
             Fermer
           </button>
-          <button className="btn btn--gold" onClick={start}>
+          <button
+            className="btn btn--gold"
+            onClick={start}
+            disabled={mode === 'vegas' && balance < VEGAS_STAKE}
+          >
             Lancer la partie
           </button>
         </>
@@ -114,6 +130,26 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
               })}
             </div>
           </div>
+        )}
+
+        {mode === 'vegas' && (
+          <p className="mode-note">
+            <Chip size={14} /> La donne coûte {VEGAS_STAKE} jetons, chaque carte
+            rangée en rapporte {vegasCardValue(difficulty)}.{' '}
+            {vegasRecycles(findDifficulty(difficulty).drawCount) === 0
+              ? 'Un seul passage dans la pioche'
+              : `${vegasRecycles(findDifficulty(difficulty).drawCount) + 1} passages dans la pioche`}
+            , pas d&rsquo;annulation.
+            {balance < VEGAS_STAKE && (
+              <strong> Il te manque {VEGAS_STAKE - balance} jetons.</strong>
+            )}
+          </p>
+        )}
+        {mode === 'chrono' && (
+          <p className="mode-note">
+            {CHRONO_LIMIT_MS / 60000} minutes pour tout ranger, à partir du
+            premier coup. Chaque seconde restante rapporte des points.
+          </p>
         )}
 
         <div className="field-block">

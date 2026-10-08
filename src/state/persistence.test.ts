@@ -140,6 +140,9 @@ describe('validation de la sauvegarde', () => {
       insurance: 0,
       hint: 3,
       redeal: 0,
+      peek: 0,
+      reshuffle: 0,
+      joker: 0,
     });
     expect(Object.keys(out.achievements)).toEqual(['first-win']);
     expect(out.daily).toEqual({
@@ -148,6 +151,50 @@ describe('validation de la sauvegarde', () => {
     });
     expect(out.wheel.lastSpin).toBeNull();
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+});
+
+describe('validation des nouveautes', () => {
+  it('assainit cagnotte, missions, coffret, tutoriel et reglages', () => {
+    const out = sanitizePersistedMeta(
+      {
+        settings: { haptics: 'oui', guaranteed: true },
+        progressive: { pot: -50, wins: 'beaucoup' },
+        missions: {
+          daily: {
+            key: '2026-10-08',
+            progress: { 'd-win-2': 1, 'mission-pirate': 99, 'd-cards': -4 },
+            claimed: ['d-win-2', 'd-win-2', 'faux'],
+          },
+          weekly: { key: '<script>', progress: {}, claimed: [] },
+        },
+        perks: { lastGift: 'demain' },
+        tutorial: { done: 'oui' },
+      },
+      defaults(),
+    );
+    expect(out.settings.haptics).toBe(defaults().settings.haptics);
+    expect(out.settings.guaranteed).toBe(true);
+    expect(out.progressive.pot).toBeGreaterThanOrEqual(
+      defaults().progressive.pot,
+    );
+    expect(out.progressive.wins).toBe(defaults().progressive.wins);
+    expect(out.missions.daily).toEqual({
+      key: '2026-10-08',
+      progress: { 'd-win-2': 1, 'd-cards': 0 },
+      claimed: ['d-win-2'],
+    });
+    expect(out.missions.weekly).toEqual(defaults().missions.weekly);
+    expect(out.perks.lastGift).toBeNull();
+    expect(out.tutorial.done).toBe(defaults().tutorial.done);
+  });
+
+  it('garde une cagnotte plus grosse que la mise de depart', () => {
+    const out = sanitizePersistedMeta(
+      { progressive: { pot: 42_000, wins: 2 } },
+      defaults(),
+    );
+    expect(out.progressive).toEqual({ pot: 42_000, wins: 2 });
   });
 });
 

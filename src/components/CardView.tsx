@@ -101,6 +101,10 @@ export interface CardViewProps {
   shaking?: boolean;
   expression?: Expression;
   floatText?: string;
+  /** Carte cachee qu'on peut toucher pour un coup d'oeil. */
+  peekable?: boolean;
+  /** Carte cachee montree le temps d'un coup d'oeil. */
+  peeking?: boolean;
   onPointerDown?: (event: ReactPointerEvent) => void;
   onPointerMove?: (event: ReactPointerEvent) => void;
   onPointerUp?: (event: ReactPointerEvent) => void;
@@ -170,6 +174,8 @@ function CardViewBase(props: CardViewProps) {
   if (props.hint) classes.push('is-hint');
   if (props.hintTarget) classes.push('is-hint-target');
   if (props.shaking) classes.push('is-shake');
+  if (props.peekable) classes.push('is-peekable');
+  if (props.peeking) classes.push('is-peeking');
 
   return (
     <div
