@@ -45,8 +45,44 @@ function replaceFoundation(
   return foundations;
 }
 
+function isIndex(value: number, length: number): boolean {
+  return Number.isInteger(value) && value >= 0 && value < length;
+}
+
+/**
+ * Verifie que les index d'un coup designent bien des piles existantes. Un
+ * coup peut venir de l'interface (attribut data-drop lu dans le DOM): un index
+ * absurde doit donner un coup illegal, jamais une exception.
+ */
+function hasValidIndexes(board: Board, move: Move): boolean {
+  const f = board.foundations.length;
+  const t = board.tableau.length;
+  switch (move.type) {
+    case 'draw':
+    case 'recycle':
+      return true;
+    case 'wasteToFoundation':
+      return isIndex(move.foundation, f);
+    case 'wasteToTableau':
+      return isIndex(move.column, t);
+    case 'tableauToFoundation':
+      return isIndex(move.column, t) && isIndex(move.foundation, f);
+    case 'foundationToTableau':
+      return isIndex(move.foundation, f) && isIndex(move.column, t);
+    case 'tableauToTableau':
+      return (
+        isIndex(move.from, t) &&
+        isIndex(move.to, t) &&
+        Number.isInteger(move.count)
+      );
+    default:
+      return false;
+  }
+}
+
 /** Applique un coup et renvoie le nouveau plateau, ou null si le coup est illegal. */
 export function applyMove(board: Board, move: Move): ApplyResult | null {
+  if (!hasValidIndexes(board, move)) return null;
   switch (move.type) {
     case 'draw': {
       if (board.stock.length === 0) {

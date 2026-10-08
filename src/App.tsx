@@ -55,6 +55,20 @@ export default function App() {
     return () => window.removeEventListener('pointerdown', handler);
   }, []);
 
+  // Recharger ou fermer l'onglet en pleine serie Jackpot ferait perdre le
+  // magot sans le moindre avertissement: le navigateur demande confirmation.
+  const potAtRisk = useGameStore((s) => s.mode === 'gambling' && s.pot > 0);
+  useEffect(() => {
+    if (!potAtRisk) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Requis par les navigateurs plus anciens pour afficher la question.
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [potAtRisk]);
+
   // Une graine passee dans l'URL lance directement la donne correspondante.
   useEffect(() => {
     const seed = readSeedFromUrl();

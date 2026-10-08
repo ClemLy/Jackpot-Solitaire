@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import {
   CONSUMABLES,
   DEFAULT_CARD_BACK,
@@ -30,6 +30,11 @@ import {
   type WheelReward,
 } from './catalog';
 import { ACHIEVEMENTS, satisfiedAchievements } from './achievements';
+import {
+  createSafeStorage,
+  sanitizePersistedMeta,
+  type StorageProblem,
+} from './persistence';
 import { setSoundEnabled, setSoundVolume } from '../audio/sfx';
 import { todayISO } from '../utils/seed';
 import { formatNumber } from '../utils/format';
@@ -89,7 +94,7 @@ export interface WheelState {
   lastSpin: string | null;
 }
 
-export type NoticeKind = 'achievement' | 'vip' | 'reward';
+export type NoticeKind = 'achievement' | 'vip' | 'reward' | 'error';
 
 export interface Notice {
   id: number;
@@ -206,6 +211,36 @@ const initialInventory: Inventory = {
   owned: [],
   consumables: emptyConsumables(),
 };
+
+const STORAGE_MESSAGES: Record<
+  StorageProblem,
+  { title: string; text: string }
+> = {
+  read: {
+    title: 'Sauvegarde inaccessible',
+    text: 'Le navigateur bloque le stockage local (navigation privée ?). Ta progression ne sera pas conservée.',
+  },
+  corrupt: {
+    title: 'Sauvegarde illisible',
+    text: 'Ta sauvegarde était abîmée. Une copie a été mise de côté et le jeu repart d’une progression neuve.',
+  },
+  write: {
+    title: 'Sauvegarde impossible',
+    text: 'Le stockage du navigateur est plein ou bloqué: la progression de cette session risque d’être perdue.',
+  },
+};
+
+/**
+ * Previent le joueur d'un souci de sauvegarde. Differe d'un tour de boucle:
+ * la lecture a lieu pendant la creation meme du store, avant qu'il existe.
+ */
+function reportStorageProblem(problem: StorageProblem): void {
+  setTimeout(() => {
+    useMetaStore
+      .getState()
+      .notify({ kind: 'error', ...STORAGE_MESSAGES[problem] });
+  }, 0);
+}
 
 const ACHIEVEMENT_BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -534,7 +569,7 @@ export const useMetaStore = create<MetaState>()(
     {
       name: 'jackpot-solitaire-meta-v1',
       version: 3,
-      storage: createJSONStorage(() => localStorage),
+      storage: createSafeStorage(reportStorageProblem),
       partialize: (state) => ({
         settings: state.settings,
         stats: state.stats,
@@ -546,6 +581,9 @@ export const useMetaStore = create<MetaState>()(
         wheel: state.wheel,
       }),
       migrate: (persisted, version) => migrateMeta(persisted, version),
+      // Une sauvegarde modifiee a la main ou abimee ne doit jamais faire
+      // planter le jeu: chaque champ est valide avant d'etre repris.
+      merge: (persisted, current) => sanitizePersistedMeta(persisted, current),
       onRehydrateStorage: () => (state) => {
         if (state) {
           setSoundEnabled(state.settings.soundEnabled);

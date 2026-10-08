@@ -243,7 +243,13 @@ describe('mode Jackpot et banque', () => {
 
   it('verse le magot encaisse dans la banque', () => {
     useGameStore.getState().newGame({ mode: 'gambling', table: 'free' });
-    useGameStore.setState({ pot: 2500, combo: 1 });
+    // On ne peut encaisser qu'au bordereau de victoire.
+    useGameStore.setState({
+      pot: 2500,
+      combo: 1,
+      phase: 'won',
+      overlay: 'win',
+    });
     useGameStore.getState().cashOut();
     const wallet = useMetaStore.getState().wallet;
     expect(wallet.balance).toBe(3500);

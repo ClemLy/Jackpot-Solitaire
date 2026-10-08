@@ -18,12 +18,34 @@ export function randomSeed(): string {
   return String(Math.floor(Math.random() * 900000) + 100000);
 }
 
-/** Lit une graine passee dans l'URL (?seed=...), si presente. */
+/** Longueur maximale d'une graine: largement assez pour noter une donne. */
+export const SEED_MAX_LENGTH = 48;
+
+/**
+ * Nettoie une graine venue de l'exterieur (URL, champ de saisie): on retire
+ * les caracteres de controle et les espaces superflus, et on borne la
+ * longueur. Une graine vide apres nettoyage est refusee (null).
+ */
+export function sanitizeSeed(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  // Les blancs (retours a la ligne, tabulations) deviennent des espaces
+  // avant de retirer les autres caracteres de controle.
+  const cleaned = Array.from(raw.normalize('NFC').replace(/\s+/g, ' '))
+    .filter((ch) => {
+      const code = ch.codePointAt(0) ?? 0;
+      return code >= 0x20 && !(code >= 0x7f && code <= 0x9f);
+    })
+    .join('')
+    .trim();
+  if (cleaned.length === 0) return null;
+  return Array.from(cleaned).slice(0, SEED_MAX_LENGTH).join('');
+}
+
+/** Lit une graine passee dans l'URL (?seed=...), si presente et valide. */
 export function readSeedFromUrl(): string | null {
   if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
-  const seed = params.get('seed');
-  return seed && seed.trim().length > 0 ? seed.trim() : null;
+  return sanitizeSeed(params.get('seed'));
 }
 
 /** Construit un lien partageable qui rejoue exactement la meme donne. */

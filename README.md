@@ -23,6 +23,7 @@ jeu sur la manche suivante ?
 - [Lancer le projet](#lancer-le-projet)
 - [Architecture du code](#architecture-du-code)
 - [Tests](#tests)
+- [Sécurité et robustesse](#sécurité-et-robustesse)
 - [Intégration et déploiement continus](#intégration-et-déploiement-continus)
 - [Régénérer les captures et les icônes](#régénérer-les-captures-et-les-icônes)
 - [Vie privée](#vie-privée)
@@ -257,7 +258,8 @@ npm run build && npm run preview
 | `npm run dev` | Serveur de développement avec rechargement à chaud. |
 | `npm run build` | Vérifie les types puis produit le build dans `dist/`. |
 | `npm run preview` | Sert le build de production en local. |
-| `npm test` | Tests unitaires du moteur et de l’économie (Vitest). |
+| `npm test` | Tests unitaires et d’interface (Vitest, Testing Library). |
+| `npm run test:e2e` | Tests de bout en bout sur le build de production (Playwright). |
 | `npm run test:watch` | Tests en mode surveillance. |
 | `npm run typecheck` | Vérification stricte des types TypeScript. |
 | `npm run lint` | Analyse statique ESLint. |
@@ -265,7 +267,7 @@ npm run build && npm run preview
 | `npm run format:check` | Vérifie le formatage sans modifier. |
 | `npm run screenshots` | Régénère les captures et les icônes. |
 
-Avant de pousser, `npm run format:check && npm run lint && npm run typecheck && npm test`
+Avant de pousser, `npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:e2e`
 reproduit la CI.
 
 ## Architecture du code
@@ -290,12 +292,17 @@ src/
                  inventaire, roue, hauts faits, migration des sauvegardes
     catalog.ts   Économie pure : boutique, bonus, rangs VIP, tables, roue
     gambling.ts  Règles chiffrées du mode Jackpot
+    persistence.ts  Stockage local qui ne plante jamais, validation de la
+                    sauvegarde champ par champ
     achievements.ts
   audio/
     sfx.ts       Sons synthétisés à la volée (Web Audio API)
-  components/  Interface React (plateau, bandeau, dock, boutique, roue...)
+  components/  Interface React (plateau, bandeau, dock, boutique, roue,
+               écrans 404 et plantage)
   styles/      Tokens et tapis, cartes, plateau, interface
-  utils/       Formatage, graines, tracés vectoriels des enseignes
+  utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
+e2e/           Tests de bout en bout (Playwright)
+404.html       Page servie par GitHub Pages pour toute adresse inconnue
 ```
 
 Choix techniques notables :
@@ -317,22 +324,67 @@ Choix techniques notables :
 - **Colonnes adaptatives** : les écarts de chaque colonne sont calculés à
   partir de la hauteur réellement disponible.
 
-Pile technique : React 18, TypeScript, Vite, Zustand, vite-plugin-pwa,
-Vitest, Lucide, Fontsource (Fraunces, Manrope).
+Pile technique : React 18, TypeScript, Vite 8, Zustand, vite-plugin-pwa,
+Vitest, Testing Library, Playwright, Lucide, Fontsource (Fraunces, Manrope).
 
 ## Tests
 
 ```bash
-npm test
+npm test                              # unitaires et interface
+npx playwright install chromium       # une seule fois
+npm run test:e2e                      # bout en bout
 ```
 
-Le moteur est couvert : mélange déterministe, distribution, règles de
-placement, application et non-mutation des coups, victoire et blocage, fin
-automatique, indices, score.
+Quatre étages :
 
-L’économie aussi : rangs VIP et remises, pourboires, tirage pondéré de la
-roue, migration des anciennes sauvegardes, achats refusés ou acceptés,
-prélèvement des mises, remboursement de l’assurance, encaissement.
+- **Moteur** : mélange déterministe, distribution pour chaque difficulté,
+  règles de placement, coups illégaux ou aux index absurdes, victoire et
+  blocage, fin automatique, indices, score. Des **parties aléatoires**
+  (`fuzz.test.ts`) jouent des milliers de coups au hasard et vérifient après
+  chacun que les 52 cartes sont toutes là, que les fondations et colonnes
+  restent valides et que le plateau d’origine n’est jamais modifié.
+- **Économie et parcours de jeu** : pourboires par difficulté, gains du
+  Jackpot (série, table, difficulté), quitte ou double, coffre-fort,
+  défaite, assurance, seconde chance, annuler, indices, et les garde-fous
+  (pas d’encaissement en pleine partie, pas de double encaissement, une
+  seule ouverture de coffre).
+- **Sauvegarde** : stockage plein ou bloqué, JSON corrompu mis de côté,
+  sauvegarde bricolée (soldes négatifs, objets inconnus, types faux).
+- **Interface** : écran de plantage, page 404, notifications d’erreur,
+  réglages, pioche au clavier, confirmation avant de fermer l’onglet.
+
+Les tests de bout en bout tournent sur le build de production servi sous
+`/Jackpot-Solitaire/`, sur ordinateur et téléphone : ils échouent à la
+moindre erreur console ou violation de la CSP.
+
+## Sécurité et robustesse
+
+Le jeu n’a ni serveur ni compte : la surface d’attaque se limite au
+navigateur. Ce qui est en place :
+
+- **Politique de sécurité du contenu** (CSP) injectée dans le HTML de
+  production : scripts, styles et polices ne viennent que du site, aucun
+  `unsafe-inline` ni `unsafe-eval`, pas d’`<object>`, pas de formulaire.
+- **Aucun HTML injecté** : tout texte affiché passe par React, y compris la
+  graine lue dans l’adresse et le chemin affiché sur la page 404.
+- **Graines nettoyées** : caractères de contrôle retirés, longueur bornée.
+- **Sauvegarde validée** au chargement, champ par champ : une sauvegarde
+  modifiée à la main ne peut ni planter le jeu ni produire un solde négatif
+  ou infini. Une sauvegarde illisible est mise de côté (clé
+  `jackpot-solitaire-meta-v1-illisible`) et le joueur est prévenu.
+- **Actions d’argent protégées** : encaisser, doubler, miser, ouvrir le
+  coffre ne fonctionnent que dans l’état de jeu prévu.
+- **Erreurs visibles** : un plantage de l’interface affiche un écran dédié
+  (retour à l’accueil, rapport à copier) ; les autres erreurs donnent une
+  notification discrète sans interrompre la partie.
+- **Dépendances** : `npm audit` à zéro vulnérabilité ; l’outil de
+  développement exposé sur `window` n’existe qu’en mode dev.
+
+Limites connues, propres à un jeu 100 % local : les jetons et la roue du
+jour reposent sur le navigateur et l’horloge de l’appareil, donc un joueur
+déterminé peut toujours tricher sur sa propre sauvegarde. GitHub Pages ne
+permet pas d’en-têtes HTTP : pas de `frame-ancestors` ni de HSTS au-delà de
+ce que GitHub fournit.
 
 ## Intégration et déploiement continus
 
@@ -342,8 +394,10 @@ et pull request sur `main` :
 1. Formatage (Prettier)
 2. Analyse statique (ESLint)
 3. Types (TypeScript)
-4. Tests unitaires (Vitest)
+4. Tests unitaires et d’interface (Vitest)
 5. Build de production (Vite)
+6. En parallèle : tests de bout en bout (Playwright), traces jointes en
+   cas d’échec
 
 Sur un push vers `main`, et seulement si tout est vert, le jeu est construit
 pour le sous-chemin du dépôt puis publié sur

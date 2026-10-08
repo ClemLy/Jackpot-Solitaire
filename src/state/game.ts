@@ -29,7 +29,7 @@ import {
   type StakeTableId,
 } from './catalog';
 import { playSound } from '../audio/sfx';
-import { dailySeed, randomSeed, todayISO } from '../utils/seed';
+import { dailySeed, randomSeed, sanitizeSeed, todayISO } from '../utils/seed';
 import { formatNumber } from '../utils/format';
 
 export type GameMode = 'classic' | 'gambling' | 'zen' | 'chrono' | 'daily';
@@ -194,6 +194,20 @@ function stopAutoTimer(): void {
 
 function isRiskingPot(state: GameStore): boolean {
   return state.mode === 'gambling' && state.pot > 0;
+}
+
+/**
+ * Vrai quand le joueur a gagne une manche Jackpot et doit choisir entre
+ * encaisser et doubler (bordereau de victoire ou coffre-fort ouvert). Les
+ * actions d'argent verifient cet etat: un appel hors contexte (double clic,
+ * bouton reste a l'ecran, console) ne doit jamais crediter ou relancer.
+ */
+function awaitingDecision(state: GameStore): boolean {
+  return (
+    state.mode === 'gambling' &&
+    state.phase === 'won' &&
+    (state.overlay === 'win' || state.overlay === 'vault')
+  );
 }
 
 function insuranceRefund(state: GameStore): number {
@@ -593,7 +607,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       settleBust();
       const mode = options?.mode ?? state.mode;
       const difficulty = options?.difficulty ?? meta.settings.difficulty;
-      let seed = options?.seed;
+      let seed = sanitizeSeed(options?.seed) ?? undefined;
       if (!seed) {
         seed = mode === 'daily' ? dailySeed() : randomSeed();
       }
@@ -742,6 +756,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
 
     cashOut: () => {
       const state = get();
+      if (!awaitingDecision(state)) return;
       const amount = state.pot;
       useMetaStore.getState().secureBank(amount, state.combo);
       playSound('coins');
@@ -763,6 +778,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
 
     doubleOrNothing: (insure = false) => {
       const state = get();
+      if (!awaitingDecision(state)) return;
       // L'assurance couvre uniquement la manche qui s'ouvre.
       const insured =
         insure && useMetaStore.getState().useConsumable('insurance');
@@ -782,6 +798,13 @@ export const useGameStore = create<GameStore>()((set, get) => {
 
     gambleFromScore: () => {
       const state = get();
+      // Seule une victoire notee hors Jackpot peut devenir une mise.
+      if (
+        state.phase !== 'won' ||
+        state.mode === 'gambling' ||
+        state.mode === 'zen'
+      )
+        return;
       const seed = randomSeed();
       // On transforme la victoire actuelle en premiere manche d'une serie.
       set({ mode: 'gambling', pot: state.score, combo: 1 });
@@ -792,11 +815,15 @@ export const useGameStore = create<GameStore>()((set, get) => {
     },
 
     enterVault: () => {
+      const state = get();
+      if (!awaitingDecision(state) || !state.win?.vaultEligible) return;
       set({ overlay: 'vault', vaultResult: null });
     },
 
     openVault: () => {
       const state = get();
+      // Une seule ouverture par coffre.
+      if (state.overlay !== 'vault' || state.vaultResult) return;
       const outcome = drawVaultOutcome();
       const potAfter = Math.max(0, Math.round(state.pot * outcome.multiplier));
       useMetaStore.getState().openVault();

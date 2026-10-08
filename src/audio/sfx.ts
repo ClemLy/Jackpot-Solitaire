@@ -32,6 +32,10 @@ let volume = 0.6;
 function ensureContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   if (!ctx) {
+    // Certains navigateurs refusent de creer un contexte audio (trop de
+    // contextes ouverts, politique d'autoplay stricte): le jeu doit continuer
+    // en silence plutot que planter. Voir playSound.
+
     const Ctor =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext?: typeof AudioContext })
@@ -59,7 +63,12 @@ export function setSoundVolume(value: number): void {
 
 /** A appeler sur la premiere interaction pour debloquer l'audio mobile. */
 export function unlockAudio(): void {
-  if (enabled) ensureContext();
+  if (!enabled) return;
+  try {
+    ensureContext();
+  } catch {
+    enabled = false;
+  }
 }
 
 function noiseBuffer(context: AudioContext, seconds: number): AudioBuffer {
@@ -336,9 +345,16 @@ function render(name: SoundName, context: AudioContext, bus: GainNode): void {
 
 export function playSound(name: SoundName): void {
   if (!enabled) return;
-  const context = ensureContext();
-  if (!context || !master) return;
-  render(name, context, master);
+  // Le son n'est jamais critique: une erreur audio (contexte refuse, noeud
+  // non supporte) ne doit surtout pas interrompre le coup en cours, qui
+  // appelle playSound au milieu de sa mise a jour.
+  try {
+    const context = ensureContext();
+    if (!context || !master) return;
+    render(name, context, master);
+  } catch {
+    enabled = false;
+  }
 }
 
 export const sfx = { play: playSound, unlock: unlockAudio };

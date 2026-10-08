@@ -1,6 +1,10 @@
 import { ShieldCheck, Shield } from 'lucide-react';
 import { useMetaStore } from '../state/meta';
-import { discountedPrice, findConsumable } from '../state/catalog';
+import {
+  INSURANCE_REFUND,
+  discountedPrice,
+  findConsumable,
+} from '../state/catalog';
 import { playSound } from '../audio/sfx';
 import { formatNumber } from '../utils/format';
 import { Chip } from './ui';
@@ -24,7 +28,7 @@ export function InsuranceToggle({
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
   const buy = useMetaStore((s) => s.buyConsumable);
   const price = discountedPrice(findConsumable('insurance').price, lifetime);
-  const refund = Math.round(pot / 2);
+  const refund = Math.round(pot * INSURANCE_REFUND);
 
   if (owned <= 0) {
     if (balance < price) return null;

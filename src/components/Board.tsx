@@ -98,6 +98,15 @@ function parseDrop(el: Element | null): DropTarget | null {
   return { kind, index: Number(index) };
 }
 
+/** Vrai si la cible du lacher est la pile d'ou viennent les cartes. */
+function isSamePile(source: Source, target: DropTarget): boolean {
+  if (source.kind === 'tableau')
+    return target.kind === 'tableau' && target.index === source.column;
+  if (source.kind === 'foundation')
+    return target.kind === 'foundation' && target.index === source.index;
+  return false;
+}
+
 function prefersReducedMotion(): boolean {
   return (
     useMetaStore.getState().settings.reducedMotion ||
@@ -546,6 +555,9 @@ export function Board() {
       const target = parseDrop(
         document.elementFromPoint(event.clientX, event.clientY),
       );
+      // Reposer les cartes la ou on les a prises n'est pas un coup rate:
+      // on annule simplement le glisser, sans penalite.
+      if (target && isSamePile(m.source, target)) return;
       if (target) {
         const move = buildMove(m.source, m.cards, target);
         if (move && applyDragMove(move)) return;
@@ -686,7 +698,13 @@ export function Board() {
             ref={stockRef}
             className={`pile pile--stock${hintInfo?.stock ? ' is-hint' : ''}`}
             onClick={() => phase === 'playing' && clickStock()}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return;
+              e.preventDefault();
+              if (phase === 'playing') clickStock();
+            }}
             role="button"
+            tabIndex={0}
             aria-label={
               stockEmpty ? 'Recharger la pioche' : 'Piocher une carte'
             }

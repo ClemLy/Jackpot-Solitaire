@@ -41,11 +41,43 @@ jobs:
       - name: Build de production
         run: npm run build
 
+  e2e:
+    name: Tests de bout en bout (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperation du code
+        uses: actions/checkout@v4
+
+      - name: Installation de Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installation des dependances
+        run: npm ci
+
+      - name: Installation de Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Build de production servi sous /Jackpot-Solitaire/, comme en ligne:
+      # CSP, page 404, sauvegarde corrompue, bureau et mobile.
+      - name: Tests de bout en bout
+        run: npm run test:e2e
+
+      - name: Rapport en cas d echec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
+
   deploy:
     name: Deploiement GitHub Pages
     # On ne deploie que lors d'un push sur main, apres la passe qualite.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: quality
+    needs: [quality, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read

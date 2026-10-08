@@ -9,7 +9,12 @@ import {
   type DifficultyId,
   type StakeTableId,
 } from '../state/catalog';
-import { dailySeed, randomSeed, shareUrl } from '../utils/seed';
+import {
+  SEED_MAX_LENGTH,
+  dailySeed,
+  randomSeed,
+  shareUrl,
+} from '../utils/seed';
 import { formatNumber } from '../utils/format';
 import { DifficultyPicker } from './ui';
 
@@ -128,6 +133,7 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
               value={effectiveSeed}
               disabled={isDaily}
               onChange={(e) => setSeed(e.target.value)}
+              maxLength={SEED_MAX_LENGTH}
               aria-label="Graine de partie"
               spellCheck={false}
               autoComplete="off"

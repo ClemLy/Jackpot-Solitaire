@@ -1,5 +1,6 @@
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useGameStore } from '../state/game';
+import { INSURANCE_REFUND } from '../state/catalog';
 import { formatNumber } from '../utils/format';
 import { Stage } from './Modal';
 import { Chip } from './ui';
@@ -23,7 +24,8 @@ export function ConfirmLeaveModal() {
       {insured && (
         <p className="stage__note">
           <ShieldCheck size={16} /> Manche assurée:{' '}
-          {formatNumber(Math.round(pot / 2))} jetons te seront rendus.
+          {formatNumber(Math.round(pot * INSURANCE_REFUND))} jetons te seront
+          rendus.
         </p>
       )}
       <div className="stage__actions is-in">

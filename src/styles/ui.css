@@ -3029,3 +3029,230 @@
     width: min(180px, 42dvh);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Notification d'erreur: meme carton que les autres, liseré rouge, et on peut
+   la toucher pour la fermer.
+--------------------------------------------------------------------------- */
+
+.toast[data-kind='error'] {
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 143, 143, 0.5),
+    var(--shadow-2);
+}
+.toast[data-kind='error'] .toast__medal {
+  background: linear-gradient(160deg, #ff9a9a, #b8263a);
+  color: #2b0508;
+}
+.toast[data-kind='error'] .toast__kicker {
+  color: var(--neg);
+}
+
+/* ---------------------------------------------------------------------------
+   Ecrans systeme (page introuvable, plantage): un eventail de cartes au-dessus
+   d'un panneau sombre, centre sur le tapis.
+--------------------------------------------------------------------------- */
+
+.sys {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: clamp(20px, 4vh, 36px);
+  padding: max(32px, env(safe-area-inset-top)) 16px
+    max(32px, env(safe-area-inset-bottom));
+}
+
+.sys__panel {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+  padding: clamp(22px, 4vw, 34px);
+  border-radius: var(--r-xl);
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--line-gold),
+    var(--shadow-3);
+  animation: sysRise 520ms var(--ease-out) both;
+}
+
+.sys__eyebrow {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-200);
+}
+.sys__eyebrow--red {
+  color: var(--neg);
+}
+
+.sys__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 5vw, 2.15rem);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.sys__text {
+  color: var(--text-2);
+  line-height: 1.55;
+  max-width: 44ch;
+}
+
+.sys__code {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--gold-100);
+  font:
+    600 0.88em ui-monospace,
+    'SF Mono',
+    Menlo,
+    monospace;
+  overflow-wrap: anywhere;
+  vertical-align: baseline;
+}
+
+.sys__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.sys__actions a.btn {
+  text-decoration: none;
+}
+
+.sys__details {
+  width: 100%;
+  margin-top: 4px;
+  text-align: left;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.sys__details summary {
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 750;
+  color: var(--text-3);
+  text-align: center;
+  list-style-position: inside;
+}
+.sys__details[open] {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+.sys__pre {
+  width: 100%;
+  max-height: 140px;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--neg);
+  font:
+    600 0.8rem/1.45 ui-monospace,
+    'SF Mono',
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sys__danger {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-3);
+}
+
+/* Eventail de trois cartes: 4 - jeton - 4, ou trois dos renverses. */
+.sys-fan {
+  position: relative;
+  --card-w: clamp(70px, 16vw, 104px);
+  --card-h: calc(var(--card-w) * 1.4);
+  width: calc(var(--card-w) * 3);
+  height: calc(var(--card-h) * 1.08);
+}
+.sys-fan__slot {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+  margin-left: calc(var(--card-w) / -2);
+  transform-origin: 50% 140%;
+  transform: rotate(calc(var(--i) * 14deg));
+  animation: sysFan 700ms var(--ease-out) both;
+  animation-delay: calc((var(--i) + 1) * 80ms);
+}
+.sys-fan__slot .card {
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.4));
+}
+.sys-fan__chip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--card-h) * 0.18);
+  width: calc(var(--card-w) * 0.86);
+  aspect-ratio: 1;
+  margin-left: calc(var(--card-w) * -0.43);
+  z-index: 2;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.45));
+  animation: sysChip 900ms var(--ease-spring) 260ms both;
+}
+.sys-fan--crash .sys-fan__slot {
+  transform: rotate(calc(var(--i) * 22deg))
+    translateY(calc(var(--i) * var(--i) * 6px));
+}
+.sys-fan__stamp {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  translate: -50% 0;
+  z-index: 3;
+  --rot: -10deg;
+  background: rgba(251, 246, 234, 0.92);
+  white-space: nowrap;
+  animation: stampIn 300ms var(--ease-out) 650ms both;
+}
+
+@keyframes sysRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+@keyframes sysFan {
+  from {
+    opacity: 0;
+    transform: rotate(0deg) translateY(30px);
+  }
+}
+@keyframes sysChip {
+  from {
+    opacity: 0;
+    transform: translateY(-40px) rotate(-120deg) scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sys__panel,
+  .sys-fan__slot,
+  .sys-fan__chip,
+  .sys-fan__stamp {
+    animation: none;
+  }
+}
