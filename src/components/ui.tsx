@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useMetaStore } from '../state/meta';
-import { formatNumber } from '../utils/format';
+import {
+  DIFFICULTIES,
+  findDifficulty,
+  type DifficultyId,
+} from '../state/catalog';
+import { formatMultiplier, formatNumber } from '../utils/format';
 
 type ChipTone = 'gold' | 'red' | 'black' | 'blue' | 'violet';
 
@@ -157,5 +162,35 @@ export function Balance({ className }: { className?: string }) {
       <Chip size="1.25em" />
       <RollingNumber value={balance} className="balance__value" />
     </span>
+  );
+}
+
+/** Choix du niveau de difficulte, avec le multiplicateur de gains de chacun. */
+export function DifficultyPicker({
+  value,
+  onChange,
+}: {
+  value: DifficultyId;
+  onChange: (id: DifficultyId) => void;
+}) {
+  return (
+    <>
+      <div className="pills" role="radiogroup" aria-label="Difficulté">
+        {DIFFICULTIES.map((d) => (
+          <button
+            key={d.id}
+            role="radio"
+            aria-checked={value === d.id}
+            onClick={() => onChange(d.id)}
+          >
+            {d.label} <small>×{formatMultiplier(d.payout)}</small>
+          </button>
+        ))}
+      </div>
+      <span className="field-hint">
+        {findDifficulty(value).pitch} Gains ×
+        {formatMultiplier(findDifficulty(value).payout)}.
+      </span>
+    </>
   );
 }

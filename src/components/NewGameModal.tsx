@@ -3,28 +3,33 @@ import { Check, Dice5, Link as LinkIcon } from 'lucide-react';
 import { Modal } from './Modal';
 import { useGameStore, MODE_LABEL, type GameMode } from '../state/game';
 import { useMetaStore } from '../state/meta';
-import { STAKE_TABLES, meetsTier, type StakeTableId } from '../state/catalog';
+import {
+  STAKE_TABLES,
+  meetsTier,
+  type DifficultyId,
+  type StakeTableId,
+} from '../state/catalog';
 import { dailySeed, randomSeed, shareUrl } from '../utils/seed';
 import { formatNumber } from '../utils/format';
+import { DifficultyPicker } from './ui';
 
 const MODES: GameMode[] = ['classic', 'gambling', 'daily', 'chrono', 'zen'];
 
 export function NewGameModal({ onClose }: { onClose: () => void }) {
   const current = useGameStore((s) => ({
     mode: s.mode,
-    drawCount: s.drawCount,
+    difficulty: s.difficulty,
     seed: s.seed,
     table: s.stakeTable,
   }));
   const newGame = useGameStore((s) => s.newGame);
   const requestLeave = useGameStore((s) => s.requestLeave);
-  const defaultDraw = useMetaStore((s) => s.settings.defaultDraw);
   const balance = useMetaStore((s) => s.wallet.balance);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
 
   const [mode, setMode] = useState<GameMode>(current.mode);
-  const [drawCount, setDrawCount] = useState<1 | 3>(
-    current.drawCount ?? defaultDraw,
+  const [difficulty, setDifficulty] = useState<DifficultyId>(
+    current.difficulty,
   );
   const [table, setTable] = useState<StakeTableId>(current.table);
   const [seed, setSeed] = useState(current.seed);
@@ -35,7 +40,7 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
 
   const start = () => {
     requestLeave(() => {
-      newGame({ mode, drawCount, seed: effectiveSeed, table });
+      newGame({ mode, difficulty, seed: effectiveSeed, table });
       onClose();
     });
   };
@@ -106,22 +111,9 @@ export function NewGameModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        <div className="row row--between">
-          <span className="field-label">Difficulté de pioche</span>
-          <div className="segmented" role="group" aria-label="Pioche">
-            <button
-              aria-pressed={drawCount === 1}
-              onClick={() => setDrawCount(1)}
-            >
-              Pioche 1
-            </button>
-            <button
-              aria-pressed={drawCount === 3}
-              onClick={() => setDrawCount(3)}
-            >
-              Pioche 3
-            </button>
-          </div>
+        <div className="field-block">
+          <span className="field-label">Difficulté</span>
+          <DifficultyPicker value={difficulty} onChange={setDifficulty} />
         </div>
 
         <div className="field-block">

@@ -21,9 +21,11 @@ import { useMetaStore } from './meta';
 import {
   DAILY_BONUS,
   INSURANCE_REFUND,
+  findDifficulty,
   findStakeTable,
   meetsTier,
   tipForWin,
+  type DifficultyId,
   type StakeTableId,
 } from './catalog';
 import { playSound } from '../audio/sfx';
@@ -66,6 +68,8 @@ export interface WinSummary {
   multiplier: number;
   /** Multiplicateur de la table a mise. */
   tableMultiplier: number;
+  /** Multiplicateur du niveau de difficulte. */
+  difficultyMultiplier: number;
   gain: number;
   potBefore: number;
   potAfter: number;
@@ -87,7 +91,7 @@ export interface LostSummary {
 
 export interface NewGameOptions {
   mode?: GameMode;
-  drawCount?: 1 | 3;
+  difficulty?: DifficultyId;
   seed?: string;
   table?: StakeTableId;
 }
@@ -98,6 +102,7 @@ interface GameStore {
   overlay: Overlay;
 
   mode: GameMode;
+  difficulty: DifficultyId;
   drawCount: 1 | 3;
   seed: string;
 
@@ -236,13 +241,14 @@ export const useGameStore = create<GameStore>()((set, get) => {
   /** Distribue une nouvelle donne et remet a zero l'etat vivant de la partie. */
   function dealRound(
     mode: GameMode,
-    drawCount: 1 | 3,
+    difficulty: DifficultyId,
     seed: string,
     keepPot: boolean,
     extra: Partial<GameStore> = {},
   ): void {
     stopAutoTimer();
-    const board = deal(seed, drawCount);
+    const { drawCount, gentle } = findDifficulty(difficulty);
+    const board = deal(seed, drawCount, { gentle });
     useMetaStore.getState().recordDeal();
     playSound('shuffle');
     set((state) => ({
@@ -250,6 +256,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       overlay: 'none',
       modal: 'none',
       mode,
+      difficulty,
       drawCount,
       seed,
       board,
@@ -318,12 +325,15 @@ export const useGameStore = create<GameStore>()((set, get) => {
     let multiplier = 1;
     const table = findStakeTable(state.stakeTable);
     const tableMultiplier = state.mode === 'gambling' ? table.multiplier : 1;
+    const difficultyMultiplier = findDifficulty(state.difficulty).payout;
     let gain = roundScore;
     const potBefore = pot;
 
     if (state.mode === 'gambling') {
       multiplier = comboMultiplier(combo);
-      gain = Math.round(roundScore * multiplier * tableMultiplier);
+      gain = Math.round(
+        roundScore * multiplier * tableMultiplier * difficultyMultiplier,
+      );
       // Le magot lui-meme ne descend jamais sous zero: un score negatif
       // rogne la mise mais ne rend jamais la banque debitrice.
       pot = Math.max(0, pot + gain);
@@ -332,7 +342,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     }
 
     // Hors Jackpot, une victoire verse un pourboire direct a la banque.
-    const tip = tipForWin(state.mode, roundScore);
+    const tip = tipForWin(state.mode, roundScore, difficultyMultiplier);
     const dailyBonus = firstDailyWin ? DAILY_BONUS : 0;
     meta.credit(tip + dailyBonus);
 
@@ -355,6 +365,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         baseScore,
         multiplier,
         tableMultiplier,
+        difficultyMultiplier,
         gain,
         potBefore,
         potAfter: pot,
@@ -430,6 +441,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     if (result.outcome.revealed > 0) playSound('flip');
 
     const startedAt = state.startedAt ?? Date.now();
+    const autoAvailable = canAutoComplete(result.board);
     set({
       board: result.board,
       score: nextScore,
@@ -441,7 +453,10 @@ export const useGameStore = create<GameStore>()((set, get) => {
       ],
       hint: null,
       shake: null,
-      autoAvailable: canAutoComplete(result.board),
+      autoAvailable,
+      // Si un coup joue pendant le rangement casse la fin automatique, on
+      // l'arrete au lieu de piocher en boucle.
+      autoCompleting: state.autoCompleting && autoAvailable,
     });
 
     if (isWon(result.board)) {
@@ -498,6 +513,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     overlay: 'none',
 
     mode: 'classic',
+    difficulty: 'expert',
     drawCount: 3,
     seed: 'bienvenue',
 
@@ -576,13 +592,13 @@ export const useGameStore = create<GameStore>()((set, get) => {
       const state = get();
       settleBust();
       const mode = options?.mode ?? state.mode;
-      const drawCount = options?.drawCount ?? meta.settings.defaultDraw;
+      const difficulty = options?.difficulty ?? meta.settings.difficulty;
       let seed = options?.seed;
       if (!seed) {
         seed = mode === 'daily' ? dailySeed() : randomSeed();
       }
       if (mode !== 'gambling') {
-        dealRound(mode, drawCount, seed, false);
+        dealRound(mode, difficulty, seed, false);
         return;
       }
       // Mode Jackpot: on s'assoit a une table. La mise quitte la banque et
@@ -600,7 +616,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         table = findStakeTable('free');
       }
       if (table.stake > 0) playSound('chip');
-      dealRound(mode, drawCount, seed, false, {
+      dealRound(mode, difficulty, seed, false, {
         stakeTable: table.id,
         pot: table.stake,
       });
@@ -609,7 +625,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     restartSameSeed: () => {
       const state = get();
       settleBust();
-      dealRound(state.mode, state.drawCount, state.seed, false);
+      dealRound(state.mode, state.difficulty, state.seed, false);
     },
 
     clickStock: () => {
@@ -674,6 +690,8 @@ export const useGameStore = create<GameStore>()((set, get) => {
       const previous = state.history[state.history.length - 1];
       const scoring = state.mode !== 'zen';
       playSound('whoosh');
+      // Annuler reprend la main: on coupe un rangement automatique en cours.
+      stopAutoTimer();
       set({
         board: previous.board,
         moves: previous.moves,
@@ -683,6 +701,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         hint: null,
         shake: null,
         autoAvailable: canAutoComplete(previous.board),
+        autoCompleting: false,
       });
     },
 
@@ -747,7 +766,9 @@ export const useGameStore = create<GameStore>()((set, get) => {
       // L'assurance couvre uniquement la manche qui s'ouvre.
       const insured =
         insure && useMetaStore.getState().useConsumable('insurance');
-      dealRound('gambling', state.drawCount, randomSeed(), true, { insured });
+      dealRound('gambling', state.difficulty, randomSeed(), true, {
+        insured,
+      });
     },
 
     secondChance: () => {
@@ -756,7 +777,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (!useMetaStore.getState().useConsumable('redeal')) return;
       // Le magot et la serie sont conserves tels quels: la manche bloquee
       // est simplement effacee et remplacee par une donne neuve.
-      dealRound('gambling', state.drawCount, randomSeed(), true);
+      dealRound('gambling', state.difficulty, randomSeed(), true);
     },
 
     gambleFromScore: () => {
@@ -764,7 +785,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       const seed = randomSeed();
       // On transforme la victoire actuelle en premiere manche d'une serie.
       set({ mode: 'gambling', pot: state.score, combo: 1 });
-      dealRound('gambling', state.drawCount, seed, true, {
+      dealRound('gambling', state.difficulty, seed, true, {
         stakeTable: 'free',
         insured: false,
       });

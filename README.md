@@ -78,11 +78,22 @@ Pour le confort :
 - Indice quand on bloque, qui montre aussi la pioche si c’est elle
   qu’il faut utiliser.
 - Annuler illimité.
-- Fin automatique dès qu’il n’y a plus de suspense (vérifiée par
-  simulation, donc jamais proposée à tort).
+- Fin automatique dès que toutes les cartes de la table sont retournées et
+  qu’il n’y a plus de suspense (vérifiée par simulation, donc jamais
+  proposée à tort).
 - Détection de blocage : si la donne ne peut plus jamais être terminée, le
   jeu le dit au lieu de laisser chercher dans le vide.
-- Pioche 1 (facile) ou Pioche 3 (classique).
+- Quatre niveaux de difficulté, qui pondèrent les jetons gagnés :
+
+  | Niveau | Pioche | Donne | Gains |
+  | --- | --- | --- | --- |
+  | Facile | 1 | adoucie | ×0,5 |
+  | Normal | 1 | au hasard | ×1 |
+  | Difficile | 3 | adoucie | ×1,5 |
+  | Expert | 3 | au hasard | ×3 |
+
+  Une donne adoucie remonte les cartes basses vers le haut des colonnes :
+  les As sont moins souvent enterrés sous les cartes cachées.
 - Graine de partie : rejouer une donne précise, ou l’envoyer par un lien
   `?seed=...`.
 
@@ -115,7 +126,8 @@ Toutes les règles sont aussi expliquées dans le jeu (bouton Règles).
 | Bonus sans faute (aucun coup invalide, aucun annuler) | +100 |
 
 En mode Jackpot, chaque manche gagnée grossit le magot, multipliée par la
-série en cours (×1, ×1,5, ×2, ×3, puis ×5). Après chaque victoire :
+série en cours (×1, ×1,5, ×2, ×3, puis ×5), par la table et par la
+difficulté. Après chaque victoire :
 
 - **Encaisser** : le magot rejoint la banque, définitivement.
 - **Quitte ou double** : on rejoue aussitôt en risquant tout. Une manche
@@ -293,8 +305,9 @@ Choix techniques notables :
 - **Graines déterministes** : un hash de chaîne alimente un générateur
   mulberry32. Deux graines identiques donnent la même partie, d’où le défi
   du jour et le partage par lien.
-- **Fin automatique sûre** : proposée seulement si la partie peut vraiment se
-  terminer en envoyant les cartes aux fondations, vérifié par simulation.
+- **Fin automatique sûre** : lancée seulement quand plus aucune carte de la
+  table n’est face cachée et que la partie peut vraiment se terminer en
+  envoyant les cartes aux fondations, vérifié par simulation.
 - **Détection de blocage** : la partie n’est déclarée perdue que si aucun
   coup ne peut plus jamais faire progresser la donne, en simulant tous les
   tirages accessibles via la pioche.

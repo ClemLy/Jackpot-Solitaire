@@ -6,6 +6,7 @@ import {
   DEFAULT_TABLE,
   DEFAULT_VICTORY_FX,
   DEFAULT_CARD_FACE,
+  DEFAULT_DIFFICULTY,
   DEFAULT_TITLE,
   COLLECTIBLES,
   WELCOME_GIFT,
@@ -14,15 +15,18 @@ import {
   drawWheelSegment,
   findConsumable,
   findCosmetic,
+  findDifficulty,
   isValidCardBack,
   isValidTable,
   isValidVictoryFx,
   isValidCardFace,
+  isValidDifficulty,
   isValidTitle,
   meetsTier,
   tierIndex,
   vipTierFor,
   type ConsumableId,
+  type DifficultyId,
   type WheelReward,
 } from './catalog';
 import { ACHIEVEMENTS, satisfiedAchievements } from './achievements';
@@ -40,7 +44,8 @@ export interface Settings {
   cardFace: string;
   /** Titre honorifique affiche sur l'accueil et les bordereaux. */
   title: string;
-  defaultDraw: 1 | 3;
+  /** Difficulte des nouvelles donnes (pioche, donne et gains). */
+  difficulty: DifficultyId;
   reducedMotion: boolean;
 }
 
@@ -157,7 +162,7 @@ const initialSettings: Settings = {
   victoryFx: DEFAULT_VICTORY_FX,
   cardFace: DEFAULT_CARD_FACE,
   title: DEFAULT_TITLE,
-  defaultDraw: 3,
+  difficulty: DEFAULT_DIFFICULTY,
   reducedMotion: false,
 };
 
@@ -256,6 +261,8 @@ export const useMetaStore = create<MetaState>()(
               next.cardFace = state.settings.cardFace ?? DEFAULT_CARD_FACE;
             if (!isValidTitle(next.title) || !owns(next.title))
               next.title = state.settings.title ?? DEFAULT_TITLE;
+            if (!isValidDifficulty(next.difficulty))
+              next.difficulty = state.settings.difficulty;
             setSoundEnabled(next.soundEnabled);
             setSoundVolume(next.volume);
             return { settings: next };
@@ -336,7 +343,7 @@ export const useMetaStore = create<MetaState>()(
             satisfiedAchievements({
               won: false,
               timeMs: 0,
-              drawCount: prev.settings.defaultDraw,
+              drawCount: findDifficulty(prev.settings.difficulty).drawCount,
               invalidMoves: 0,
               undoCount: 0,
               usedHint: false,
@@ -526,7 +533,7 @@ export const useMetaStore = create<MetaState>()(
     },
     {
       name: 'jackpot-solitaire-meta-v1',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         settings: state.settings,
@@ -583,6 +590,19 @@ export function migrateMeta(persisted: unknown, version: number): unknown {
       ...settings,
       cardFace: settings.cardFace ?? DEFAULT_CARD_FACE,
       title: settings.title ?? DEFAULT_TITLE,
+    };
+  }
+  if (version < 3) {
+    // Version 3: la pioche par defaut devient un niveau de difficulte. On
+    // garde l'experience de jeu a l'identique: la pioche 3 au hasard
+    // correspond au niveau Expert, la pioche 1 au hasard au niveau Normal.
+    const settings = (data.settings ?? {}) as Partial<Settings> & {
+      defaultDraw?: 1 | 3;
+    };
+    const { defaultDraw, ...rest } = settings;
+    data.settings = {
+      ...rest,
+      difficulty: defaultDraw === 1 ? 'normal' : 'expert',
     };
   }
   return data;

@@ -347,10 +347,10 @@ const SECTIONS: Section[] = [
               text: 'Annuler illimité: reviens autant de coups que tu veux en arrière.',
             },
             {
-              text: "Autocomplétion: dès qu'il n'y a plus de suspense, un bouton termine la partie tout seul.",
+              text: "Autocomplétion: une fois toutes les cartes de la table retournées, et s'il n'y a plus de suspense, les cartes se rangent toutes seules.",
             },
             {
-              text: 'Pioche 1 ou 3: choisis la difficulté dans les options de partie.',
+              text: 'Difficulté: de Facile (×0,5) à Expert (×3), elle règle la pioche, la donne et les jetons gagnés. À choisir dans les réglages ou les options de partie.',
             },
             {
               text: 'Graine partageable: rejoue une donne précise ou envoie-la à un ami via un lien.',

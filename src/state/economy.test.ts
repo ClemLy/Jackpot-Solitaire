@@ -61,6 +61,12 @@ describe('recompenses', () => {
     expect(tipForWin('chrono', -40)).toBe(0);
   });
 
+  it('pondere le pourboire par la difficulte', () => {
+    expect(tipForWin('classic', 1300, 0.5)).toBe(65);
+    expect(tipForWin('classic', 1300, 3)).toBe(390);
+    expect(tipForWin('zen', 0, 1.5)).toBe(75);
+  });
+
   it('tire la roue selon les poids, bornes comprises', () => {
     expect(drawWheelSegment(0)).toBe(0);
     expect(drawWheelSegment(0.999999)).toBe(WHEEL_SEGMENTS.length - 1);
@@ -97,7 +103,19 @@ describe('migration des sauvegardes', () => {
 
   it('ne touche pas une sauvegarde deja a jour', () => {
     const data = { wallet: { balance: 5, lifetimeEarned: 5, spent: 0 } };
-    expect(migrateMeta(data, 1)).toEqual(data);
+    expect(migrateMeta(data, 3)).toEqual(data);
+  });
+
+  it('convertit la pioche par defaut en difficulte equivalente', () => {
+    const draw3 = migrateMeta({ settings: { defaultDraw: 3 } }, 2) as {
+      settings: Record<string, unknown>;
+    };
+    expect(draw3.settings.difficulty).toBe('expert');
+    expect(draw3.settings).not.toHaveProperty('defaultDraw');
+    const draw1 = migrateMeta({ settings: { defaultDraw: 1 } }, 2) as {
+      settings: Record<string, unknown>;
+    };
+    expect(draw1.settings.difficulty).toBe('normal');
   });
 });
 
@@ -211,6 +229,16 @@ describe('mode Jackpot et banque', () => {
     useGameStore.getState().goHome();
     expect(useGameStore.getState().pot).toBe(0);
     expect(useMetaStore.getState().wallet.balance).toBe(1000 + 2000);
+  });
+
+  it('distribue selon la difficulte choisie', () => {
+    useGameStore.getState().newGame({ mode: 'classic', difficulty: 'easy' });
+    expect(useGameStore.getState().drawCount).toBe(1);
+    useGameStore.getState().newGame({ mode: 'classic', difficulty: 'hard' });
+    expect(useGameStore.getState().drawCount).toBe(3);
+    useMetaStore.getState().updateSettings({ difficulty: 'expert' });
+    useGameStore.getState().newGame({ mode: 'classic' });
+    expect(useGameStore.getState().difficulty).toBe('expert');
   });
 
   it('verse le magot encaisse dans la banque', () => {

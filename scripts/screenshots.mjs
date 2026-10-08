@@ -178,7 +178,7 @@ async function main() {
     await page.screenshot({ path: resolve(shotsDir, 'accueil.png') });
 
     await driveStore(page, () =>
-      window.__jackpot.game.getState().newGame({ mode: 'gambling', table: 'gold', drawCount: 3, seed: 'demo-jackpot' }),
+      window.__jackpot.game.getState().newGame({ mode: 'gambling', table: 'gold', difficulty: 'expert', seed: 'demo-jackpot' }),
     );
     await playMoves(page, 34);
     await page.screenshot({ path: resolve(shotsDir, 'partie.png') });
@@ -210,7 +210,7 @@ async function main() {
     await sleep(800);
     await page.screenshot({ path: resolve(shotsDir, 'mobile-accueil.png') });
     await driveStore(page, () =>
-      window.__jackpot.game.getState().newGame({ mode: 'gambling', table: 'silver', drawCount: 3, seed: 'demo-jackpot' }),
+      window.__jackpot.game.getState().newGame({ mode: 'gambling', table: 'silver', difficulty: 'expert', seed: 'demo-jackpot' }),
     );
     await playMoves(page, 34);
     await page.screenshot({ path: resolve(shotsDir, 'mobile-partie.png') });
@@ -227,7 +227,7 @@ async function main() {
     });
     page = land.page;
     await driveStore(page, () =>
-      window.__jackpot.game.getState().newGame({ mode: 'classic', drawCount: 3, seed: 'demo-jackpot' }),
+      window.__jackpot.game.getState().newGame({ mode: 'classic', difficulty: 'expert', seed: 'demo-jackpot' }),
     );
     await playMoves(page, 34);
     await page.screenshot({ path: resolve(shotsDir, 'mobile-paysage.png') });

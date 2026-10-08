@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Vault, Home as HomeIcon } from 'lucide-react';
 import { useGameStore, MODE_LABEL } from '../state/game';
-import { findStakeTable, findCosmetic } from '../state/catalog';
+import { findDifficulty, findStakeTable, findCosmetic } from '../state/catalog';
 import { useMetaStore } from '../state/meta';
 import { playSound } from '../audio/sfx';
 import {
@@ -75,6 +75,7 @@ export function WinOverlay() {
   const titleId = useMetaStore((s) => s.settings.title);
   const combo = useGameStore((s) => s.combo);
   const stakeTable = useGameStore((s) => s.stakeTable);
+  const difficulty = useGameStore((s) => s.difficulty);
   const finalTimeMs = useGameStore((s) => s.finalTimeMs);
   const cashOut = useGameStore((s) => s.cashOut);
   const doubleOrNothing = useGameStore((s) => s.doubleOrNothing);
@@ -107,8 +108,10 @@ export function WinOverlay() {
           list.push({ key: 'combo', delay: 650, sound: 'stamp' });
         if (win.tableMultiplier !== 1)
           list.push({ key: 'table', delay: 650, sound: 'stamp' });
-        list.push({ key: 'pot', delay: 1100, sound: 'coins' });
       }
+      if (win.difficultyMultiplier !== 1)
+        list.push({ key: 'difficulty', delay: 650, sound: 'stamp' });
+      if (gambling) list.push({ key: 'pot', delay: 1100, sound: 'coins' });
     }
     if (!gambling && win.tip + win.dailyBonus > 0)
       list.push({ key: 'reward', delay: 900, sound: 'coins' });
@@ -202,7 +205,7 @@ export function WinOverlay() {
               label="Score de la manche"
               value={formatNumber(win.roundScore)}
             />
-            {gambling && (
+            {(gambling || win.difficultyMultiplier !== 1) && (
               <div className="tally__mults">
                 {win.multiplier !== 1 && reached('combo') && (
                   <span className="stamp">
@@ -213,6 +216,12 @@ export function WinOverlay() {
                   <span className="stamp stamp--blue">
                     ×{formatMultiplier(win.tableMultiplier)}{' '}
                     <small>{table.label}</small>
+                  </span>
+                )}
+                {win.difficultyMultiplier !== 1 && reached('difficulty') && (
+                  <span className="stamp stamp--green">
+                    ×{formatMultiplier(win.difficultyMultiplier)}{' '}
+                    <small>{findDifficulty(difficulty).label}</small>
                   </span>
                 )}
               </div>

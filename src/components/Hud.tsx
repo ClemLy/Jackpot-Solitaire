@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useGameStore, computeElapsed, MODE_LABEL } from '../state/game';
 import { useMetaStore } from '../state/meta';
-import { findStakeTable } from '../state/catalog';
+import { findDifficulty, findStakeTable } from '../state/catalog';
 import { formatDuration, formatMultiplier } from '../utils/format';
 import { Chip, RollingNumber } from './ui';
 
@@ -63,7 +63,7 @@ function ScoreValue({ score }: { score: number }) {
 
 export function Hud() {
   const mode = useGameStore((s) => s.mode);
-  const drawCount = useGameStore((s) => s.drawCount);
+  const difficulty = useGameStore((s) => s.difficulty);
   const score = useGameStore((s) => s.score);
   const moves = useGameStore((s) => s.moves);
   const pot = useGameStore((s) => s.pot);
@@ -78,7 +78,8 @@ export function Hud() {
   const table = findStakeTable(stakeTable);
   const gambling = mode === 'gambling';
 
-  const sub = [`Pioche ${drawCount}`];
+  const level = findDifficulty(difficulty);
+  const sub = [level.label, `Pioche ${level.drawCount}`];
   if (gambling && table.id !== 'free') sub.push(table.label);
 
   return (

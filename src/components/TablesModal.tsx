@@ -3,10 +3,15 @@ import { Lock } from 'lucide-react';
 import { Modal } from './Modal';
 import { useGameStore } from '../state/game';
 import { useMetaStore } from '../state/meta';
-import { STAKE_TABLES, VIP_TIERS, meetsTier } from '../state/catalog';
+import {
+  STAKE_TABLES,
+  VIP_TIERS,
+  meetsTier,
+  type DifficultyId,
+} from '../state/catalog';
 import { playSound } from '../audio/sfx';
 import { formatMultiplier, formatNumber } from '../utils/format';
-import { Balance, Chip } from './ui';
+import { Balance, Chip, DifficultyPicker } from './ui';
 
 const STACK_TONES = [
   ['black'],
@@ -23,8 +28,8 @@ export function TablesModal({ onClose }: { onClose: () => void }) {
   const current = useGameStore((s) => s.stakeTable);
   const balance = useMetaStore((s) => s.wallet.balance);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
-  const defaultDraw = useMetaStore((s) => s.settings.defaultDraw);
-  const [draw, setDraw] = useState<1 | 3>(defaultDraw);
+  const defaultDifficulty = useMetaStore((s) => s.settings.difficulty);
+  const [difficulty, setDifficulty] = useState<DifficultyId>(defaultDifficulty);
 
   return (
     <Modal
@@ -51,7 +56,7 @@ export function TablesModal({ onClose }: { onClose: () => void }) {
               disabled={locked || poor}
               onClick={() => {
                 playSound('chip');
-                newGame({ mode: 'gambling', table: t.id, drawCount: draw });
+                newGame({ mode: 'gambling', table: t.id, difficulty });
               }}
             >
               <span className="stake__stack" aria-hidden="true">
@@ -92,16 +97,9 @@ export function TablesModal({ onClose }: { onClose: () => void }) {
           );
         })}
       </div>
-      <div className="row row--between">
-        <span className="field-label">Difficulté de pioche</span>
-        <div className="segmented" role="group" aria-label="Pioche">
-          <button aria-pressed={draw === 1} onClick={() => setDraw(1)}>
-            Pioche 1
-          </button>
-          <button aria-pressed={draw === 3} onClick={() => setDraw(3)}>
-            Pioche 3
-          </button>
-        </div>
+      <div className="field-block">
+        <span className="field-label">Difficulté</span>
+        <DifficultyPicker value={difficulty} onChange={setDifficulty} />
       </div>
     </Modal>
   );

@@ -603,10 +603,81 @@ export function findStakeTable(id: StakeTableId): StakeTable {
 export const WELCOME_GIFT = 1000;
 
 /** Pourboire verse a la banque pour une victoire hors Jackpot. */
-export function tipForWin(mode: string, roundScore: number): number {
+export function tipForWin(
+  mode: string,
+  roundScore: number,
+  payout = 1,
+): number {
   if (mode === 'gambling') return 0;
-  if (mode === 'zen') return 50;
-  return Math.max(0, Math.round(roundScore * 0.1));
+  if (mode === 'zen') return Math.round(50 * payout);
+  return Math.max(0, Math.round(roundScore * 0.1 * payout));
+}
+
+// ---------------------------------------------------------------------------
+// Niveaux de difficulte: ils reglent la pioche et la donne, et ponderent les
+// jetons gagnes (pourboire hors Jackpot, gains du magot en Jackpot).
+// ---------------------------------------------------------------------------
+
+export type DifficultyId = 'easy' | 'normal' | 'hard' | 'expert';
+
+export interface Difficulty {
+  id: DifficultyId;
+  label: string;
+  drawCount: 1 | 3;
+  /** Donne adoucie: les cartes basses sont moins souvent enterrees. */
+  gentle: boolean;
+  /** Multiplicateur des jetons gagnes. */
+  payout: number;
+  pitch: string;
+}
+
+// Taux de victoire d'un joueur glouton simule (3000 donnes par niveau):
+// Facile 76 %, Normal 34 %, Difficile 21 %, Expert 9 %. Un humain fait
+// nettement mieux, mais l'ordre et les ecarts restent les memes. Les
+// multiplicateurs gardent un gain moyen par partie a peu pres equivalent.
+export const DIFFICULTIES: readonly Difficulty[] = [
+  {
+    id: 'easy',
+    label: 'Facile',
+    drawCount: 1,
+    gentle: true,
+    payout: 0.5,
+    pitch: 'Pioche 1, donne adoucie: les As sortent vite.',
+  },
+  {
+    id: 'normal',
+    label: 'Normal',
+    drawCount: 1,
+    gentle: false,
+    payout: 1,
+    pitch: 'Pioche 1, donne au hasard.',
+  },
+  {
+    id: 'hard',
+    label: 'Difficile',
+    drawCount: 3,
+    gentle: true,
+    payout: 1.5,
+    pitch: 'Pioche 3, donne adoucie.',
+  },
+  {
+    id: 'expert',
+    label: 'Expert',
+    drawCount: 3,
+    gentle: false,
+    payout: 3,
+    pitch: 'Pioche 3, donne au hasard. Le Klondike pur et dur.',
+  },
+] as const;
+
+export const DEFAULT_DIFFICULTY: DifficultyId = 'normal';
+
+export function findDifficulty(id: DifficultyId): Difficulty {
+  return DIFFICULTIES.find((d) => d.id === id) ?? DIFFICULTIES[1];
+}
+
+export function isValidDifficulty(id: unknown): id is DifficultyId {
+  return DIFFICULTIES.some((d) => d.id === id);
 }
 
 /** Prime pour la premiere victoire du defi du jour. */

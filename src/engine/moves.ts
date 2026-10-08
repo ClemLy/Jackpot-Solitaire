@@ -188,14 +188,23 @@ export function isWon(board: Board): boolean {
 }
 
 /**
- * L'autocompletion n'est proposee que si la partie peut vraiment se terminer
- * en n'envoyant que des cartes vers les fondations (en piochant si besoin).
- * On le verifie par simulation bornee: c'est la seule garantie fiable, car
- * une carte utile peut rester coincee sous une carte plus forte meme sans
- * aucune carte face cachee.
+ * L'autocompletion n'est proposee qu'une fois toutes les cartes du tableau
+ * retournees, et seulement si la partie peut vraiment se terminer en
+ * n'envoyant que des cartes vers les fondations (en piochant si besoin).
+ *
+ * La premiere condition est indispensable: la simulation connait les cartes
+ * cachees, elle pouvait donc "voir" qu'elles tombaient dans le bon ordre et
+ * finir la partie a la place du joueur alors qu'il restait des cartes face
+ * cachee sur la table.
+ *
+ * La seconde se verifie par simulation bornee: une carte utile peut rester
+ * coincee sous une carte plus forte meme sans aucune carte face cachee.
  */
 export function canAutoComplete(board: Board): boolean {
   if (isWon(board)) return false;
+  if (board.tableau.some((column) => column.some((card) => !card.faceUp))) {
+    return false;
+  }
   let current = board;
   let guard = 0;
   while (guard++ < 2000) {

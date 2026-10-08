@@ -91,6 +91,39 @@ describe('deal', () => {
   it('donne des distributions differentes selon la graine', () => {
     expect(deal('abc', 1)).not.toEqual(deal('xyz', 1));
   });
+
+  it('adoucit la donne sans changer la pioche ni les cartes', () => {
+    const plain = deal('doux', 1);
+    const gentle = deal('doux', 1, { gentle: true });
+    expect(gentle).toEqual(deal('doux', 1, { gentle: true }));
+    expect(gentle.stock).toEqual(plain.stock);
+    const ids = (b: Board) =>
+      b.tableau
+        .flat()
+        .map((c) => c.id)
+        .sort();
+    expect(ids(gentle)).toEqual(ids(plain));
+    gentle.tableau.forEach((col, i) => {
+      expect(col).toHaveLength(i + 1);
+      expect(col[col.length - 1].faceUp).toBe(true);
+      col.slice(0, -1).forEach((c) => expect(c.faceUp).toBe(false));
+    });
+  });
+
+  it('remonte les cartes basses vers le haut des colonnes', () => {
+    // Rang moyen des cartes visibles sur 200 donnes: nettement plus bas
+    // qu'au hasard (7 en moyenne) une fois la donne adoucie.
+    let plain = 0;
+    let gentle = 0;
+    for (let i = 0; i < 200; i++) {
+      const tops = (b: Board) =>
+        b.tableau.reduce((n, col) => n + col[col.length - 1].rank, 0);
+      plain += tops(deal(`g${i}`, 1));
+      gentle += tops(deal(`g${i}`, 1, { gentle: true }));
+    }
+    expect(gentle / 1400).toBeLessThan(5);
+    expect(plain / 1400).toBeGreaterThan(6);
+  });
 });
 
 describe('regles de placement', () => {
@@ -257,6 +290,30 @@ describe('etats de fin', () => {
     };
     hidden.tableau[0] = [card('spades', 13, false)];
     expect(canAutoComplete(hidden)).toBe(false);
+
+    // Une carte cachee sous une carte visible suffit a l'interdire, meme si
+    // l'ordre cache permettrait de finir: c'est au joueur de la retourner.
+    const underneath: Board = {
+      ...emptyBoard(1),
+      foundations: [
+        foundationUpTo('spades', 11),
+        foundationUpTo('hearts', 12),
+        foundationUpTo('diamonds', 12),
+        foundationUpTo('clubs', 12),
+      ],
+    };
+    underneath.tableau[0] = [card('spades', 13, false), card('spades', 12)];
+    underneath.tableau[1] = [card('hearts', 13)];
+    underneath.tableau[2] = [card('diamonds', 13)];
+    underneath.tableau[3] = [card('clubs', 13)];
+    expect(canAutoComplete(underneath)).toBe(false);
+    const flipped: Board = {
+      ...underneath,
+      tableau: underneath.tableau.map((col) =>
+        col.map((c) => ({ ...c, faceUp: true })),
+      ),
+    };
+    expect(canAutoComplete(flipped)).toBe(true);
 
     // Meme toutes faces visibles, un As coince sous une carte plus forte bloque.
     const buried = emptyBoard(1);

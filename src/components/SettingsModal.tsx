@@ -1,6 +1,7 @@
 import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
 import { playSound, unlockAudio } from '../audio/sfx';
+import { DifficultyPicker } from './ui';
 
 function Switch({
   label,
@@ -76,31 +77,18 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           onChange={(v) => update({ reducedMotion: v })}
         />
 
-        <div className="setting setting--static">
+        <div className="setting setting--static setting--stack">
           <span className="setting__text">
-            <span className="setting__label">Pioche par défaut</span>
+            <span className="setting__label">Difficulté</span>
             <span className="setting__hint">
-              Pioche 1 est plus facile, Pioche 3 plus corsée.
+              S&rsquo;applique aux prochaines donnes. Plus c&rsquo;est dur, plus
+              les victoires rapportent de jetons.
             </span>
           </span>
-          <div
-            className="segmented"
-            role="group"
-            aria-label="Pioche par défaut"
-          >
-            <button
-              aria-pressed={settings.defaultDraw === 1}
-              onClick={() => update({ defaultDraw: 1 })}
-            >
-              1 carte
-            </button>
-            <button
-              aria-pressed={settings.defaultDraw === 3}
-              onClick={() => update({ defaultDraw: 3 })}
-            >
-              3 cartes
-            </button>
-          </div>
+          <DifficultyPicker
+            value={settings.difficulty}
+            onChange={(difficulty) => update({ difficulty })}
+          />
         </div>
 
         <p className="fineprint">
