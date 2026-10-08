@@ -1,6 +1,6 @@
 /// <reference types="vitest/config" />
 import { resolve } from 'node:path';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -17,22 +17,33 @@ const base = process.env.VITE_BASE ?? '/';
  * Les seules exceptions sont les images en data: (grain du tapis, masques
  * des tampons) et les blob: eventuels.
  */
-export const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self'",
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "worker-src 'self'",
-  "manifest-src 'self'",
-  "media-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'none'",
-].join('; ');
+export function contentSecurityPolicy(supabaseUrl?: string): string {
+  // Le seul serveur exterieur autorise: celui des comptes, s'il est configure.
+  let api = '';
+  if (supabaseUrl) {
+    try {
+      api = ` ${new URL(supabaseUrl).origin}`;
+    } catch {
+      api = '';
+    }
+  }
+  return [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self'",
+    "img-src 'self' data: blob:",
+    "font-src 'self'",
+    `connect-src 'self'${api}`,
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "media-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'none'",
+  ].join('; ');
+}
 
-function contentSecurityPolicy(): Plugin {
+function cspPlugin(supabaseUrl?: string): Plugin {
   return {
     name: 'jackpot:csp',
     apply: 'build',
@@ -41,7 +52,7 @@ function contentSecurityPolicy(): Plugin {
         tag: 'meta',
         attrs: {
           'http-equiv': 'Content-Security-Policy',
-          content: CONTENT_SECURITY_POLICY,
+          content: contentSecurityPolicy(supabaseUrl),
         },
         injectTo: 'head-prepend',
       },
@@ -49,7 +60,7 @@ function contentSecurityPolicy(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base,
   build: {
     // Vite incruste les petits fichiers en data: dans le CSS. Pour les
@@ -68,7 +79,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    contentSecurityPolicy(),
+    cspPlugin(loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'robots.txt'],
@@ -106,6 +117,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'server/**/*.test.ts'],
+    // Les tests d'integration parlent au Supabase local: plus de marge.
+    testTimeout: 20_000,
   },
-});
+}));

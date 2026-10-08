@@ -7,6 +7,7 @@ import {
   findCosmetic,
 } from '../state/catalog';
 import { playSound } from '../audio/sfx';
+import { tryBuy } from '../state/economy';
 import { formatDuration, formatNumber } from '../utils/format';
 import { Stage } from './Modal';
 import { Chip } from './ui';
@@ -14,14 +15,13 @@ import { Chip } from './ui';
 export function LostOverlay() {
   const lost = useGameStore((s) => s.lost);
   const mode = useGameStore((s) => s.mode);
-  const titleId = useMetaStore((s) => s.settings.title);
+  const titleId = useMetaStore((s) => s.equipped.title);
   const newGame = useGameStore((s) => s.newGame);
   const goHome = useGameStore((s) => s.goHome);
   const secondChance = useGameStore((s) => s.secondChance);
   const redeals = useMetaStore((s) => s.inventory.consumables.redeal);
   const balance = useMetaStore((s) => s.wallet.balance);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
-  const buy = useMetaStore((s) => s.buyConsumable);
 
   const playerTitle = findCosmetic(titleId)?.label ?? 'Jackpot Solitaire';
   if (!lost) return null;
@@ -130,10 +130,12 @@ export function LostOverlay() {
         {lost.wasGambling && (redeals > 0 || canBuyRedeal) && (
           <button
             className="btn btn--gold btn--lg btn--block"
-            onClick={() => {
-              if (redeals <= 0 && buy('redeal') !== 'ok') return;
-              playSound('purchase');
-              secondChance();
+            onClick={async () => {
+              if (redeals <= 0) {
+                if (!(await tryBuy('redeal'))) return;
+                playSound('purchase');
+              }
+              await secondChance();
             }}
           >
             <LifeBuoy size={20} />

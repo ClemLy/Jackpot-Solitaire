@@ -3,8 +3,11 @@
 
 import { findWinnableSeed, type DealConfig } from '../engine';
 
-self.onmessage = (event: MessageEvent<{ id: number; config: DealConfig }>) => {
-  const { id, config } = event.data;
-  const seed = findWinnableSeed(config);
+self.onmessage = (
+  event: MessageEvent<{ id: number; config: DealConfig; prefix: string }>,
+) => {
+  const { id, config, prefix } = event.data;
+  let k = 0;
+  const seed = findWinnableSeed(config, undefined, () => `${prefix}-${k++}`);
   self.postMessage({ id, seed });
 };

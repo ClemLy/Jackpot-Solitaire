@@ -7,7 +7,11 @@ import {
   Settings,
   ShoppingBag,
   Target,
+  UserRound,
+  Users,
 } from 'lucide-react';
+import { accountsEnabled, useAccountStore } from '../state/account';
+import { Portrait } from './Portrait';
 import { useGameStore, type GameMode } from '../state/game';
 import { pendingRewards, useMetaStore } from '../state/meta';
 import {
@@ -151,13 +155,16 @@ export function Home() {
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
   const daily = useMetaStore((s) => s.daily);
   const canSpin = useMetaStore((s) => s.wheel.lastSpin !== todayISO());
-  const titleId = useMetaStore((s) => s.settings.title);
+  const titleId = useMetaStore((s) => s.equipped.title);
   const balance = useMetaStore((s) => s.wallet.balance);
   const progressive = useMetaStore((s) => s.progressive.pot);
   const pending = useMetaStore(pendingRewards);
   const tutorialDone = useMetaStore((s) => s.tutorial.done);
   const completeTutorial = useMetaStore((s) => s.completeTutorial);
   const startTutorial = useGameStore((s) => s.startTutorial);
+  const avatar = useMetaStore((s) => s.equipped.avatar);
+  const frame = useMetaStore((s) => s.equipped.frame);
+  const account = useAccountStore();
   const title = findCosmetic(titleId);
 
   const tier = vipTierFor(lifetime);
@@ -214,6 +221,29 @@ export function Home() {
           <span className="topbar__name">Jackpot Solitaire</span>
         </div>
         <div className="topbar__right">
+          {accountsEnabled && (
+            <button
+              className="profile-pill"
+              data-state={account.status}
+              onClick={() =>
+                openModal(account.status === 'online' ? 'profile' : 'account')
+              }
+              aria-label={
+                account.status === 'online'
+                  ? `Mon profil (${account.pseudo})`
+                  : 'Se connecter'
+              }
+            >
+              <Portrait avatar={avatar} frame={frame} size={30} />
+              <span className="profile-pill__label">
+                {account.status === 'online'
+                  ? account.pseudo
+                  : account.status === 'loading'
+                    ? 'Connexion…'
+                    : 'Se connecter'}
+              </span>
+            </button>
+          )}
           <button
             className="missions-pill"
             onClick={() => openModal('missions')}
@@ -351,6 +381,17 @@ export function Home() {
         />
 
         <nav className="home__links" aria-label="Menu">
+          <button className="link-btn" onClick={() => openModal('profile')}>
+            <UserRound size={18} /> Profil
+          </button>
+          {accountsEnabled && (
+            <button className="link-btn" onClick={() => openModal('friends')}>
+              <Users size={18} /> Amis
+              {account.incoming > 0 && (
+                <span className="link-btn__badge">{account.incoming}</span>
+              )}
+            </button>
+          )}
           <button className="link-btn" onClick={() => openModal('missions')}>
             <Target size={18} /> Missions
           </button>

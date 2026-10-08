@@ -1,417 +1,421 @@
-// Parcours complets du store de partie: victoire, Jackpot, coffre, defaite,
-// assurance, seconde chance, et les garde-fous des actions d'argent.
+// Parcours complets du store de partie, en mode invite. Chaque victoire est
+// une vraie partie: le solveur joue la donne coup par coup, et le coeur du
+// jeu rejoue le journal avant de payer quoi que ce soit.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cardId, type Board, type Card, type Rank, type Suit } from '../engine';
+import { findSolution } from '../engine';
+import {
+  CHRONO_LIMIT_MS,
+  VEGAS_STAKE,
+  sideBetStake,
+  vegasCardValue,
+} from './catalog';
 import { useGameStore } from './game';
 import { useMetaStore } from './meta';
-import { findDifficulty, type DifficultyId } from './catalog';
-import { comboMultiplier } from './gambling';
+import { resetDealer } from './dealer';
+import { TUTORIAL_SEED } from '../core';
+import {
+  nextDealWinnable,
+  nextVegasDeadEnd,
+  playSolution,
+  settle,
+  winRound,
+  winnableSeed,
+} from '../test/play';
 
-const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
+const meta = () => useMetaStore.getState();
+const game = () => useGameStore.getState();
+const balance = () => meta().wallet.balance;
 
-function card(suit: Suit, rank: number, faceUp = true): Card {
-  return { id: cardId(suit, rank as Rank), suit, rank: rank as Rank, faceUp };
+function give(
+  id: 'hint' | 'peek' | 'reshuffle' | 'joker' | 'insurance' | 'redeal',
+  n: number,
+) {
+  useMetaStore.setState((s) => ({
+    inventory: {
+      ...s.inventory,
+      consumables: { ...s.inventory.consumables, [id]: n },
+    },
+  }));
 }
 
-function upTo(suit: Suit, rank: number): Card[] {
-  return Array.from({ length: rank }, (_, i) => card(suit, i + 1));
-}
+const errors = () => meta().notices.filter((n) => n.kind === 'error');
 
-/** Plateau a un coup de la victoire: il ne reste que le Roi de pique. */
-function oneMoveFromWin(drawCount: 1 | 3 = 3): Board {
-  return {
-    stock: [],
-    waste: [],
-    drawCount,
-    foundations: [
-      upTo('spades', 12),
-      upTo('hearts', 13),
-      upTo('diamonds', 13),
-      upTo('clubs', 13),
-    ],
-    tableau: [[card('spades', 13)], [], [], [], [], [], []],
-  };
-}
-
-/** Plateau definitivement bloque: sept cartes noires, aucune place libre. */
-function deadlockedBoard(): Board {
-  const tops: [Suit, number][] = [
-    ['spades', 13],
-    ['clubs', 13],
-    ['spades', 12],
-    ['clubs', 12],
-    ['spades', 11],
-    ['clubs', 11],
-    ['spades', 10],
-  ];
-  return {
-    stock: [],
-    waste: [],
-    drawCount: 3,
-    foundations: [[], [], [], []],
-    tableau: tops.map(([suit, rank], i) => [
-      card(SUITS[1 + (i % 2)], 2 + i, false),
-      card(suit, rank),
-    ]),
-  };
-}
-
-function resetAll(balance = 0): void {
+beforeEach(() => {
   localStorage.clear();
-  useMetaStore.getState().resetProgress();
+  resetDealer();
+  meta().leaveAccount();
+  meta().resetProgress();
   useMetaStore.setState({
-    wallet: { balance, lifetimeEarned: 0, spent: 0 },
+    wallet: { balance: 100_000, lifetimeEarned: 0, spent: 0 },
     notices: [],
   });
-  useMetaStore.getState().updateSettings({ soundEnabled: false });
+  meta().updateSettings({ soundEnabled: false, guaranteed: false });
   useGameStore.setState({
-    pot: 0,
-    combo: 0,
-    insured: false,
+    route: 'home',
+    phase: 'idle',
     mode: 'classic',
+    round: null,
     modal: 'none',
+    overlay: 'none',
+    busy: false,
+    preparing: false,
+    settling: false,
     pendingAction: null,
   });
-}
+});
 
-/** Lance une partie puis remplace la donne par un plateau choisi. */
-function startOn(
-  board: Board,
-  opts: {
-    mode?: 'classic' | 'gambling' | 'zen';
-    difficulty?: DifficultyId;
-  } = {},
-): void {
-  useGameStore
-    .getState()
-    .newGame({ mode: opts.mode ?? 'classic', difficulty: opts.difficulty });
-  useGameStore.setState({
-    board,
-    score: 500,
-    startedAt: Date.now() - 60_000,
-  });
-}
-
-function winNow(): void {
-  const ok = useGameStore
-    .getState()
-    .applyDragMove({ type: 'tableauToFoundation', column: 0, foundation: 0 });
-  expect(ok).toBe(true);
-  expect(useGameStore.getState().phase).toBe('won');
-}
-
-beforeEach(() => resetAll(5000));
 afterEach(() => vi.useRealTimers());
 
-describe('victoire hors Jackpot', () => {
-  it.each<DifficultyId>(['easy', 'normal', 'hard', 'expert'])(
-    'verse un pourboire pondere par la difficulte (%s)',
-    (difficulty) => {
-      startOn(oneMoveFromWin(), { difficulty });
-      const before = useMetaStore.getState().wallet.balance;
-      winNow();
-      const { win, overlay } = useGameStore.getState();
-      expect(overlay).toBe('win');
-      const payout = findDifficulty(difficulty).payout;
-      expect(win?.difficultyMultiplier).toBe(payout);
-      expect(win?.tip).toBe(Math.round(win!.roundScore * 0.1 * payout));
-      expect(useMetaStore.getState().wallet.balance).toBe(before + win!.tip);
-      expect(useMetaStore.getState().stats.gamesWon).toBe(1);
-    },
-  );
-
-  it('peut transformer la victoire en mise Jackpot, une seule fois', () => {
-    startOn(oneMoveFromWin());
-    winNow();
-    const score = useGameStore.getState().score;
-    useGameStore.getState().gambleFromScore();
-    expect(useGameStore.getState().mode).toBe('gambling');
-    expect(useGameStore.getState().pot).toBe(score);
-    expect(useGameStore.getState().phase).toBe('playing');
-    // Deuxieme appel (double clic): la partie est en cours, rien ne bouge.
-    useGameStore.getState().gambleFromScore();
-    expect(useGameStore.getState().pot).toBe(score);
+describe('partie classique', () => {
+  it('paie une vraie victoire, rejouee par le coeur', async () => {
+    nextDealWinnable('normal');
+    await game().newGame({ mode: 'classic', difficulty: 'normal' });
+    expect(game().phase).toBe('playing');
+    expect(game().round?.seedSource).toBe('random');
+    await winRound();
+    const { win, overlay } = game();
+    expect(overlay).toBe('win');
+    expect(win!.tip).toBe(Math.round(win!.roundScore * 0.1));
+    expect(balance()).toBe(100_000 + win!.tip);
+    expect(meta().stats.gamesWon).toBe(1);
+    expect(errors()).toEqual([]);
   });
 
-  it('ne laisse pas miser une partie Zen ni une partie en cours', () => {
-    startOn(oneMoveFromWin(), { mode: 'zen' });
-    useGameStore.getState().gambleFromScore();
-    expect(useGameStore.getState().mode).toBe('zen');
-    winNow();
-    useGameStore.getState().gambleFromScore();
-    expect(useGameStore.getState().mode).toBe('zen');
-  });
-});
-
-describe('mode Jackpot', () => {
-  it('multiplie le gain par la serie, la table et la difficulte', () => {
-    startOn(oneMoveFromWin(), { mode: 'gambling', difficulty: 'hard' });
-    useGameStore.setState({ combo: 2, pot: 1000 });
-    winNow();
-    const { win, pot, combo } = useGameStore.getState();
-    const expected = Math.round(win!.roundScore * comboMultiplier(2) * 1 * 1.5);
-    expect(win?.gain).toBe(expected);
-    expect(pot).toBe(1000 + expected);
-    expect(combo).toBe(3);
-    expect(win?.vaultEligible).toBe(true);
-    expect(win?.tip).toBe(0);
+  it('pondere le pourboire par la difficulte', async () => {
+    nextDealWinnable('hard');
+    await game().newGame({ mode: 'classic', difficulty: 'hard' });
+    await winRound();
+    const win = game().win!;
+    expect(win.difficultyMultiplier).toBe(1.5);
+    expect(win.tip).toBe(Math.round(win.roundScore * 0.1 * 1.5));
   });
 
-  it('encaisse le magot une seule fois et seulement apres une victoire', () => {
-    startOn(oneMoveFromWin(), { mode: 'gambling' });
-    useGameStore.setState({ pot: 800 });
-    const start = useMetaStore.getState().wallet.balance;
-
-    // En pleine partie, encaisser ne fait rien.
-    useGameStore.getState().cashOut();
-    expect(useGameStore.getState().pot).toBe(800);
-    expect(useMetaStore.getState().wallet.balance).toBe(start);
-
-    winNow();
-    const pot = useGameStore.getState().pot;
-    useGameStore.getState().cashOut();
-    useGameStore.getState().cashOut();
-    expect(useMetaStore.getState().wallet.balance).toBe(start + pot);
-    expect(useGameStore.getState()).toMatchObject({
-      pot: 0,
-      route: 'home',
-      phase: 'idle',
-    });
+  it('ne paie rien sur une graine imposee', async () => {
+    await game().newGame({ mode: 'classic', seed: winnableSeed('normal') });
+    expect(game().unpaid).toBe(true);
+    await winRound();
+    expect(game().win!.unpaid).toBe(true);
+    expect(game().win!.tip).toBe(0);
+    expect(balance()).toBe(100_000);
   });
 
-  it('quitte ou double: garde le magot, consomme une seule assurance', () => {
-    useMetaStore.setState((s) => ({
-      inventory: {
-        ...s.inventory,
-        consumables: { ...s.inventory.consumables, insurance: 2 },
-      },
-    }));
-    startOn(oneMoveFromWin(), { mode: 'gambling' });
-    // Pas de quitte ou double tant que la manche n'est pas gagnee.
-    useGameStore.getState().doubleOrNothing(true);
-    expect(useMetaStore.getState().inventory.consumables.insurance).toBe(2);
-
-    winNow();
-    const pot = useGameStore.getState().pot;
-    useGameStore.getState().doubleOrNothing(true);
-    useGameStore.getState().doubleOrNothing(true);
-    const state = useGameStore.getState();
-    expect(state.phase).toBe('playing');
-    expect(state.pot).toBe(pot);
-    expect(state.insured).toBe(true);
-    expect(useMetaStore.getState().inventory.consumables.insurance).toBe(1);
+  it('impose la graine du jour au defi', async () => {
+    await game().newGame({ mode: 'daily', seed: 'triche' });
+    expect(game().seed).toMatch(/^defi-\d{4}-\d{2}-\d{2}$/);
   });
 
-  it('n ouvre le coffre qu apres trois victoires, et une seule fois', () => {
-    startOn(oneMoveFromWin(), { mode: 'gambling' });
-    useGameStore.setState({ combo: 0, pot: 100 });
-    winNow();
-    useGameStore.getState().enterVault();
-    expect(useGameStore.getState().overlay).toBe('win');
-
-    startOn(oneMoveFromWin(), { mode: 'gambling' });
-    useGameStore.setState({ combo: 2, pot: 1000 });
-    winNow();
-    useGameStore.getState().enterVault();
-    expect(useGameStore.getState().overlay).toBe('vault');
-    const potBefore = useGameStore.getState().pot;
-    useGameStore.getState().openVault();
-    const after = useGameStore.getState();
-    expect(after.vaultResult).not.toBeNull();
-    expect(after.pot).toBe(
-      Math.max(0, Math.round(potBefore * after.vaultResult!.multiplier)),
-    );
-    useGameStore.getState().openVault();
-    expect(useGameStore.getState().pot).toBe(after.pot);
-    expect(useMetaStore.getState().gambling.vaultsOpened).toBe(1);
-  });
-});
-
-describe('donne bloquee', () => {
-  it('declare la defaite quand l indice ne trouve plus rien', () => {
-    startOn(deadlockedBoard());
-    useGameStore.getState().requestHint();
-    const state = useGameStore.getState();
-    expect(state.phase).toBe('lost');
-    expect(state.overlay).toBe('lost');
-    expect(useMetaStore.getState().stats.currentWinStreak).toBe(0);
+  it('annuler restaure le plateau, et le journal reste valide', async () => {
+    await game().newGame({ mode: 'classic', seed: 'annuler' });
+    const before = game().board;
+    game().clickStock();
+    game().undo();
+    expect(game().board).toEqual(before);
+    expect(game().score).toBe(-15);
+    await game().goHome();
+    expect(errors()).toEqual([]);
   });
 
-  it('l assurance rend la moitie du magot en quittant', () => {
-    startOn(deadlockedBoard(), { mode: 'gambling' });
-    useGameStore.setState({ pot: 3000, combo: 2, insured: true });
-    const start = useMetaStore.getState().wallet.balance;
-    useGameStore.getState().requestHint();
-    expect(useGameStore.getState().lost).toMatchObject({
-      wasGambling: true,
-      potLost: 3000,
-      refund: 1500,
-    });
-    useGameStore.getState().goHome();
-    expect(useMetaStore.getState().wallet.balance).toBe(start + 1500);
-    expect(useGameStore.getState().pot).toBe(0);
+  it('l oeil du croupier offre l indice, sinon il coute 25 points', async () => {
+    give('hint', 1);
+    await game().newGame({ mode: 'classic', seed: 'indice' });
+    game().requestHint();
+    expect(game().freeHint).toBe(true);
+    expect(game().score).toBe(0);
+    game().requestHint();
+    expect(game().score).toBe(-25);
+    await game().goHome();
+    expect(meta().inventory.consumables.hint).toBe(0);
+    expect(errors()).toEqual([]);
   });
 
-  it('la seconde chance redistribue en gardant le magot', () => {
-    startOn(deadlockedBoard(), { mode: 'gambling' });
-    useGameStore.setState({ pot: 3000, combo: 2 });
-    useGameStore.getState().requestHint();
-
-    // Sans jeton de seconde chance: refuse.
-    useGameStore.getState().secondChance();
-    expect(useGameStore.getState().phase).toBe('lost');
-
-    useMetaStore.setState((s) => ({
-      inventory: {
-        ...s.inventory,
-        consumables: { ...s.inventory.consumables, redeal: 1 },
-      },
-    }));
-    useGameStore.getState().secondChance();
-    const state = useGameStore.getState();
-    expect(state.phase).toBe('playing');
-    expect(state.pot).toBe(3000);
-    expect(state.combo).toBe(2);
-    expect(useMetaStore.getState().inventory.consumables.redeal).toBe(0);
-  });
-});
-
-describe('coups et penalites', () => {
-  it('annuler restaure le plateau avec une penalite', () => {
-    useGameStore.getState().newGame({ mode: 'classic', seed: 'annuler' });
-    const before = useGameStore.getState().board;
-    useGameStore.getState().clickStock();
-    expect(useGameStore.getState().board).not.toEqual(before);
-    useGameStore.getState().undo();
-    const state = useGameStore.getState();
-    expect(state.board).toEqual(before);
-    expect(state.score).toBe(-15);
-    expect(state.undoCount).toBe(1);
-  });
-
-  it('annuler interrompt un rangement automatique', () => {
-    vi.useFakeTimers();
-    const board: Board = {
-      ...oneMoveFromWin(),
-      foundations: [
-        upTo('spades', 11),
-        upTo('hearts', 13),
-        upTo('diamonds', 13),
-        upTo('clubs', 13),
-      ],
-      tableau: [[card('spades', 13)], [card('spades', 12)], [], [], [], [], []],
-    };
-    startOn(board);
-    useGameStore
-      .getState()
-      .applyDragMove({ type: 'tableauToTableau', from: 0, to: 2, count: 1 });
-    expect(useGameStore.getState().autoCompleting).toBe(true);
-    useGameStore.getState().undo();
-    expect(useGameStore.getState().autoCompleting).toBe(false);
-    vi.advanceTimersByTime(2000);
-    expect(useGameStore.getState().phase).toBe('playing');
-  });
-
-  it('ne range pas tout seul tant qu il reste une carte cachee', () => {
-    vi.useFakeTimers();
-    const board: Board = {
-      ...oneMoveFromWin(),
-      foundations: [
-        upTo('spades', 10),
-        upTo('hearts', 13),
-        upTo('diamonds', 13),
-        upTo('clubs', 13),
-      ],
-      tableau: [
-        [
-          card('spades', 13, false),
-          card('spades', 12, false),
-          card('spades', 11),
-        ],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-      ],
-    };
-    startOn(board);
-    useGameStore
-      .getState()
-      .applyDragMove({ type: 'tableauToFoundation', column: 0, foundation: 0 });
-    // La Dame vient d'etre revelee, mais le Roi est encore cache.
-    expect(useGameStore.getState().autoCompleting).toBe(false);
-    vi.advanceTimersByTime(2000);
-    expect(useGameStore.getState().phase).toBe('playing');
-  });
-
-  it('penalise un coup impossible, sauf en Zen', () => {
-    startOn(oneMoveFromWin());
-    useGameStore.getState().reportInvalid('spades-13');
-    expect(useGameStore.getState().score).toBe(495);
-    startOn(oneMoveFromWin(), { mode: 'zen' });
-    useGameStore.getState().reportInvalid('spades-13');
-    expect(useGameStore.getState().score).toBe(500);
-  });
-
-  it('l oeil du croupier offre l indice sans penalite', () => {
-    startOn(oneMoveFromWin());
-    useGameStore.getState().requestHint();
-    expect(useGameStore.getState().score).toBe(475);
-    useMetaStore.setState((s) => ({
-      inventory: {
-        ...s.inventory,
-        consumables: { ...s.inventory.consumables, hint: 1 },
-      },
-    }));
-    useGameStore.getState().requestHint();
-    expect(useGameStore.getState().score).toBe(475);
-    expect(useGameStore.getState().freeHint).toBe(true);
-    expect(useMetaStore.getState().inventory.consumables.hint).toBe(0);
-  });
-});
-
-describe('nouvelle partie', () => {
-  it('nettoie la graine fournie', () => {
-    useGameStore.getState().newGame({ seed: '  ab\u0000c  ' });
-    expect(useGameStore.getState().seed).toBe('abc');
-    useGameStore.getState().newGame({ seed: '\u0000\u0001' });
-    expect(useGameStore.getState().seed).toMatch(/^\d{6}$/);
-  });
-
-  it('impose la graine du jour au defi', () => {
-    useGameStore.getState().newGame({ mode: 'daily' });
-    expect(useGameStore.getState().seed).toMatch(/^defi-\d{4}-\d{2}-\d{2}$/);
-  });
-
-  it('demande confirmation avant d abandonner un magot', () => {
-    startOn(oneMoveFromWin(), { mode: 'gambling' });
-    useGameStore.setState({ pot: 1200 });
+  it('demande confirmation avant d abandonner un magot', async () => {
+    await game().newGame({ mode: 'gambling', table: 'silver' });
     const action = vi.fn();
-    useGameStore.getState().requestLeave(action);
+    game().requestLeave(action);
     expect(action).not.toHaveBeenCalled();
-    expect(useGameStore.getState().modal).toBe('confirmLeave');
-    useGameStore.getState().cancelPendingAction();
-    expect(action).not.toHaveBeenCalled();
-
-    useGameStore.getState().requestLeave(action);
-    useGameStore.getState().confirmPendingAction();
+    expect(game().modal).toBe('confirmLeave');
+    game().cancelPendingAction();
+    game().requestLeave(action);
+    game().confirmPendingAction();
     expect(action).toHaveBeenCalledTimes(1);
+  });
+});
 
-    useGameStore.setState({ pot: 0 });
-    const direct = vi.fn();
-    useGameStore.getState().requestLeave(direct);
-    expect(direct).toHaveBeenCalledTimes(1);
+describe('Vegas', () => {
+  it('fait payer la donne et paie les cartes rangees en quittant', async () => {
+    nextDealWinnable('normal', true);
+    await game().newGame({ mode: 'vegas', difficulty: 'normal' });
+    expect(balance()).toBe(100_000 - VEGAS_STAKE);
+    playSolution(40);
+    const cards = game().board.foundations.reduce((n, p) => n + p.length, 0);
+    await game().goHome();
+    expect(balance()).toBe(
+      100_000 - VEGAS_STAKE + cards * vegasCardValue('normal'),
+    );
   });
 
-  it('se rabat sur la table libre quand le rang manque', () => {
+  it('refuse de distribuer sans les 52 jetons, sans rien quitter', async () => {
+    await game().newGame({ mode: 'classic', seed: 'avant' });
     useMetaStore.setState({
-      wallet: { balance: 1e6, lifetimeEarned: 0, spent: 0 },
+      wallet: { balance: 10, lifetimeEarned: 0, spent: 0 },
     });
-    useGameStore.getState().newGame({ mode: 'gambling', table: 'platinum' });
-    expect(useGameStore.getState().stakeTable).toBe('free');
-    expect(useMetaStore.getState().wallet.balance).toBe(1e6);
+    await game().newGame({ mode: 'vegas' });
+    expect(game().mode).toBe('classic');
+    expect(game().seed).toBe('avant');
+    expect(errors()).toHaveLength(1);
+  });
+
+  it('se perd quand la pioche est epuisee sans issue', async () => {
+    nextVegasDeadEnd();
+    await game().newGame({ mode: 'vegas', difficulty: 'normal' });
+    for (let i = 0; i < 24; i++) game().clickStock();
+    await settle();
+    expect(game().phase).toBe('lost');
+    expect(game().lost?.reason).toBe('deadlock');
+    expect(game().lost?.vegas?.stake).toBe(VEGAS_STAKE);
+  });
+
+  it('interdit d annuler', async () => {
+    await game().newGame({ mode: 'vegas' });
+    game().clickStock();
+    const board = game().board;
+    game().undo();
+    expect(game().board).toBe(board);
+  });
+});
+
+describe('Chrono', () => {
+  it('perd la partie a la fin du compte a rebours', async () => {
+    vi.useFakeTimers({
+      toFake: [
+        'Date',
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+      ],
+    });
+    await game().newGame({ mode: 'chrono', seed: 'chrono' });
+    vi.setSystemTime(Date.now() + CHRONO_LIMIT_MS + 1000);
+    vi.advanceTimersByTime(CHRONO_LIMIT_MS + 1000);
+    await vi.waitFor(() => expect(game().lost?.reason).toBe('time'));
+  });
+});
+
+describe('Jackpot', () => {
+  it('table, victoire, quitte ou double, moitie a l abri puis encaissement', async () => {
+    nextDealWinnable('normal');
+    await game().newGame({
+      mode: 'gambling',
+      table: 'gold',
+      difficulty: 'normal',
+    });
+    expect(balance()).toBe(100_000 - 2500);
+    expect(game().pot).toBe(2500);
+    await winRound();
+    expect(meta().session.awaiting).toBe('decision');
+    const pot1 = game().pot;
+    expect(pot1).toBeGreaterThan(2500);
+
+    nextDealWinnable('normal');
+    await game().doubleOrNothing();
+    expect(game().phase).toBe('playing');
+    expect(game().pot).toBe(pot1);
+    await winRound();
+    expect(game().combo).toBe(2);
+    const pot2 = game().pot;
+
+    const before = balance();
+    nextDealWinnable('normal');
+    await game().cashOutHalf();
+    expect(balance()).toBe(before + Math.floor(pot2 / 2));
+    expect(game().pot).toBe(pot2 - Math.floor(pot2 / 2));
+    await winRound();
+    const pot3 = game().pot;
+    const beforeCash = balance();
+    await game().cashOut();
+    expect(balance()).toBe(beforeCash + pot3);
+    expect(game().route).toBe('home');
+    expect(meta().session.pot).toBe(0);
+  });
+
+  it('paie les paris tenus et les verrouille au premier coup', async () => {
+    nextDealWinnable('normal');
+    await game().newGame({
+      mode: 'gambling',
+      table: 'gold',
+      difficulty: 'normal',
+    });
+    expect(game().toggleSideBet('no-undo')).toBe(true);
+    expect(game().toggleSideBet('no-hint')).toBe(true);
+    game().requestHint();
+    game().clickStock();
+    expect(game().toggleSideBet('fast')).toBe(false);
+    game().undo();
+    // Meme revenu au depart, on a vu la pioche: les paris restent fermes.
+    expect(game().toggleSideBet('fast')).toBe(false);
+    // On revient sur la pioche: on rejoue la donne depuis le debut.
+    await winRound();
+    const bets = game().win!.bets;
+    const stake = sideBetStake('gold');
+    expect(bets.find((b) => b.id === 'no-undo')?.won).toBe(false);
+    expect(bets.find((b) => b.id === 'no-hint')?.won).toBe(false);
+    expect(bets.every((b) => b.stake === stake)).toBe(true);
+  });
+
+  it('paie un pari tenu', async () => {
+    nextDealWinnable('normal');
+    await game().newGame({
+      mode: 'gambling',
+      table: 'gold',
+      difficulty: 'normal',
+    });
+    game().toggleSideBet('no-undo');
+    const before = balance();
+    await winRound();
+    const stake = sideBetStake('gold');
+    expect(game().win!.bets[0]).toMatchObject({
+      won: true,
+      payout: stake * 3,
+    });
+    expect(balance()).toBe(before - stake + stake * 3);
+  });
+
+  it('remet le jackpot progressif a l exploit en Expert', async () => {
+    nextDealWinnable('expert');
+    await game().newGame({
+      mode: 'gambling',
+      table: 'silver',
+      difficulty: 'expert',
+    });
+    const pot = meta().progressive.pot;
+    await winRound();
+    expect(game().win!.progressive).toBe(pot);
+    expect(meta().progressive.pot).toBe(5000);
+  });
+
+  it('ouvre le coffre une seule fois apres trois victoires', async () => {
+    nextDealWinnable('normal');
+    await game().newGame({
+      mode: 'gambling',
+      table: 'free',
+      difficulty: 'normal',
+    });
+    await winRound();
+    for (let i = 0; i < 2; i++) {
+      nextDealWinnable('normal');
+      await game().doubleOrNothing();
+      await winRound();
+    }
+    expect(game().win!.vaultEligible).toBe(true);
+    game().enterVault();
+    expect(game().overlay).toBe('vault');
+    await game().openVault();
+    const pot = game().pot;
+    await game().openVault();
+    expect(game().pot).toBe(pot);
+    expect(meta().gambling.vaultsOpened).toBe(1);
+  });
+
+  it('mise une victoire classique au Jackpot', async () => {
+    nextDealWinnable('normal');
+    await game().newGame({ mode: 'classic', difficulty: 'normal' });
+    await winRound();
+    const score = game().win!.roundScore;
+    nextDealWinnable('normal');
+    await game().gambleFromScore();
+    expect(game().mode).toBe('gambling');
+    expect(game().pot).toBe(score);
+  });
+
+  it('perd le magot en quittant la table apres une victoire', async () => {
+    nextDealWinnable('normal');
+    await game().newGame({
+      mode: 'gambling',
+      table: 'free',
+      difficulty: 'normal',
+    });
+    await winRound();
+    await game().goHome();
+    expect(meta().session.pot).toBe(0);
+    expect(game().pot).toBe(0);
+  });
+});
+
+describe('jokers', () => {
+  it('coup d oeil: consomme a la carte choisie et valide a la fin', async () => {
+    give('peek', 1);
+    await game().newGame({ mode: 'classic', seed: 'oeil' });
+    expect(game().playJoker('peek')).toBe(true);
+    const hidden = game().board.tableau[6][0];
+    expect(game().peekAt(hidden.id)).toBe(true);
+    expect(game().peekCard).toBe(hidden.id);
+    expect(game().playJoker('peek')).toBe(false);
+    await game().goHome();
+    expect(meta().inventory.consumables.peek).toBe(0);
+    expect(errors()).toEqual([]);
+  });
+
+  it('remelange: ordre de pioche rejouable par le coeur', async () => {
+    give('reshuffle', 1);
+    await game().newGame({ mode: 'classic', seed: 'remelange' });
+    const stock = game().board.stock.map((c) => c.id);
+    expect(game().playJoker('reshuffle')).toBe(true);
+    expect(game().board.stock.map((c) => c.id)).not.toEqual(stock);
+    game().clickStock();
+    await game().goHome();
+    expect(meta().inventory.consumables.reshuffle).toBe(0);
+    expect(errors()).toEqual([]);
+  });
+
+  it('joker: un coup interdit passe une fois, et le coeur l accepte', async () => {
+    give('joker', 1);
+    await game().newGame({ mode: 'classic', seed: 'joker' });
+    game().clickStock();
+    const board = game().board;
+    // Une colonne ou la carte du talon ne peut pas aller normalement.
+    const column = board.tableau.findIndex(
+      (col, c) =>
+        col.length > 0 &&
+        !game().applyDragMove({ type: 'wasteToTableau', column: c }),
+    );
+    expect(column).toBeGreaterThanOrEqual(0);
+    game().playJoker('joker');
+    expect(game().applyDragMove({ type: 'wasteToTableau', column })).toBe(true);
+    expect(game().jokerArmed).toBe(false);
+    await game().goHome();
+    expect(meta().inventory.consumables.joker).toBe(0);
+    expect(errors()).toEqual([]);
+  });
+});
+
+describe('donnes garanties et tutoriel', () => {
+  it('sert une donne prouvee gagnable, sur le prefixe impose', async () => {
+    meta().updateSettings({ guaranteed: true });
+    const nonce = meta().session.nonce;
+    await game().newGame({ mode: 'classic', difficulty: 'normal' });
+    expect(game().round?.seedSource).toBe('guaranteed');
+    expect(game().seed.startsWith(`${nonce}-`)).toBe(true);
+    expect(Array.isArray(findSolution(game().board, 20_000))).toBe(true);
+    await winRound();
+    expect(game().win!.guaranteedMultiplier).toBe(0.75);
+  });
+
+  it('respecte le defi du jour', async () => {
+    meta().updateSettings({ guaranteed: true });
+    await game().newGame({ mode: 'daily' });
+    expect(game().guaranteed).toBe(false);
+  });
+
+  it('lance une donne douce ou un premier coup existe', async () => {
+    await game().startTutorial();
+    expect(game().tutorial).toBe(true);
+    expect(game().seed).toBe(TUTORIAL_SEED);
+    expect(game().difficulty).toBe('easy');
+    const tops = game().board.tableau.map((c) => c[c.length - 1]);
+    expect(tops.some((c) => c.rank === 1)).toBe(true);
+    game().endTutorial();
+    expect(meta().tutorial.done).toBe(true);
   });
 });

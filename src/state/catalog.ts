@@ -2,7 +2,8 @@
 // permettent d'acheter, les rangs VIP, les tables a mise du mode Jackpot et la
 // roue quotidienne. Module pur (aucun etat), pour rester facilement testable.
 
-export type CosmeticCategory = 'back' | 'face' | 'table' | 'fx' | 'title';
+export type CosmeticCategory =
+  'back' | 'face' | 'table' | 'fx' | 'title' | 'avatar' | 'frame' | 'card';
 
 export type VipTierId = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
@@ -11,9 +12,12 @@ export interface Cosmetic {
   category: CosmeticCategory;
   label: string;
   hint: string;
-  /** Prix en jetons. 0 = offert d'office. */
+  /**
+   * Prix en jetons. 0 = offert d'office (des que le rang requis est atteint,
+   * pour un objet reserve a un rang).
+   */
   price: number;
-  /** Rang VIP minimum pour pouvoir l'acheter. */
+  /** Rang VIP minimum pour pouvoir l'acheter (ou le recevoir). */
   minTier?: VipTierId;
   /** Piece maitresse de la boutique: mise en avant comme le graal. */
   grail?: boolean;
@@ -358,13 +362,333 @@ export const TITLES: readonly Cosmetic[] = [
   },
 ] as const;
 
+// ---------------------------------------------------------------------------
+// Profil du joueur: avatar (un personnage), cadre et carte de profil.
+// ---------------------------------------------------------------------------
+
+export const AVATARS: readonly Cosmetic[] = [
+  {
+    id: 'croupier',
+    category: 'avatar',
+    label: 'Le croupier',
+    hint: 'Visière verte et nœud papillon: la maison vous salue.',
+    price: 0,
+  },
+  {
+    id: 'joueuse',
+    category: 'avatar',
+    label: 'La joueuse',
+    hint: 'Chignon impeccable et regard qui ne bluffe jamais.',
+    price: 0,
+  },
+  {
+    id: 'cowboy',
+    category: 'avatar',
+    label: 'Le cow-boy',
+    hint: 'Il a joué sa première main dans un saloon.',
+    price: 0,
+  },
+  {
+    id: 'chat',
+    category: 'avatar',
+    label: 'Le chat porte-bonheur',
+    hint: 'Une patte levée, et la chance tourne.',
+    price: 0,
+  },
+  {
+    id: 'magicien',
+    category: 'avatar',
+    label: 'Le magicien',
+    hint: 'Un as dans chaque manche, littéralement.',
+    price: 800,
+  },
+  {
+    id: 'pirate',
+    category: 'avatar',
+    label: 'La pirate',
+    hint: 'Elle ne rend jamais un magot.',
+    price: 800,
+  },
+  {
+    id: 'detective',
+    category: 'avatar',
+    label: 'Le détective',
+    hint: 'Il devine la carte cachée avant qu’elle se retourne.',
+    price: 1500,
+  },
+  {
+    id: 'diva',
+    category: 'avatar',
+    label: 'La diva',
+    hint: 'Plumes, paillettes, et jamais de fausse note.',
+    price: 1500,
+  },
+  {
+    id: 'robot',
+    category: 'avatar',
+    label: 'Le robot',
+    hint: 'Calcule toutes les donnes. Ou presque.',
+    price: 2500,
+  },
+  {
+    id: 'renard',
+    category: 'avatar',
+    label: 'Le renard',
+    hint: 'Rusé, discret, toujours du bon côté de la table.',
+    price: 2500,
+  },
+  {
+    id: 'astronaute',
+    category: 'avatar',
+    label: 'L’astronaute',
+    hint: 'Ses gains sont en orbite.',
+    price: 5000,
+    minTier: 'silver',
+  },
+  {
+    id: 'reine-coeur',
+    category: 'avatar',
+    label: 'La reine de cœur',
+    hint: 'Tout droit sortie du paquet, couronne comprise.',
+    price: 8000,
+    minTier: 'gold',
+  },
+  {
+    id: 'roi-pique',
+    category: 'avatar',
+    label: 'Le roi de pique',
+    hint: 'Le doyen du paquet, sceptre à la main.',
+    price: 8000,
+    minTier: 'gold',
+  },
+  {
+    id: 'joker',
+    category: 'avatar',
+    label: 'Le joker',
+    hint: 'Il se pose n’importe où, et ça lui va très bien.',
+    price: 40000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'dragon',
+    category: 'avatar',
+    label: 'Le dragon',
+    hint: 'Il dort sur un tas de jetons. Le sien.',
+    price: 60000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'nabab',
+    category: 'avatar',
+    label: 'Le magnat',
+    hint: 'Monocle, haut-de-forme en or massif: le casino lui appartient.',
+    price: 250000,
+    minTier: 'diamond',
+    grail: true,
+  },
+] as const;
+
+export const FRAMES: readonly Cosmetic[] = [
+  {
+    id: 'cadre-simple',
+    category: 'frame',
+    label: 'Liseré ivoire',
+    hint: 'Sobre et élégant, comme une carte neuve.',
+    price: 0,
+  },
+  {
+    id: 'cadre-rang-silver',
+    category: 'frame',
+    label: 'Cercle d’argent',
+    hint: 'Offert au rang Argent.',
+    price: 0,
+    minTier: 'silver',
+  },
+  {
+    id: 'cadre-rang-gold',
+    category: 'frame',
+    label: 'Cercle d’or',
+    hint: 'Offert au rang Or.',
+    price: 0,
+    minTier: 'gold',
+  },
+  {
+    id: 'cadre-rang-platinum',
+    category: 'frame',
+    label: 'Cercle de platine',
+    hint: 'Offert au rang Platine.',
+    price: 0,
+    minTier: 'platinum',
+  },
+  {
+    id: 'cadre-rang-diamond',
+    category: 'frame',
+    label: 'Couronne de diamants',
+    hint: 'Offerte au rang Diamant.',
+    price: 0,
+    minTier: 'diamond',
+  },
+  {
+    id: 'cadre-cards',
+    category: 'frame',
+    label: 'Éventail',
+    hint: 'Quatre as déployés autour du portrait.',
+    price: 1200,
+  },
+  {
+    id: 'cadre-chips',
+    category: 'frame',
+    label: 'Pile de jetons',
+    hint: 'Une couronne de jetons de toutes les couleurs.',
+    price: 1800,
+  },
+  {
+    id: 'cadre-neon',
+    category: 'frame',
+    label: 'Néon',
+    hint: 'Un tube rose qui grésille juste ce qu’il faut.',
+    price: 3000,
+  },
+  {
+    id: 'cadre-laurel',
+    category: 'frame',
+    label: 'Lauriers',
+    hint: 'Pour les champions de la table.',
+    price: 5000,
+    minTier: 'silver',
+  },
+  {
+    id: 'cadre-flames',
+    category: 'frame',
+    label: 'Série brûlante',
+    hint: 'Des flammes pour ceux qui ne s’arrêtent jamais.',
+    price: 8000,
+    minTier: 'gold',
+  },
+  {
+    id: 'cadre-crown',
+    category: 'frame',
+    label: 'Couronne royale',
+    hint: 'Le portrait coiffé d’or et de rubis.',
+    price: 25000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'cadre-royal',
+    category: 'frame',
+    label: 'Écrin impérial',
+    hint: 'Or ciselé et diamants qui scintillent sans cesse.',
+    price: 300000,
+    minTier: 'diamond',
+    grail: true,
+  },
+] as const;
+
+export const PROFILE_CARDS: readonly Cosmetic[] = [
+  {
+    id: 'carte-felt',
+    category: 'card',
+    label: 'Feutre émeraude',
+    hint: 'Le tapis de toujours, sous un spot doré.',
+    price: 0,
+  },
+  {
+    id: 'carte-velvet',
+    category: 'card',
+    label: 'Velours bordeaux',
+    hint: 'Profond et feutré comme un salon privé.',
+    price: 1500,
+  },
+  {
+    id: 'carte-midnight',
+    category: 'card',
+    label: 'Minuit',
+    hint: 'Bleu nuit semé d’étoiles.',
+    price: 1500,
+  },
+  {
+    id: 'carte-deco',
+    category: 'card',
+    label: 'Art déco',
+    hint: 'Éventails dorés et lignes des années folles.',
+    price: 4000,
+    minTier: 'silver',
+  },
+  {
+    id: 'carte-marble',
+    category: 'card',
+    label: 'Marbre',
+    hint: 'Marbre blanc veiné d’or.',
+    price: 6000,
+    minTier: 'silver',
+  },
+  {
+    id: 'carte-vegas',
+    category: 'card',
+    label: 'Enseigne de Vegas',
+    hint: 'Ampoules qui clignotent autour de ton nom.',
+    price: 9000,
+    minTier: 'gold',
+  },
+  {
+    id: 'carte-gilded',
+    category: 'card',
+    label: 'Feuille d’or',
+    hint: 'Laque noire et or battu.',
+    price: 20000,
+    minTier: 'platinum',
+  },
+  {
+    id: 'carte-holo',
+    category: 'card',
+    label: 'Holographique',
+    hint: 'Un reflet arc-en-ciel qui suit la lumière.',
+    price: 60000,
+    minTier: 'diamond',
+  },
+  {
+    id: 'carte-legend',
+    category: 'card',
+    label: 'Légende',
+    hint: 'La carte des plus grands: aurore dorée et diamants.',
+    price: 400000,
+    minTier: 'diamond',
+    grail: true,
+  },
+] as const;
+
 export const COSMETICS: readonly Cosmetic[] = [
   ...CARD_BACKS,
   ...CARD_FACES,
   ...TABLES,
   ...VICTORY_FX,
   ...TITLES,
+  ...AVATARS,
+  ...FRAMES,
+  ...PROFILE_CARDS,
 ];
+
+/** Emplacement d'equipement correspondant a chaque categorie. */
+export const SLOT_OF: Record<
+  CosmeticCategory,
+  | 'cardBack'
+  | 'cardFace'
+  | 'table'
+  | 'victoryFx'
+  | 'title'
+  | 'avatar'
+  | 'frame'
+  | 'profileCard'
+> = {
+  back: 'cardBack',
+  face: 'cardFace',
+  table: 'table',
+  fx: 'victoryFx',
+  title: 'title',
+  avatar: 'avatar',
+  frame: 'frame',
+  card: 'profileCard',
+};
 
 const COSMETIC_BY_ID = new Map(COSMETICS.map((c) => [c.id, c]));
 
@@ -396,6 +720,19 @@ export function isValidCardFace(id: string): boolean {
 
 export function isValidTitle(id: string): boolean {
   return TITLES.some((t) => t.id === id);
+}
+
+/**
+ * Un objet est possede s'il a ete achete, ou s'il est offert (prix nul) et
+ * que le rang requis est atteint.
+ */
+export function ownsCosmetic(
+  item: Cosmetic,
+  owned: readonly string[],
+  lifetimeEarned: number,
+): boolean {
+  if (owned.includes(item.id)) return true;
+  return item.price === 0 && meetsTier(lifetimeEarned, item.minTier);
 }
 
 /** Objets achetables (hors objets offerts), pour le compteur de collection. */

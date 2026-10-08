@@ -6,6 +6,7 @@ import {
   findConsumable,
 } from '../state/catalog';
 import { playSound } from '../audio/sfx';
+import { tryBuy } from '../state/economy';
 import { formatNumber } from '../utils/format';
 import { Chip } from './ui';
 
@@ -26,7 +27,6 @@ export function InsuranceToggle({
   const owned = useMetaStore((s) => s.inventory.consumables.insurance);
   const balance = useMetaStore((s) => s.wallet.balance);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
-  const buy = useMetaStore((s) => s.buyConsumable);
   const price = discountedPrice(findConsumable('insurance').price, lifetime);
   const refund = Math.round(pot * INSURANCE_REFUND);
 
@@ -37,10 +37,11 @@ export function InsuranceToggle({
         className="insure insure--buy"
         onClick={(e) => {
           e.stopPropagation();
-          if (buy('insurance') === 'ok') {
+          void tryBuy('insurance').then((ok) => {
+            if (!ok) return;
             playSound('purchase');
             onChange(true);
-          }
+          });
         }}
       >
         <Shield size={18} />

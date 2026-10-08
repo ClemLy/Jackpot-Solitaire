@@ -668,7 +668,7 @@ export function VictoryLayer({
   onDone?: () => void;
 }) {
   const reduced = useMetaStore((s) => s.settings.reducedMotion);
-  const chosen = useMetaStore((s) => s.settings.victoryFx);
+  const chosen = useMetaStore((s) => s.equipped.victoryFx);
   const effect = fx ?? chosen;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const doneRef = useRef(onDone);

@@ -113,6 +113,11 @@ jobs:
         run: npm run build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
+          # Comptes: variables du depot (Settings > Secrets and variables >
+          # Actions > Variables). La cle publiable est faite pour etre
+          # publique. Sans elles, le jeu se publie en mode invite seul.
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Envoi de l artefact
         uses: actions/upload-pages-artifact@v3

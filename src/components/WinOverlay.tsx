@@ -78,7 +78,7 @@ interface Step {
 export function WinOverlay() {
   const win = useGameStore((s) => s.win);
   const mode = useGameStore((s) => s.mode);
-  const titleId = useMetaStore((s) => s.settings.title);
+  const titleId = useMetaStore((s) => s.equipped.title);
   const combo = useGameStore((s) => s.combo);
   const stakeTable = useGameStore((s) => s.stakeTable);
   const difficulty = useGameStore((s) => s.difficulty);

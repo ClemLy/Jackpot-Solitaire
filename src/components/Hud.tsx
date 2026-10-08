@@ -248,10 +248,13 @@ export function Dock() {
   const newGame = useGameStore((s) => s.newGame);
   const openModal = useGameStore((s) => s.openModal);
   const requestLeave = useGameStore((s) => s.requestLeave);
-  const freeHints = useMetaStore((s) => s.inventory.consumables.hint);
-  const jokers = useMetaStore((s) =>
-    JOKER_IDS.reduce((n, id) => n + (s.inventory.consumables[id] ?? 0), 0),
-  );
+  // Reserve moins ce qui a deja servi dans la manche (debite a la fin).
+  const consumables = useMetaStore((s) => s.inventory.consumables);
+  const used = useGameStore((s) => s.used);
+  const left = (id: keyof typeof consumables) =>
+    Math.max(0, (consumables[id] ?? 0) - (used[id] ?? 0));
+  const freeHints = left('hint');
+  const jokers = JOKER_IDS.reduce((n, id) => n + left(id), 0);
   const jokerActive = useGameStore((s) => s.jokerArmed || s.peekMode);
   const [tray, setTray] = useState(false);
 

@@ -18,6 +18,7 @@ jeu sur la manche suivante ?
 - [Les modes de jeu](#les-modes-de-jeu)
 - [Score et mode Jackpot](#score-et-mode-jackpot)
 - [La banque, la boutique et les rangs VIP](#la-banque-la-boutique-et-les-rangs-vip)
+- [Comptes, profil et amis](#comptes-profil-et-amis)
 - [Sur téléphone](#sur-téléphone)
 - [Direction artistique](#direction-artistique)
 - [Lancer le projet](#lancer-le-projet)
@@ -25,6 +26,7 @@ jeu sur la manche suivante ?
 - [Tests](#tests)
 - [Sécurité et robustesse](#sécurité-et-robustesse)
 - [Intégration et déploiement continus](#intégration-et-déploiement-continus)
+- [Mettre en ligne les comptes (Supabase)](#mettre-en-ligne-les-comptes-supabase)
 - [Régénérer les captures et les icônes](#régénérer-les-captures-et-les-icônes)
 - [Vie privée](#vie-privée)
 - [Licence](#licence)
@@ -196,6 +198,9 @@ D’où viennent les jetons :
   - Sept effets de victoire, du champagne à la supernova.
   - Six titres honorifiques, affichés sur l’accueil et sur chaque
     bordereau, de « Flambeur » à « Roi du Jackpot ».
+  - Pour le profil : seize avatars (quatre offerts), douze cadres (quatre
+    se gagnent avec le rang, sept s’achètent) et neuf cartes de profil,
+    de l’enseigne de Vegas à la carte holographique.
   - Les pièces maîtresses (badge Graal) coûtent de 160 000 à 1 000 000 de
     jetons et sont réservées au rang Diamant.
 - **Les tables à mise**, pour faire fructifier sa banque.
@@ -271,6 +276,30 @@ Une table de casino, pas une interface web.
 - Typographie : Fraunces pour les titres et les chiffres, Manrope pour
   l’interface, embarquées pour fonctionner hors ligne.
 
+## Comptes, profil et amis
+
+Le compte est **facultatif** : on peut toujours jouer en invité, la
+progression reste alors dans le navigateur. Un compte sert à ne plus la
+perdre (cache vidé, autre ordinateur, téléphone).
+
+- **Juste un pseudo et un mot de passe**, sans adresse mail. Pseudo de 3 à
+  16 caractères (lettres, chiffres, `-` et `_`), unique sans tenir compte
+  des majuscules. Mot de passe de 10 caractères au moins, lettres et
+  chiffres. Sans mail, un mot de passe oublié ne se réinitialise pas.
+- **La progression d’invité est reprise** à l’inscription : banque,
+  collection, statistiques, hauts faits. La sauvegarde d’invité reste sur
+  l’appareil et revient à la déconnexion.
+- **Le profil** : un avatar façon figure de carte, un cadre et une carte de
+  profil qui résume la progression (rang, victoires, réussite, records,
+  collection, hauts faits). Tout se choisit dans « Profil » ; ce qui manque
+  s’achète en boutique ou se débloque avec le rang.
+- **Les amis** : on ajoute un joueur par son pseudo, il accepte ou refuse.
+  Entre amis, chacun voit la carte de l’autre. Pas de multijoueur : c’est
+  pour suivre la progression des autres. Un joueur qui n’est pas ami ne
+  voit que sa vignette (pseudo, avatar, rang).
+- **Changer de mot de passe** et **supprimer son compte** (définitif, avec
+  confirmation) se font depuis le profil.
+
 ## Lancer le projet
 
 Prérequis : Node 20 ou plus récent.
@@ -299,9 +328,25 @@ npm run build && npm run preview
 | `npm run format` | Reformate le code avec Prettier. |
 | `npm run format:check` | Vérifie le formatage sans modifier. |
 | `npm run screenshots` | Régénère les captures et les icônes. |
+| `npm run api:build` | Empaquette la fonction serveur `api` (moteur et économie partagés). |
+| `npm run api:deploy` | Empaquette puis déploie la fonction `api` sur Supabase. |
 
 Avant de pousser, `npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:e2e`
 reproduit la CI.
+
+Sans configuration, le jeu tourne en invité seul. Pour développer les
+comptes en local (Docker requis) :
+
+```bash
+npx supabase start                    # base, authentification, passerelle
+npm run api:build                     # empaquette la fonction api
+npx supabase functions serve api      # dans un second terminal
+cp .env.example .env.local            # puis y coller l'URL et la cle
+npm run dev                           # publiable affichees par supabase start
+```
+
+`supabase/functions/.env` liste les origines autorisées en local
+(`ALLOWED_ORIGINS`).
 
 ## Architecture du code
 
@@ -320,6 +365,15 @@ src/
     scoring.ts   Score et bonus de fin de partie
     solver.ts    Solveur : prouve qu'une donne se gagne (donnes garanties)
     dealer.ts    Recherche d'une donne gagnable
+  core/        Cœur partagé navigateur / serveur, pur et déterministe
+    rounds.ts    Manches : début, rejeu du journal de coups, victoire,
+                 défaite, encaisser ou doubler, coffre-fort
+    shop.ts      Achats, roue, missions, coffret de rang, objets équipés
+    actions.ts   Les actions qu'un joueur peut demander, validées
+    sanitize.ts  Validation d'un état de joueur, import d'une sauvegarde
+                 d'invité (plafonnée)
+    profile.ts   Carte de profil publique et vignette
+    calendar.ts  Jour et semaine de jeu (fuseau Europe/Paris)
   state/       État applicatif (Zustand)
     game.ts      Partie en cours : coups, annuler, chrono, Jackpot, mises,
                  assurance, navigation
@@ -331,6 +385,9 @@ src/
                     sauvegarde champ par champ
     missions.ts  Missions quotidiennes et hebdomadaires
     dealer.ts    Donnes garanties préparées dans un Web Worker
+    account.ts   Session, inscription, connexion, amis (client Supabase)
+    economy.ts   Envoie chaque action d'argent au cœur local (invité) ou
+                 au serveur (compte)
     achievements.ts
   audio/
     sfx.ts       Sons synthétisés à la volée (Web Audio API)
@@ -339,6 +396,9 @@ src/
                missions, jokers, paris, tutoriel, écrans 404 et plantage)
   styles/      Tokens et tapis, cartes, plateau, interface
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
+server/        Fonction api : authentifie, rejoue et enregistre
+supabase/      Configuration, migration SQL (tables, verrous, quotas),
+               point d'entrée de la fonction
 e2e/           Tests de bout en bout (Playwright)
 404.html       Page servie par GitHub Pages pour toute adresse inconnue
 ```
@@ -390,6 +450,12 @@ Quatre étages :
   seule ouverture de coffre). Vegas, Chrono, moitié à l’abri, paris annexes,
   jackpot progressif et ses conditions, jokers, missions, coffret de rang,
   donnes garanties et tutoriel ont chacun leur parcours complet.
+- **Cœur partagé et serveur** : chaque gain est recalculé en rejouant le
+  journal de coups ; un journal truqué (coup impossible, pari posé après
+  le premier coup, victoire inventée, chrono dépassé) est refusé. Les
+  tests d’intégration de la fonction `api` tournent contre un Supabase
+  local (`supabase start`) et sont sautés s’il n’est pas lancé : verrous
+  de la base, pseudos réservés, import plafonné, amis, conflits de version.
 - **Sauvegarde** : stockage plein ou bloqué, JSON corrompu mis de côté,
   sauvegarde bricolée (soldes négatifs, objets inconnus, types faux).
 - **Interface** : écran de plantage, page 404, notifications d’erreur,
@@ -398,12 +464,34 @@ Quatre étages :
 
 Les tests de bout en bout tournent sur le build de production servi sous
 `/Jackpot-Solitaire/`, sur ordinateur et téléphone : ils échouent à la
-moindre erreur console ou violation de la CSP.
+moindre erreur console ou violation de la CSP. La suite des comptes
+(`e2e/accounts.spec.ts` : inscription avec reprise de la progression,
+reconnexion, mauvais mot de passe, amis) ne tourne que si
+`VITE_SUPABASE_URL` est défini, avec le Supabase local lancé.
 
 ## Sécurité et robustesse
 
-Le jeu n’a ni serveur ni compte : la surface d’attaque se limite au
-navigateur. Ce qui est en place :
+En invité, tout se passe dans le navigateur. Avec un compte, le serveur
+fait autorité. Ce qui est en place :
+
+- **Le serveur rejoue chaque partie** : le navigateur n’envoie jamais un
+  gain, seulement le journal de ses coups. La fonction `api` rejoue ce
+  journal depuis la graine, avec le même cœur que le jeu, et ne paie que
+  ce qu’elle a vérifié. La donne, l’heure, le jour et le hasard (roue,
+  coffre-fort) viennent du serveur.
+- **Base verrouillée** : sécurité au niveau des lignes activée sans aucune
+  règle d’accès, droits retirés aux rôles publics. Le navigateur ne peut
+  ni lire ni écrire une table ; tout passe par la fonction, avec la clé de
+  service qui ne quitte jamais Supabase.
+- **Authentification Supabase** : mots de passe hachés (bcrypt), sessions
+  à jeton signé, 10 caractères minimum avec lettres et chiffres. Le pseudo
+  devient une adresse interne (`pseudo@joueurs.jackpot-solitaire.invalid`,
+  domaine réservé qui ne reçoit jamais de mail). Un déclencheur SQL refuse
+  les pseudos invalides, réservés (admin, croupier…) ou incohérents.
+- **Garde-fous de la fonction** : origines autorisées (CORS), 120
+  requêtes par minute et par compte, corps de 512 Ko au plus, écritures
+  concurrentes détectées (version), import d’invité plafonné, 200 amis et
+  50 demandes en attente au plus. Les erreurs ne divulguent rien.
 
 - **Politique de sécurité du contenu** (CSP) injectée dans le HTML de
   production : scripts, styles et polices ne viennent que du site, aucun
@@ -423,11 +511,14 @@ navigateur. Ce qui est en place :
 - **Dépendances** : `npm audit` à zéro vulnérabilité ; l’outil de
   développement exposé sur `window` n’existe qu’en mode dev.
 
-Limites connues, propres à un jeu 100 % local : les jetons et la roue du
-jour reposent sur le navigateur et l’horloge de l’appareil, donc un joueur
-déterminé peut toujours tricher sur sa propre sauvegarde. GitHub Pages ne
-permet pas d’en-têtes HTTP : pas de `frame-ancestors` ni de HSTS au-delà de
-ce que GitHub fournit.
+Limites connues : en invité, les jetons et la roue du jour reposent sur
+le navigateur et l’horloge de l’appareil, donc un joueur déterminé peut
+tricher sur sa propre sauvegarde. Il ne l’emporte pas dans un compte :
+l’import d’invité est plafonné (jetons, records, collection). Le serveur
+vérifie qu’une partie est jouable et gagnée, pas qu’un humain l’a jouée :
+un programme qui résout les donnes reste possible, comme dans tout
+solitaire. GitHub Pages ne permet pas d’en-têtes HTTP : pas de
+`frame-ancestors` ni de HSTS au-delà de ce que GitHub fournit.
 
 ## Intégration et déploiement continus
 
@@ -449,6 +540,40 @@ pour le sous-chemin du dépôt puis publié sur
 Pour activer le déploiement sur un fork : Settings, Pages, source « GitHub
 Actions ».
 
+## Mettre en ligne les comptes (Supabase)
+
+À faire une fois. Sans cela, le site publié reste en invité seul.
+
+1. Créer un projet sur [supabase.com](https://supabase.com) (l’offre
+   gratuite suffit), région Europe de préférence.
+2. Dans *Authentication > Sign In / Providers > Email* : désactiver
+   « Confirm email ». Dans les réglages des mots de passe : longueur
+   minimale 10, lettres et chiffres exigés.
+3. Relier le dépôt et appliquer la migration :
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <id-du-projet>
+   npx supabase db push
+   ```
+
+4. Autoriser le site publié, puis déployer la fonction :
+
+   ```bash
+   npx supabase secrets set ALLOWED_ORIGINS=https://clemly.github.io
+   npm run api:deploy
+   ```
+
+5. Dans GitHub, *Settings > Secrets and variables > Actions > Variables* :
+   ajouter `SUPABASE_URL` (`https://<id-du-projet>.supabase.co`) et
+   `SUPABASE_PUBLISHABLE_KEY` (*Project Settings > API Keys*, clé
+   publiable : elle est faite pour être publique, la base reste fermée).
+6. Pousser sur `main` : le build publié active les comptes et sa CSP
+   autorise l’adresse Supabase.
+
+Après une modification de `src/core` ou de `server/`, redéployer avec
+`npm run api:deploy` ; après une nouvelle migration, `npx supabase db push`.
+
 ## Régénérer les captures et les icônes
 
 Les captures (`screenshots/`) et les icônes PWA (`public/`) sont produites à
@@ -462,9 +587,12 @@ npm run screenshots
 
 ## Vie privée
 
-Aucun compte, aucun serveur, aucun pistage. Statistiques, réglages, banque,
-achats et hauts faits restent dans le navigateur (localStorage) et ne
-quittent jamais l’appareil. Les jetons n’ont aucune valeur réelle et ne
+Aucun pistage, aucune publicité, aucune adresse mail. En invité,
+statistiques, réglages, banque, achats et hauts faits restent dans le
+navigateur (localStorage). Avec un compte, le serveur garde le pseudo, le
+mot de passe haché et l’état de jeu, rien d’autre ; les réglages de
+l’appareil (son, vibrations, difficulté) restent locaux. Supprimer son
+compte efface tout, amis compris. Les jetons n’ont aucune valeur réelle et ne
 s’achètent pas : ils se gagnent en jouant.
 
 ## Licence

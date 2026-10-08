@@ -31,6 +31,11 @@ import {
   vipProgress,
   vipTierFor,
   RANK_PERKS,
+  AVATARS,
+  FRAMES,
+  PROFILE_CARDS,
+  SLOT_OF,
+  ownsCosmetic,
   findConsumable,
   missionBonusFor,
   weeklyGiftFor,
@@ -45,6 +50,8 @@ import { CardView } from './CardView';
 import { Balance, Chip } from './ui';
 import { VictoryLayer } from './VictoryLayer';
 import { ConsumableIcon } from './icons';
+import { Portrait } from './Portrait';
+import { economy, reportFailure } from '../state/economy';
 
 type Tab = CosmeticCategory | 'bonus';
 
@@ -54,6 +61,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'table', label: 'Tapis' },
   { id: 'fx', label: 'Effets de victoire' },
   { id: 'title', label: 'Titres' },
+  { id: 'avatar', label: 'Avatars' },
+  { id: 'frame', label: 'Cadres' },
+  { id: 'card', label: 'Cartes de profil' },
   { id: 'bonus', label: 'Bonus' },
 ];
 
@@ -63,17 +73,9 @@ const LISTS: Record<CosmeticCategory, readonly Cosmetic[]> = {
   table: TABLES,
   fx: VICTORY_FX,
   title: TITLES,
-};
-
-const SETTING_KEY: Record<
-  CosmeticCategory,
-  'cardBack' | 'cardFace' | 'table' | 'victoryFx' | 'title'
-> = {
-  back: 'cardBack',
-  face: 'cardFace',
-  table: 'table',
-  fx: 'victoryFx',
-  title: 'title',
+  avatar: AVATARS,
+  frame: FRAMES,
+  card: PROFILE_CARDS,
 };
 
 const BACK_CARD: Card = {
@@ -111,7 +113,15 @@ const FX_ICON: Record<string, ReactNode> = {
   supernova: <Sun size={30} />,
 };
 
-function Preview({ item }: { item: Cosmetic }) {
+function Preview({
+  item,
+  avatar,
+  frame,
+}: {
+  item: Cosmetic;
+  avatar: string;
+  frame: string;
+}) {
   if (item.category === 'back') {
     return (
       <div className="preview preview--back" data-back-preview={item.id}>
@@ -144,6 +154,31 @@ function Preview({ item }: { item: Cosmetic }) {
         </div>
         <div className="preview__card preview__card--b">
           <CardView card={FACE_TEN} style={{ top: 0, left: 0 }} />
+        </div>
+      </div>
+    );
+  }
+  if (item.category === 'avatar') {
+    return (
+      <div className="preview preview--portrait">
+        <Portrait avatar={item.id} frame="cadre-simple" size="62%" />
+      </div>
+    );
+  }
+  if (item.category === 'frame') {
+    return (
+      <div className="preview preview--portrait">
+        <Portrait avatar={avatar} frame={item.id} size="62%" />
+      </div>
+    );
+  }
+  if (item.category === 'card') {
+    return (
+      <div className="preview preview--pcard">
+        <div className="pcard-swatch" data-style={item.id}>
+          <Portrait avatar={avatar} frame={frame} size="46%" />
+          <span className="pcard-swatch__line" />
+          <span className="pcard-swatch__line pcard-swatch__line--short" />
         </div>
       </div>
     );
@@ -197,13 +232,10 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
   const [denied, setDenied] = useState<string | null>(null);
   const [previewFx, setPreviewFx] = useState<string | null>(null);
 
-  const settings = useMetaStore((s) => s.settings);
+  const equipped = useMetaStore((s) => s.equipped);
   const wallet = useMetaStore((s) => s.wallet);
   const owned = useMetaStore((s) => s.inventory.owned);
   const consumables = useMetaStore((s) => s.inventory.consumables);
-  const buyCosmetic = useMetaStore((s) => s.buyCosmetic);
-  const buyConsumable = useMetaStore((s) => s.buyConsumable);
-  const updateSettings = useMetaStore((s) => s.updateSettings);
 
   const lifetime = wallet.lifetimeEarned;
   const tier = vipTierFor(lifetime);
@@ -220,29 +252,30 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
     setTimeout(() => setDenied((d) => (d === id ? null : d)), 450);
   };
 
-  const equip = (item: Cosmetic) => {
-    updateSettings({ [SETTING_KEY[item.category]]: item.id });
-    playSound(item.category === 'back' ? 'flip' : 'chip');
-  };
-
-  const onCosmetic = (item: Cosmetic) => {
-    const isOwned = item.price === 0 || owned.includes(item.id);
-    if (isOwned) {
-      equip(item);
-      return;
-    }
-    const result = buyCosmetic(item.id);
-    if (result === 'ok') {
-      celebrate(item.id);
-      updateSettings({ [SETTING_KEY[item.category]]: item.id });
-    } else {
+  const onCosmetic = async (item: Cosmetic) => {
+    try {
+      if (ownsCosmetic(item, owned, wallet.lifetimeEarned)) {
+        await economy.equip(SLOT_OF[item.category], item.id);
+        playSound(item.category === 'back' ? 'flip' : 'chip');
+      } else {
+        // Un objet achete s'equipe aussitot.
+        await economy.buyCosmetic(item.id);
+        celebrate(item.id);
+      }
+    } catch (err) {
       refuse(item.id);
+      reportFailure(err);
     }
   };
 
-  const onConsumable = (item: Consumable) => {
-    if (buyConsumable(item.id) === 'ok') celebrate(item.id);
-    else refuse(item.id);
+  const onConsumable = async (item: Consumable) => {
+    try {
+      await economy.buyConsumable(item.id);
+      celebrate(item.id);
+    } catch (err) {
+      refuse(item.id);
+      reportFailure(err);
+    }
   };
 
   const list: readonly Cosmetic[] = tab === 'bonus' ? [] : LISTS[tab];
@@ -330,8 +363,8 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
       <div className="shop-grid" role="tabpanel">
         {tab !== 'bonus'
           ? list.map((item) => {
-              const isOwned = item.price === 0 || owned.includes(item.id);
-              const equipped = settings[SETTING_KEY[item.category]] === item.id;
+              const isOwned = ownsCosmetic(item, owned, lifetime);
+              const isEquipped = equipped[SLOT_OF[item.category]] === item.id;
               const locked = !isOwned && !meetsTier(lifetime, item.minTier);
               const price = discountedPrice(item.price, lifetime);
               const poor = !isOwned && !locked && wallet.balance < price;
@@ -342,11 +375,15 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
                   className="item"
                   data-locked={locked}
                   data-grail={item.grail ? 'true' : undefined}
-                  data-equipped={equipped}
+                  data-equipped={isEquipped}
                   data-flash={flash === item.id}
                   data-denied={denied === item.id}
                 >
-                  <Preview item={item} />
+                  <Preview
+                    item={item}
+                    avatar={equipped.avatar}
+                    frame={equipped.frame}
+                  />
                   <Badges item={item} />
                   {locked && (
                     <span className="item__lock" aria-hidden="true">
@@ -367,18 +404,18 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
                     <p className="item__hint">{item.hint}</p>
                   </div>
                   <button
-                    className={`item__action${equipped ? ' is-equipped' : isOwned ? ' is-owned' : ''}`}
+                    className={`item__action${isEquipped ? ' is-equipped' : isOwned ? ' is-owned' : ''}`}
                     onClick={() => onCosmetic(item)}
-                    disabled={equipped || locked}
+                    disabled={isEquipped || locked}
                     aria-label={
-                      equipped
+                      isEquipped
                         ? `${item.label}, équipé`
                         : isOwned
                           ? `Équiper ${item.label}`
                           : `Acheter ${item.label} pour ${price} jetons`
                     }
                   >
-                    {equipped ? (
+                    {isEquipped ? (
                       <>
                         <Check size={16} /> Équipé
                       </>

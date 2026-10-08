@@ -21,6 +21,10 @@ import { NewGameModal } from './components/NewGameModal';
 import { ConfirmLeaveModal } from './components/ConfirmLeaveModal';
 import { SuitSprite } from './components/Suits';
 import { MissionsModal } from './components/MissionsModal';
+import { AuthModal } from './components/AuthModal';
+import { ProfileModal } from './components/ProfileModal';
+import { FriendsModal } from './components/FriendsModal';
+import { restoreSession } from './state/account';
 import { JokerBanner } from './components/Jokers';
 import { SideBetsPanel } from './components/SideBets';
 import { Tutorial } from './components/Tutorial';
@@ -69,9 +73,10 @@ export default function App() {
   const guaranteed = useMetaStore((s) => s.settings.guaranteed);
   const difficulty = useMetaStore((s) => s.settings.difficulty);
 
-  const table = useMetaStore((s) => s.settings.table);
-  const cardBack = useMetaStore((s) => s.settings.cardBack);
-  const cardFace = useMetaStore((s) => s.settings.cardFace);
+  const nonce = useMetaStore((s) => s.session.nonce);
+  const table = useMetaStore((s) => s.equipped.table);
+  const cardBack = useMetaStore((s) => s.equipped.cardBack);
+  const cardFace = useMetaStore((s) => s.equipped.cardFace);
   const reducedMotion = useMetaStore((s) => s.settings.reducedMotion);
 
   // Deblocage de l'audio a la premiere interaction (contrainte des navigateurs mobiles).
@@ -102,8 +107,13 @@ export default function App() {
   useEffect(() => {
     if (!guaranteed) return;
     const { drawCount, gentle } = findDifficulty(difficulty);
-    prepareWinnableDeal({ drawCount, gentle });
-  }, [guaranteed, difficulty]);
+    prepareWinnableDeal({ drawCount, gentle }, nonce);
+  }, [guaranteed, difficulty, nonce]);
+
+  // Un compte deja connecte sur cet appareil reprend sa sauvegarde serveur.
+  useEffect(() => {
+    void restoreSession();
+  }, []);
 
   // Une graine passee dans l'URL lance directement la donne correspondante.
   useEffect(() => {
@@ -141,6 +151,9 @@ export default function App() {
       {modal === 'wheel' && <WheelModal onClose={closeModal} />}
       {modal === 'newgame' && <NewGameModal onClose={closeModal} />}
       {modal === 'missions' && <MissionsModal onClose={closeModal} />}
+      {modal === 'account' && <AuthModal onClose={closeModal} />}
+      {modal === 'profile' && <ProfileModal onClose={closeModal} />}
+      {modal === 'friends' && <FriendsModal onClose={closeModal} />}
       {modal === 'confirmLeave' && <ConfirmLeaveModal />}
       {preparing && <PreparingOverlay />}
       {route === 'game' && <Tutorial />}

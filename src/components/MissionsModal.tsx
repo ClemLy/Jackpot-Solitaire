@@ -19,6 +19,7 @@ import {
   weeklyGiftFor,
 } from '../state/catalog';
 import { playSound } from '../audio/sfx';
+import { economy, reportFailure } from '../state/economy';
 import { formatNumber } from '../utils/format';
 
 /** "dans 5 h 12", "dans 3 j": temps restant avant le renouvellement. */
@@ -36,7 +37,6 @@ function untilReset(scope: MissionScope, now: Date): string {
 function MissionList({ scope, now }: { scope: MissionScope; now: Date }) {
   const missions = useMetaStore((s) => s.missions);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
-  const claim = useMetaStore((s) => s.claimMission);
   const [flash, setFlash] = useState<string | null>(null);
 
   const period = currentPeriod(missions[scope], scope, now);
@@ -81,11 +81,14 @@ function MissionList({ scope, now }: { scope: MissionScope; now: Date }) {
             ) : ready ? (
               <button
                 className="btn btn--gold mission__claim"
-                onClick={() => {
-                  if (claim(scope, def.id) > 0) {
+                onClick={async () => {
+                  try {
+                    await economy.claimMission(scope, def.id);
                     playSound('coins');
                     setFlash(def.id);
                     setTimeout(() => setFlash(null), 900);
+                  } catch (err) {
+                    reportFailure(err);
                   }
                 }}
               >
@@ -106,7 +109,6 @@ function MissionList({ scope, now }: { scope: MissionScope; now: Date }) {
 function RankChest() {
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
   const canClaim = useMetaStore((s) => s.canClaimWeeklyGift());
-  const claim = useMetaStore((s) => s.claimWeeklyGift);
   const [opened, setOpened] = useState(false);
 
   const tier = vipTierFor(lifetime);
@@ -152,10 +154,13 @@ function RankChest() {
       {canClaim ? (
         <button
           className="btn btn--gold"
-          onClick={() => {
-            if (claim().length > 0) {
+          onClick={async () => {
+            try {
+              await economy.claimGift();
               playSound('purchase');
               setOpened(true);
+            } catch (err) {
+              reportFailure(err);
             }
           }}
         >

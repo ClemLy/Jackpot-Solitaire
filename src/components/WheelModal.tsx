@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Eye, Shield } from 'lucide-react';
 import { Modal } from './Modal';
-import { describeReward, useMetaStore, type SpinResult } from '../state/meta';
-import { WHEEL_SEGMENTS, drawWheelSegment } from '../state/catalog';
+import { describeReward, useMetaStore } from '../state/meta';
+import { economy, reportFailure } from '../state/economy';
+import type { SpinResult } from '../core';
+import { WHEEL_SEGMENTS } from '../state/catalog';
 import { playSound } from '../audio/sfx';
 
 const SEG = 360 / WHEEL_SEGMENTS.length;
@@ -38,7 +40,6 @@ const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
 
 export function WheelModal({ onClose }: { onClose: () => void }) {
   const canSpin = useMetaStore((s) => s.canSpinWheel());
-  const spinWheel = useMetaStore((s) => s.spinWheel);
   const reduced = useMetaStore((s) => s.settings.reducedMotion);
 
   const [spinning, setSpinning] = useState(false);
@@ -50,15 +51,21 @@ export function WheelModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
-  const spin = () => {
+  const spin = async () => {
     if (spinning || !canSpin) return;
-    const roll = Math.random();
-    const index = drawWheelSegment(roll);
-    // Le tirage est enregistre des le lancer: fermer la fenetre en pleine
-    // rotation ne permet pas de relancer la roue.
-    const outcome = spinWheel(roll);
-    if (!outcome) return;
     setSpinning(true);
+    // Le tirage est fait par l'economie (le serveur pour un compte) et
+    // enregistre des le lancer: fermer la fenetre en pleine rotation ne
+    // permet pas de relancer la roue.
+    let outcome: SpinResult;
+    try {
+      outcome = await economy.spin();
+    } catch (err) {
+      reportFailure(err);
+      setSpinning(false);
+      return;
+    }
+    const index = outcome.index;
     playSound('button');
 
     const start = rotation.current;

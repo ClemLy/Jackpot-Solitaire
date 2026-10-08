@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSafeStorage, sanitizePersistedMeta } from './persistence';
-import { useMetaStore } from './meta';
+import { createSafeStorage } from './persistence';
+import { pickPlayer, useMetaStore } from './meta';
+import { sanitizePlayer } from '../core';
 
 const KEY = 'jackpot-solitaire-meta-v1';
 
 /** Etat courant du store, tel qu'il sert de valeur de repli. */
 function defaults() {
-  return useMetaStore.getState();
+  return pickPlayer(useMetaStore.getState());
 }
 
 describe('stockage fiable', () => {
@@ -63,16 +64,16 @@ describe('stockage fiable', () => {
   });
 });
 
-describe('validation de la sauvegarde', () => {
-  it('ignore une sauvegarde qui n est pas un objet', () => {
+describe('validation de l etat du joueur', () => {
+  it('ignore un etat qui n est pas un objet', () => {
     const current = defaults();
-    expect(sanitizePersistedMeta(null, current)).toBe(current);
-    expect(sanitizePersistedMeta('x', current)).toBe(current);
-    expect(sanitizePersistedMeta([1], current)).toBe(current);
+    expect(sanitizePlayer(null, current)).toBe(current);
+    expect(sanitizePlayer('x', current)).toBe(current);
+    expect(sanitizePlayer([1], current)).toBe(current);
   });
 
   it('borne les soldes et compteurs bricoles', () => {
-    const out = sanitizePersistedMeta(
+    const out = sanitizePlayer(
       {
         wallet: { balance: -500, lifetimeEarned: 'beaucoup', spent: Infinity },
         stats: {
@@ -95,31 +96,27 @@ describe('validation de la sauvegarde', () => {
     expect(out.gambling.vaultsOpened).toBe(2);
   });
 
-  it('remplace les reglages inconnus par les valeurs courantes', () => {
-    const out = sanitizePersistedMeta(
+  it('n equipe que des objets possedes, dans le bon emplacement', () => {
+    const out = sanitizePlayer(
       {
-        settings: {
-          cardBack: 'inexistant',
-          table: 42,
-          difficulty: 'impossible',
-          volume: 7,
-          soundEnabled: 'oui',
-          title: 'rookie',
+        inventory: { owned: ['foil'] },
+        equipped: {
+          cardBack: 'foil',
+          table: 'inexistant',
+          avatar: 'nabab',
+          title: 'foil',
         },
       },
       defaults(),
     );
-    const d = defaults().settings;
-    expect(out.settings.cardBack).toBe(d.cardBack);
-    expect(out.settings.table).toBe(d.table);
-    expect(out.settings.difficulty).toBe(d.difficulty);
-    expect(out.settings.volume).toBe(1);
-    expect(out.settings.soundEnabled).toBe(d.soundEnabled);
-    expect(out.settings.title).toBe('rookie');
+    expect(out.equipped.cardBack).toBe('foil');
+    expect(out.equipped.table).toBe(defaults().equipped.table);
+    expect(out.equipped.avatar).toBe(defaults().equipped.avatar);
+    expect(out.equipped.title).toBe(defaults().equipped.title);
   });
 
   it('filtre inventaire, hauts faits et dates', () => {
-    const out = sanitizePersistedMeta(
+    const out = sanitizePlayer(
       {
         inventory: {
           owned: ['foil', 'foil', 'objet-pirate', 12, '__proto__'],
@@ -152,13 +149,10 @@ describe('validation de la sauvegarde', () => {
     expect(out.wheel.lastSpin).toBeNull();
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
-});
 
-describe('validation des nouveautes', () => {
-  it('assainit cagnotte, missions, coffret, tutoriel et reglages', () => {
-    const out = sanitizePersistedMeta(
+  it('assainit cagnotte, missions, coffret et session', () => {
+    const out = sanitizePlayer(
       {
-        settings: { haptics: 'oui', guaranteed: true },
         progressive: { pot: -50, wins: 'beaucoup' },
         missions: {
           daily: {
@@ -169,16 +163,18 @@ describe('validation des nouveautes', () => {
           weekly: { key: '<script>', progress: {}, claimed: [] },
         },
         perks: { lastGift: 'demain' },
-        tutorial: { done: 'oui' },
+        session: {
+          pot: -9,
+          awaiting: 'jackpot',
+          nonce: '<img>',
+          round: { id: 'x', mode: 'sudo' },
+        },
       },
       defaults(),
     );
-    expect(out.settings.haptics).toBe(defaults().settings.haptics);
-    expect(out.settings.guaranteed).toBe(true);
     expect(out.progressive.pot).toBeGreaterThanOrEqual(
       defaults().progressive.pot,
     );
-    expect(out.progressive.wins).toBe(defaults().progressive.wins);
     expect(out.missions.daily).toEqual({
       key: '2026-10-08',
       progress: { 'd-win-2': 1, 'd-cards': 0 },
@@ -186,15 +182,10 @@ describe('validation des nouveautes', () => {
     });
     expect(out.missions.weekly).toEqual(defaults().missions.weekly);
     expect(out.perks.lastGift).toBeNull();
-    expect(out.tutorial.done).toBe(defaults().tutorial.done);
-  });
-
-  it('garde une cagnotte plus grosse que la mise de depart', () => {
-    const out = sanitizePersistedMeta(
-      { progressive: { pot: 42_000, wins: 2 } },
-      defaults(),
-    );
-    expect(out.progressive).toEqual({ pot: 42_000, wins: 2 });
+    expect(out.session.pot).toBe(0);
+    expect(out.session.awaiting).toBe('none');
+    expect(out.session.nonce).toBe(defaults().session.nonce);
+    expect(out.session.round).toBeNull();
   });
 });
 
@@ -227,6 +218,7 @@ describe('rechargement du store', () => {
           settings: { difficulty: 'easy', volume: -4 },
         },
         version: 4,
+        // Version 4: la migration regroupe d'abord l'etat du joueur.
       }),
     );
     await useMetaStore.persist.rehydrate();

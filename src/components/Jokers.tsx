@@ -9,6 +9,7 @@ import {
   type JokerId,
 } from '../state/catalog';
 import { playSound } from '../audio/sfx';
+import { tryBuy } from '../state/economy';
 import { formatNumber } from '../utils/format';
 import { ConsumableIcon } from './icons';
 import { Chip } from './ui';
@@ -38,10 +39,12 @@ export function JokerTray({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const board = useGameStore((s) => s.board);
   const playJoker = useGameStore((s) => s.playJoker);
+  // Ce qui reste vraiment: la reserve, moins les jokers deja joues dans la
+  // manche (ils ne sont debites qu'a la fin).
   const consumables = useMetaStore((s) => s.inventory.consumables);
+  const used = useGameStore((s) => s.used);
   const balance = useMetaStore((s) => s.wallet.balance);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
-  const buy = useMetaStore((s) => s.buyConsumable);
 
   // Fermeture au clic a l'exterieur ou avec Echap.
   useEffect(() => {
@@ -68,7 +71,7 @@ export function JokerTray({ onClose }: { onClose: () => void }) {
       <ul className="joker-tray__list">
         {JOKER_IDS.map((id) => {
           const item = findConsumable(id);
-          const count = consumables[id] ?? 0;
+          const count = Math.max(0, (consumables[id] ?? 0) - (used[id] ?? 0));
           const price = discountedPrice(item.price, lifetime);
           const blocked = unavailable(id, board);
           return (
@@ -97,8 +100,8 @@ export function JokerTray({ onClose }: { onClose: () => void }) {
                 <button
                   className="btn btn--ghost joker__action"
                   disabled={balance < price}
-                  onClick={() => {
-                    if (buy(id) === 'ok') playSound('purchase');
+                  onClick={async () => {
+                    if (await tryBuy(id)) playSound('purchase');
                   }}
                   aria-label={`Acheter ${item.label} pour ${price} jetons`}
                 >

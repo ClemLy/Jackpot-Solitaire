@@ -93,3 +93,10 @@ temp/
 skills-lock.json
 CLAUDE.local.md
 design/assets/
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+supabase/functions/.env
+supabase/functions/api/handler.js
+.env.local

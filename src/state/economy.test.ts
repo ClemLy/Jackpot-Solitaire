@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  COSMETICS,
   WELCOME_GIFT,
   WHEEL_SEGMENTS,
   discountedPrice,
@@ -10,17 +11,21 @@ import {
   vipProgress,
   vipTierFor,
 } from './catalog';
-import { migrateMeta, useMetaStore } from './meta';
-import { useGameStore } from './game';
+import { mergePersisted, migrateMeta, pickPlayer, useMetaStore } from './meta';
+import { economy, perform } from './economy';
+import { useAccountStore } from './account';
+import * as account from './account';
 
-function resetStores(balance = 0): void {
-  useMetaStore.getState().resetProgress();
+const meta = () => useMetaStore.getState();
+
+function resetStores(balance = 0, lifetimeEarned = 0): void {
+  meta().leaveAccount();
+  meta().resetProgress();
   useMetaStore.setState({
-    wallet: { balance, lifetimeEarned: 0, spent: 0 },
+    wallet: { balance, lifetimeEarned, spent: 0 },
     notices: [],
   });
-  useMetaStore.getState().updateSettings({ soundEnabled: false });
-  useGameStore.setState({ pot: 0, combo: 0, insured: false, mode: 'classic' });
+  meta().updateSettings({ soundEnabled: false });
 }
 
 describe('rangs VIP', () => {
@@ -80,187 +85,166 @@ describe('recompenses', () => {
 });
 
 describe('migration des sauvegardes', () => {
-  it('transforme la banque securisee en solde, plus le cadeau', () => {
-    const out = migrateMeta(
+  it('transforme une vieille banque securisee en solde, plus le cadeau', () => {
+    const v0 = migrateMeta(
       {
         settings: { cardBack: 'modern', table: 'neon' },
         gambling: { secured: 12480 },
       },
       0,
-    ) as Record<string, unknown>;
-    expect(out.wallet).toEqual({
+    ) as { player: Record<string, unknown>; settings: Record<string, unknown> };
+    expect(v0.player.wallet).toEqual({
       balance: 12480 + WELCOME_GIFT,
       lifetimeEarned: 12480,
       spent: 0,
     });
-    expect(out.settings).toMatchObject({
+    expect(v0.player.equipped).toMatchObject({
       cardBack: 'modern',
       table: 'neon',
       victoryFx: 'bounce',
+      avatar: 'croupier',
     });
-    expect(out.inventory).toMatchObject({ owned: [] });
+    expect(v0.settings).not.toHaveProperty('cardBack');
   });
 
-  it('ne touche pas une sauvegarde deja a jour', () => {
-    const data = { wallet: { balance: 5, lifetimeEarned: 5, spent: 0 } };
-    expect(migrateMeta(data, 4)).toEqual(data);
+  it('regroupe une sauvegarde v4 en un etat de joueur', () => {
+    const v4 = {
+      settings: {
+        soundEnabled: false,
+        difficulty: 'hard',
+        cardBack: 'foil',
+        title: 'rookie',
+      },
+      wallet: { balance: 4321, lifetimeEarned: 9000, spent: 10 },
+      stats: { gamesPlayed: 12, gamesWon: 5 },
+      inventory: { owned: ['foil'], consumables: { hint: 2 } },
+      tutorial: { done: true },
+    };
+    const out = migrateMeta(structuredClone(v4), 4) as Record<string, unknown>;
+    const merged = mergePersisted(out, meta());
+    expect(merged.wallet.balance).toBe(4321);
+    expect(merged.stats.gamesWon).toBe(5);
+    expect(merged.equipped.cardBack).toBe('foil');
+    expect(merged.inventory.consumables.hint).toBe(2);
+    expect(merged.settings.difficulty).toBe('hard');
+    expect(merged.settings.soundEnabled).toBe(false);
+    expect(merged.tutorial.done).toBe(true);
   });
 
-  it('remet tout le monde en Normal, pioche 3 comprise', () => {
-    const draw3 = migrateMeta({ settings: { defaultDraw: 3 } }, 2) as {
-      settings: Record<string, unknown>;
+  it('ignore une sauvegarde v5 bricolee', () => {
+    const merged = mergePersisted(
+      {
+        player: {
+          wallet: { balance: -50, lifetimeEarned: 'x', spent: 0 },
+          equipped: { avatar: 'nabab', frame: 'cadre-rang-diamond' },
+        },
+        settings: { volume: 9, difficulty: 'triche' },
+      },
+      meta(),
+    );
+    expect(merged.wallet.balance).toBe(0);
+    expect(merged.equipped.avatar).toBe('croupier');
+    expect(merged.equipped.frame).toBe('cadre-simple');
+    expect(merged.settings.volume).toBe(1);
+    expect(merged.settings.difficulty).toBe('normal');
+  });
+});
+
+describe('passerelle de l economie', () => {
+  beforeEach(() => resetStores(5000));
+
+  it('execute le coeur sur place pour un invite', async () => {
+    await perform({ type: 'buyConsumable', id: 'joker' });
+    expect(meta().inventory.consumables.joker).toBe(1);
+    expect(meta().wallet.balance).toBe(5000 - 900);
+  });
+
+  it('rend un refus lisible', async () => {
+    resetStores(0);
+    await expect(economy.buyConsumable('joker')).rejects.toThrow(
+      'Pas assez de jetons.',
+    );
+  });
+
+  it('envoie l action au serveur pour un compte, qui fait foi', async () => {
+    const serverState = {
+      ...pickPlayer(meta()),
+      wallet: { balance: 777, lifetimeEarned: 0, spent: 0 },
     };
-    expect(draw3.settings.difficulty).toBe('normal');
-    expect(draw3.settings).not.toHaveProperty('defaultDraw');
-    const draw1 = migrateMeta({ settings: { defaultDraw: 1 } }, 2) as {
-      settings: Record<string, unknown>;
-    };
-    expect(draw1.settings.difficulty).toBe('normal');
-    // Une sauvegarde v3 passee en Expert par l'ancienne migration repart
-    // aussi en Normal; ensuite, le choix du joueur est respecte.
-    const v3 = migrateMeta({ settings: { difficulty: 'expert' } }, 3) as {
-      settings: Record<string, unknown>;
-    };
-    expect(v3.settings.difficulty).toBe('normal');
-    const v4 = { settings: { difficulty: 'expert' } };
-    expect(migrateMeta(v4, 4)).toEqual(v4);
+    const api = vi.spyOn(account, 'api').mockResolvedValue({
+      state: serverState,
+      notices: [{ kind: 'reward', title: 'Serveur', text: 'ok' }],
+      result: { id: 'joker' },
+    });
+    meta().enterAccount(pickPlayer(meta()));
+    useAccountStore.setState({ status: 'online', pseudo: 'Testeur' });
+    await economy.buyConsumable('joker');
+    expect(api).toHaveBeenCalledWith({
+      op: 'act',
+      action: { type: 'buyConsumable', id: 'joker' },
+    });
+    expect(meta().wallet.balance).toBe(777);
+    expect(meta().notices[meta().notices.length - 1]?.title).toBe('Serveur');
+    api.mockRestore();
+    useAccountStore.setState({ status: 'guest', pseudo: null });
+  });
+
+  it('met la sauvegarde d invite de cote pendant un compte', () => {
+    resetStores(1234);
+    meta().enterAccount({
+      ...pickPlayer(meta()),
+      wallet: { balance: 99, lifetimeEarned: 0, spent: 0 },
+    });
+    expect(meta().wallet.balance).toBe(99);
+    // Le stockage local ne recoit jamais l'etat du compte.
+    meta().updateSettings({ volume: 0.3 });
+    const saved = JSON.parse(
+      localStorage.getItem('jackpot-solitaire-meta-v1') ?? '{}',
+    );
+    expect(saved.state.player.wallet.balance).toBe(1234);
+    meta().leaveAccount();
+    expect(meta().wallet.balance).toBe(1234);
   });
 });
 
 describe('boutique', () => {
-  beforeEach(() => resetStores());
+  beforeEach(() => resetStores(0));
 
-  it('refuse un achat sans fonds puis l accepte une fois credite', () => {
-    const meta = useMetaStore.getState();
-    expect(meta.buyCosmetic('burgundy')).toBe('funds');
-    meta.credit(3000);
-    expect(useMetaStore.getState().buyCosmetic('burgundy')).toBe('ok');
-    expect(useMetaStore.getState().wallet.balance).toBe(0);
-    expect(useMetaStore.getState().isOwned('burgundy')).toBe(true);
-    expect(useMetaStore.getState().buyCosmetic('burgundy')).toBe('owned');
+  it('donne a chaque objet un identifiant unique, toutes categories confondues', () => {
+    const ids = COSMETICS.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('bloque un objet reserve a un rang superieur', () => {
-    useMetaStore.setState({
-      wallet: { balance: 50000, lifetimeEarned: 0, spent: 0 },
-    });
-    expect(useMetaStore.getState().buyCosmetic('salon')).toBe('locked');
+  it('refuse un achat sans fonds puis l accepte et l equipe', async () => {
+    await expect(economy.buyCosmetic('emerald')).rejects.toThrow();
+    resetStores(5000);
+    await economy.buyCosmetic('emerald');
+    expect(meta().inventory.owned).toContain('emerald');
+    expect(meta().equipped.cardBack).toBe('emerald');
   });
 
-  it('refuse d equiper un objet non possede', () => {
-    useMetaStore.getState().updateSettings({ table: 'marble' });
-    expect(useMetaStore.getState().settings.table).not.toBe('marble');
-    useMetaStore.getState().updateSettings({ table: 'neon' });
-    expect(useMetaStore.getState().settings.table).toBe('neon');
+  it('bloque un objet reserve a un rang superieur', async () => {
+    resetStores(1_000_000, 0);
+    await expect(economy.buyCosmetic('nabab')).rejects.toThrow(/rang/);
   });
 
-  it('annonce la montee de rang', () => {
-    useMetaStore.getState().credit(5000);
-    const notices = useMetaStore.getState().notices;
-    expect(notices.some((n) => n.kind === 'vip')).toBe(true);
-  });
-});
-
-describe('boutique de prestige', () => {
-  beforeEach(() => resetStores());
-
-  it('reserve les pieces maitresses au rang Diamant', () => {
-    useMetaStore.setState({
-      wallet: { balance: 2_000_000, lifetimeEarned: 60000, spent: 0 },
-    });
-    expect(useMetaStore.getState().buyCosmetic('triple7')).toBe('locked');
-    expect(useMetaStore.getState().buyCosmetic('obsidian')).toBe('ok');
+  it('offre les cadres de rang une fois le rang atteint', async () => {
+    await expect(economy.equip('frame', 'cadre-rang-gold')).rejects.toThrow();
+    resetStores(0, 25_000);
+    await economy.equip('frame', 'cadre-rang-gold');
+    expect(meta().equipped.frame).toBe('cadre-rang-gold');
   });
 
-  it('decerne le Graal a l achat d une piece maitresse', () => {
-    useMetaStore.setState({
-      wallet: { balance: 2_000_000, lifetimeEarned: 150000, spent: 0 },
-    });
-    expect(useMetaStore.getState().buyCosmetic('gilded')).toBe('ok');
-    expect(useMetaStore.getState().achievements.grail).toBeTruthy();
-    useMetaStore.getState().updateSettings({ cardFace: 'gilded' });
-    expect(useMetaStore.getState().settings.cardFace).toBe('gilded');
+  it('decerne le Graal a l achat d une piece maitresse', async () => {
+    resetStores(2_000_000, 200_000);
+    await economy.buyCosmetic('nabab');
+    expect(meta().achievements.grail).toBeGreaterThan(0);
   });
 
-  it('multiplie les jetons de la roue selon le rang', () => {
-    useMetaStore.setState({
-      wallet: { balance: 0, lifetimeEarned: 150000, spent: 0 },
-      wheel: { lastSpin: null },
-    });
-    // roll 0 = premier segment (100 jetons), x3 au rang Diamant.
-    const res = useMetaStore.getState().spinWheel(0);
-    expect(res?.boost).toBe(3);
-    expect(res?.reward).toEqual({ kind: 'chips', amount: 300 });
-    expect(useMetaStore.getState().wallet.balance).toBe(300);
-  });
-
-  it('migre une sauvegarde v1 avec recto et titre par defaut', () => {
-    const out = migrateMeta({ settings: { cardBack: 'foil' } }, 1) as {
-      settings: Record<string, string>;
-    };
-    expect(out.settings).toMatchObject({
-      cardBack: 'foil',
-      cardFace: 'ivory',
-      title: 'rookie',
-    });
-  });
-});
-
-describe('mode Jackpot et banque', () => {
-  beforeEach(() => resetStores(1000));
-
-  it('preleve la mise de la table et la place dans le magot', () => {
-    useGameStore.getState().newGame({ mode: 'gambling', table: 'silver' });
-    expect(useGameStore.getState().pot).toBe(500);
-    expect(useGameStore.getState().stakeTable).toBe('silver');
-    expect(useMetaStore.getState().wallet.balance).toBe(500);
-  });
-
-  it('ferme la table Legende a qui n est pas Diamant', () => {
-    useMetaStore.setState({
-      wallet: { balance: 500000, lifetimeEarned: 60000, spent: 0 },
-    });
-    useGameStore.getState().newGame({ mode: 'gambling', table: 'legend' });
-    expect(useGameStore.getState().stakeTable).toBe('free');
-  });
-
-  it('se rabat sur la table libre si la mise est trop chere', () => {
-    useGameStore.getState().newGame({ mode: 'gambling', table: 'gold' });
-    expect(useGameStore.getState().stakeTable).toBe('free');
-    expect(useGameStore.getState().pot).toBe(0);
-    expect(useMetaStore.getState().wallet.balance).toBe(1000);
-  });
-
-  it('rend la moitie du magot assure en cas d abandon', () => {
-    useGameStore.getState().newGame({ mode: 'gambling', table: 'free' });
-    useGameStore.setState({ pot: 4000, combo: 2, insured: true });
-    useGameStore.getState().goHome();
-    expect(useGameStore.getState().pot).toBe(0);
-    expect(useMetaStore.getState().wallet.balance).toBe(1000 + 2000);
-  });
-
-  it('distribue selon la difficulte choisie', () => {
-    useGameStore.getState().newGame({ mode: 'classic', difficulty: 'easy' });
-    expect(useGameStore.getState().drawCount).toBe(1);
-    useGameStore.getState().newGame({ mode: 'classic', difficulty: 'hard' });
-    expect(useGameStore.getState().drawCount).toBe(3);
-    useMetaStore.getState().updateSettings({ difficulty: 'expert' });
-    useGameStore.getState().newGame({ mode: 'classic' });
-    expect(useGameStore.getState().difficulty).toBe('expert');
-  });
-
-  it('verse le magot encaisse dans la banque', () => {
-    useGameStore.getState().newGame({ mode: 'gambling', table: 'free' });
-    // On ne peut encaisser qu'au bordereau de victoire.
-    useGameStore.setState({
-      pot: 2500,
-      combo: 1,
-      phase: 'won',
-      overlay: 'win',
-    });
-    useGameStore.getState().cashOut();
-    const wallet = useMetaStore.getState().wallet;
-    expect(wallet.balance).toBe(3500);
-    expect(wallet.lifetimeEarned).toBe(2500);
+  it('multiplie les jetons de la roue selon le rang', async () => {
+    resetStores(0, 200_000);
+    const spin = await economy.spin();
+    if (spin.reward.kind === 'chips') expect(spin.boost).toBe(3);
+    await expect(economy.spin()).rejects.toThrow(/aujourd/);
   });
 });

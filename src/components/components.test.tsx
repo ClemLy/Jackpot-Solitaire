@@ -45,7 +45,7 @@ describe('ecran de plantage', () => {
     window.removeEventListener('error', silence);
   });
 
-  it('rattrape une erreur d affichage et permet de repartir', () => {
+  it('rattrape une erreur d affichage et permet de repartir', async () => {
     function Harness() {
       const [armed, setArmed] = useState(true);
       return (
@@ -64,7 +64,7 @@ describe('ecran de plantage', () => {
     expect(screen.getByText('Partie en cours')).toBeTruthy();
   });
 
-  it('signale l erreur au rapporteur', () => {
+  it('signale l erreur au rapporteur', async () => {
     const onError = vi.fn();
     render(
       <ErrorBoundary onError={onError}>
@@ -98,7 +98,7 @@ describe('ecran de plantage', () => {
 });
 
 describe('page introuvable', () => {
-  it('affiche l adresse demandee comme simple texte et un lien de retour', () => {
+  it('affiche l adresse demandee comme simple texte et un lien de retour', async () => {
     const path = '/<img src=x onerror=alert(1)>';
     const { container } = render(
       <NotFoundScreen path={path} homeHref="/jeu/" />,
@@ -112,7 +112,7 @@ describe('page introuvable', () => {
 });
 
 describe('notifications d erreur', () => {
-  it('s annoncent aux lecteurs d ecran et se ferment au toucher', () => {
+  it('s annoncent aux lecteurs d ecran et se ferment au toucher', async () => {
     render(<Toaster />);
     act(() => {
       useMetaStore
@@ -127,12 +127,12 @@ describe('notifications d erreur', () => {
 });
 
 describe('application', () => {
-  it('affiche l accueil sans planter', () => {
+  it('affiche l accueil sans planter', async () => {
     render(<App />);
     expect(screen.getAllByText(/jackpot/i).length).toBeGreaterThan(0);
   });
 
-  it('change la difficulte depuis les reglages', () => {
+  it('change la difficulte depuis les reglages', async () => {
     render(<App />);
     act(() => useGameStore.getState().openModal('settings'));
     fireEvent.click(screen.getByRole('radio', { name: /facile/i }));
@@ -144,18 +144,20 @@ describe('application', () => {
     ).toBe('true');
   });
 
-  it('borne la longueur de la graine saisie', () => {
+  it('borne la longueur de la graine saisie', async () => {
     render(<App />);
     act(() => useGameStore.getState().openModal('newgame'));
     const input = screen.getByLabelText('Graine de partie') as HTMLInputElement;
     expect(input.maxLength).toBeGreaterThan(0);
   });
 
-  it('laisse piocher au clavier', () => {
+  it('laisse piocher au clavier', async () => {
     render(<App />);
-    act(() =>
-      useGameStore.getState().newGame({ mode: 'classic', seed: 'clavier' }),
-    );
+    await act(async () => {
+      await useGameStore
+        .getState()
+        .newGame({ mode: 'classic', seed: 'clavier' });
+    });
     const stock = screen.getByRole('button', { name: /piocher/i });
     expect(stock.tabIndex).toBe(0);
     fireEvent.keyDown(stock, { key: 'Enter' });
@@ -165,10 +167,12 @@ describe('application', () => {
     expect(useGameStore.getState().board.waste.length).toBe(waste);
   });
 
-  it('demande confirmation avant de fermer l onglet avec un magot en jeu', () => {
+  it('demande confirmation avant de fermer l onglet avec un magot en jeu', async () => {
     render(<App />);
-    act(() => {
-      useGameStore.getState().newGame({ mode: 'gambling', table: 'free' });
+    await act(async () => {
+      await useGameStore
+        .getState()
+        .newGame({ mode: 'gambling', table: 'free' });
       useGameStore.setState({ pot: 900 });
     });
     const risky = new Event('beforeunload', { cancelable: true });

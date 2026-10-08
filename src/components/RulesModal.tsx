@@ -19,6 +19,7 @@ import {
 } from '../state/catalog';
 import { GraduationCap } from 'lucide-react';
 import { useGameStore } from '../state/game';
+import { accountsEnabled } from '../state/account';
 import { formatMultiplier, formatNumber } from '../utils/format';
 
 interface Item {
@@ -365,7 +366,7 @@ const SECTIONS: Section[] = [
         <RuleList
           items={[
             {
-              text: 'La boutique: dos et recto des cartes, tapis, effets de victoire et titres honorifiques. Les plus belles pièces sont réservées aux rangs Platine et Diamant.',
+              text: 'La boutique: dos et recto des cartes, tapis, effets de victoire, titres honorifiques, avatars, cadres et cartes de profil. Les plus belles pièces sont réservées aux rangs Platine et Diamant.',
             },
             {
               text: 'Les tables à mise du Jackpot, pour faire fructifier ta banque.',
@@ -455,10 +456,33 @@ const SECTIONS: Section[] = [
             },
           ]}
         />
+        <h3>Ton profil</h3>
+        <RuleList
+          items={[
+            {
+              text: 'Avatar, cadre et carte de profil: choisis-les dans Profil. Certains cadres se débloquent avec ton rang VIP, les autres s’achètent en boutique.',
+            },
+            ...(accountsEnabled
+              ? [
+                  {
+                    text: 'Compte: juste un pseudo et un mot de passe, sans adresse mail. Ta banque, ta collection et ta carte te suivent sur tous tes appareils. Ta progression d’invité est reprise à l’inscription.',
+                  },
+                  {
+                    text: 'Amis: ajoute un joueur par son pseudo. Une fois la demande acceptée, chacun voit la carte de profil de l’autre: rang, records et collection.',
+                  },
+                  {
+                    tone: 'minus' as const,
+                    mark: '!',
+                    text: 'Sans adresse mail, un mot de passe oublié ne peut pas être réinitialisé: garde-le précieusement.',
+                  },
+                ]
+              : []),
+          ]}
+        />
         <div className="callout">
-          Tout reste sur ton appareil: statistiques, records et réglages ne
-          quittent jamais ton navigateur. Le jeu s&rsquo;installe et fonctionne
-          même sans connexion.
+          {accountsEnabled
+            ? 'Sans compte, tout reste sur ton appareil. Avec un compte, ta progression est gardée et vérifiée par le serveur: chaque partie gagnée y est rejouée coup par coup avant de payer. Le jeu s’installe, et se joue en invité même sans connexion.'
+            : 'Tout reste sur ton appareil: statistiques, records et réglages ne quittent jamais ton navigateur. Le jeu s’installe et fonctionne même sans connexion.'}
         </div>
         <TutorialButton />
       </div>

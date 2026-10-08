@@ -4,7 +4,12 @@
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
-afterEach(() => cleanup());
+// Les tests d'integration du serveur tournent sous Node, sans navigateur.
+const browser = typeof window !== 'undefined';
+
+afterEach(() => {
+  if (browser) cleanup();
+});
 
 if (!('ResizeObserver' in globalThis)) {
   class ResizeObserverStub {
@@ -16,7 +21,7 @@ if (!('ResizeObserver' in globalThis)) {
     ResizeObserverStub;
 }
 
-if (!window.matchMedia) {
+if (browser && !window.matchMedia) {
   window.matchMedia = (query: string) =>
     ({
       matches: false,
@@ -30,7 +35,7 @@ if (!window.matchMedia) {
     }) as MediaQueryList;
 }
 
-if (!Element.prototype.animate) {
+if (browser && !Element.prototype.animate) {
   Element.prototype.animate = function animate() {
     return {
       addEventListener: () => {},
@@ -41,6 +46,6 @@ if (!Element.prototype.animate) {
   };
 }
 
-if (!document.elementFromPoint) {
+if (browser && !document.elementFromPoint) {
   document.elementFromPoint = () => null;
 }

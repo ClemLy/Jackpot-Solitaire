@@ -5,7 +5,6 @@ import { MissionsModal } from './MissionsModal';
 import { useGameStore } from '../state/game';
 import { useMetaStore } from '../state/meta';
 import { activeMissions, periodKey } from '../state/missions';
-import { sideBetStake } from '../state/catalog';
 
 function reset(): void {
   localStorage.clear();
@@ -34,7 +33,7 @@ function reset(): void {
 beforeEach(reset);
 
 describe('accueil', () => {
-  it('invite au tutoriel a la premiere visite, et sait se taire', () => {
+  it('invite au tutoriel a la premiere visite, et sait se taire', async () => {
     useMetaStore.setState({ tutorial: { done: false } });
     render(<App />);
     expect(screen.getByText('Première visite ?')).toBeTruthy();
@@ -43,7 +42,7 @@ describe('accueil', () => {
     expect(useMetaStore.getState().tutorial.done).toBe(true);
   });
 
-  it('signale les recompenses en attente sur le bouton Missions', () => {
+  it('signale les recompenses en attente sur le bouton Missions', async () => {
     useMetaStore.setState({
       wallet: { balance: 0, lifetimeEarned: 6000, spent: 0 },
     });
@@ -53,7 +52,7 @@ describe('accueil', () => {
     ).toBeTruthy();
   });
 
-  it('propose Vegas et affiche le jackpot progressif', () => {
+  it('propose Vegas et affiche le jackpot progressif', async () => {
     render(<App />);
     expect(screen.getByRole('button', { name: /vegas/i })).toBeTruthy();
     expect(screen.getByText('Jackpot progressif')).toBeTruthy();
@@ -61,7 +60,7 @@ describe('accueil', () => {
 });
 
 describe('missions', () => {
-  it('recupere une mission terminee et le coffret de rang', () => {
+  it('recupere une mission terminee et le coffret de rang', async () => {
     const key = periodKey('daily');
     const def = activeMissions('daily', key)[0];
     useMetaStore.setState((s) => ({
@@ -82,27 +81,29 @@ describe('missions', () => {
     expect(useMetaStore.getState().inventory.consumables.hint).toBe(1);
   });
 
-  it('explique le coffret avant le rang Argent', () => {
+  it('explique le coffret avant le rang Argent', async () => {
     render(<MissionsModal onClose={() => {}} />);
     expect(screen.getByText(/atteins le rang argent/i)).toBeTruthy();
   });
 });
 
 describe('en partie', () => {
-  it('pose un pari annexe puis le verrouille au premier coup', () => {
+  it('pose un pari annexe puis le verrouille au premier coup', async () => {
     render(<App />);
-    act(() =>
-      useGameStore.getState().newGame({ mode: 'gambling', table: 'gold' }),
-    );
+    await act(async () => {
+      await useGameStore
+        .getState()
+        .newGame({ mode: 'gambling', table: 'gold' });
+    });
     // Discrets par defaut: une pastille, qu'on ouvre pour parier.
     expect(screen.queryByRole('switch', { name: /sans indice/i })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /paris annexes/i }));
     const bet = screen.getByRole('switch', { name: /sans indice/i });
     fireEvent.click(bet);
     expect(bet.getAttribute('aria-checked')).toBe('true');
-    expect(useMetaStore.getState().wallet.balance).toBe(
-      50_000 - 2500 - sideBetStake('gold'),
-    );
+    // La mise du pari n'est debitee qu'a la fin de la manche.
+    expect(useMetaStore.getState().wallet.balance).toBe(50_000 - 2500);
+    expect(useGameStore.getState().sideBets).toEqual(['no-hint']);
     expect(screen.getByRole('button', { name: /1 pari · 250/ })).toBeTruthy();
     fireEvent.click(
       screen.getByRole('button', { name: /fermer les paris annexes/i }),
@@ -113,9 +114,11 @@ describe('en partie', () => {
     expect(screen.getByText('1 pari')).toBeTruthy();
   });
 
-  it('ouvre le plateau des jokers, achete puis arme un joker', () => {
+  it('ouvre le plateau des jokers, achete puis arme un joker', async () => {
     render(<App />);
-    act(() => useGameStore.getState().newGame({ mode: 'classic', seed: 'j' }));
+    await act(async () => {
+      await useGameStore.getState().newGame({ mode: 'classic', seed: 'j' });
+    });
     fireEvent.click(screen.getByRole('button', { name: /jokers/i }));
     fireEvent.click(
       screen.getByRole('button', { name: /acheter joker pour/i }),
@@ -129,12 +132,16 @@ describe('en partie', () => {
     expect(useGameStore.getState().jokerArmed).toBe(false);
   });
 
-  it('montre le compte a rebours au Chrono et les gains a Vegas', () => {
+  it('montre le compte a rebours au Chrono et les gains a Vegas', async () => {
     render(<App />);
-    act(() => useGameStore.getState().newGame({ mode: 'chrono' }));
+    await act(async () => {
+      await useGameStore.getState().newGame({ mode: 'chrono' });
+    });
     expect(screen.getByText('Reste')).toBeTruthy();
     expect(screen.getByText('05:00')).toBeTruthy();
-    act(() => useGameStore.getState().newGame({ mode: 'vegas' }));
+    await act(async () => {
+      await useGameStore.getState().newGame({ mode: 'vegas' });
+    });
     expect(screen.getByText('Gains')).toBeTruthy();
     expect(screen.getByText('Recharges')).toBeTruthy();
     expect(
@@ -142,9 +149,11 @@ describe('en partie', () => {
     ).toHaveProperty('disabled', true);
   });
 
-  it('guide le tutoriel pas a pas et le laisse passer', () => {
+  it('guide le tutoriel pas a pas et le laisse passer', async () => {
     render(<App />);
-    act(() => useGameStore.getState().startTutorial());
+    await act(async () => {
+      await useGameStore.getState().startTutorial();
+    });
     expect(screen.getByText('Le but du jeu')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Suivant' }));
     expect(screen.getByText('Les colonnes')).toBeTruthy();
@@ -168,7 +177,7 @@ describe('en partie', () => {
 });
 
 describe('reglages', () => {
-  it('active les donnes garanties', () => {
+  it('active les donnes garanties', async () => {
     render(<App />);
     act(() => useGameStore.getState().openModal('settings'));
     const toggle = screen.getByRole('switch', { name: /donnes garanties/i });
