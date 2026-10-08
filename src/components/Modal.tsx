@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -86,21 +86,8 @@ export function Stage({
   onEscape?: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [overflow, setOverflow] = useState(false);
   useEffect(() => {
     ref.current?.focus({ preventScroll: true });
-  }, []);
-  // Un bordereau plus haut que l'ecran defile sous ses boutons: on le
-  // signale pour afficher un fondu au-dessus d'eux, et seulement dans ce cas.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const check = () => setOverflow(el.scrollHeight > el.clientHeight + 2);
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    for (const child of Array.from(el.children)) ro.observe(child);
-    return () => ro.disconnect();
   }, []);
   useEffect(() => {
     if (!onEscape) return;
@@ -116,7 +103,6 @@ export function Stage({
         className="stage"
         data-tone={tone}
         data-variant={variant}
-        data-overflow={overflow ? 'true' : undefined}
         role="dialog"
         aria-modal="true"
         aria-label={label}

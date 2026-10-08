@@ -46,11 +46,16 @@ test.describe('nouveautes', () => {
     await page.goto('./');
     await page.getByRole('button', { name: /jouer au jackpot/i }).click();
     await page.getByRole('button', { name: /table libre/i }).click();
+    await page.getByRole('button', { name: /paris annexes/i }).click();
     const bet = page.getByRole('switch', { name: /sans annuler/i });
     await bet.click();
     await expect(bet).toHaveAttribute('aria-checked', 'true');
-    await page.getByRole('button', { name: /piocher une carte/i }).click();
+    // Toucher le tapis referme le panneau, sans annuler le pari.
+    await page.locator('.board__tableau').click({ position: { x: 5, y: 5 } });
     await expect(bet).toBeHidden();
+    await expect(page.getByRole('button', { name: /1 pari/ })).toBeVisible();
+    await page.getByRole('button', { name: /piocher une carte/i }).click();
+    await expect(page.getByRole('button', { name: /1 pari/ })).toBeHidden();
     await expect(page.getByText('1 pari')).toBeVisible();
   });
 

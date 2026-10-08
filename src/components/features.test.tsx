@@ -94,14 +94,22 @@ describe('en partie', () => {
     act(() =>
       useGameStore.getState().newGame({ mode: 'gambling', table: 'gold' }),
     );
+    // Discrets par defaut: une pastille, qu'on ouvre pour parier.
+    expect(screen.queryByRole('switch', { name: /sans indice/i })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /paris annexes/i }));
     const bet = screen.getByRole('switch', { name: /sans indice/i });
     fireEvent.click(bet);
     expect(bet.getAttribute('aria-checked')).toBe('true');
     expect(useMetaStore.getState().wallet.balance).toBe(
       50_000 - 2500 - sideBetStake('gold'),
     );
-    act(() => useGameStore.getState().clickStock());
+    expect(screen.getByRole('button', { name: /1 pari · 250/ })).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole('button', { name: /fermer les paris annexes/i }),
+    );
     expect(screen.queryByRole('switch', { name: /sans indice/i })).toBeNull();
+    act(() => useGameStore.getState().clickStock());
+    expect(screen.queryByRole('button', { name: /1 pari · 250/ })).toBeNull();
     expect(screen.getByText('1 pari')).toBeTruthy();
   });
 
