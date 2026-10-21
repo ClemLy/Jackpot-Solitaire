@@ -122,6 +122,22 @@ export function createHandler(config: ApiConfig) {
     });
   }
 
+  /** Identifiant annonce par le jeton, non verifie: sert a prelire seulement. */
+  function subOf(req: Request): string | null {
+    const header = req.headers.get('authorization') ?? '';
+    const part = header.startsWith('Bearer ') ? header.split('.')[1] : '';
+    if (!part) return null;
+    try {
+      const json = atob(part.replace(/-/g, '+').replace(/_/g, '/'));
+      const sub = (JSON.parse(json) as { sub?: unknown }).sub;
+      return typeof sub === 'string' && /^[0-9a-f-]{36}$/.test(sub)
+        ? sub
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
   async function userFrom(req: Request): Promise<{ id: string }> {
     const header = req.headers.get('authorization') ?? '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : '';
@@ -237,17 +253,11 @@ export function createHandler(config: ApiConfig) {
   }
 
   /** Applique une action au joueur, avec verrou optimiste. */
-  async function act(
-    uid: string,
-    raw: unknown,
-    preloaded:
-      Promise<{ state: PlayerState; version: number } | null> | undefined,
-    t: Timings,
-  ) {
+  async function act(uid: string, raw: unknown, t: Timings) {
     const action = parseAction(raw);
     for (let attempt = 0; attempt < 3; attempt++) {
       const loaded =
-        (await (attempt === 0 && preloaded ? preloaded : loadState(uid))) ??
+        (await t.step('read', loadState(uid))) ??
         (await bootstrap(uid, undefined).then(() => loadState(uid)));
       if (!loaded) throw new HttpError(500, 'state', 'Sauvegarde introuvable.');
       const out = dispatch(loaded.state, action, ctx());
@@ -272,6 +282,65 @@ export function createHandler(config: ApiConfig) {
       // Version changee entre lecture et ecriture: on recommence.
     }
     throw new HttpError(409, 'busy', 'Action simultanée, réessaie.');
+  }
+
+  /** Ce que rend la fonction SQL `act_load`. */
+  interface ActLoad {
+    allowed: boolean;
+    state: unknown;
+    version: number | null;
+    pseudo: string | null;
+    created_at: string | null;
+  }
+
+  /**
+   * Limitation, sauvegarde et profil en un seul appel a la base. Rend
+   * 'legacy' si la migration n'est pas encore appliquee: l'ancien chemin,
+   * plus lent mais equivalent, prend alors le relais.
+   */
+  async function loadForAct(uid: string): Promise<ActLoad | 'legacy'> {
+    const { data, error } = await admin.rpc('act_load', {
+      uid,
+      max_hits: config.rateLimit ?? 120,
+    });
+    if (error) {
+      // PGRST202: fonction absente du schema.
+      if (error.code === 'PGRST202') return 'legacy';
+      throw error;
+    }
+    return data as ActLoad;
+  }
+
+  /** Chemin rapide d'une action: une lecture, une ecriture. */
+  async function actFast(uid: string, raw: unknown, row: ActLoad, t: Timings) {
+    if (!row.allowed) {
+      throw new HttpError(
+        429,
+        'rate',
+        'Doucement ! Trop d’actions d’un coup, réessaie dans un instant.',
+      );
+    }
+    // Pas encore de sauvegarde (premiere action): l'ancien chemin la cree.
+    if (row.state == null || row.version == null || !row.pseudo) {
+      return act(uid, raw, t);
+    }
+    const action = parseAction(raw);
+    const fresh = initialPlayer(makeCtx(now(), cryptoRandom, GAME_TIME_ZONE));
+    const out = dispatch(sanitizePlayer(row.state, fresh), action, ctx());
+    const card = publicCard(row.pseudo, out.state, row.created_at ?? '');
+    const { data, error } = await t.step(
+      'save',
+      admin.rpc('act_save', {
+        uid,
+        new_state: out.state,
+        expected_version: Number(row.version),
+        card,
+      }),
+    );
+    if (error) throw error;
+    if (data === true) return out;
+    // Version changee entre lecture et ecriture: l'ancien chemin reessaie.
+    return act(uid, raw, t);
   }
 
   // -------------------------------------------------------------------------
@@ -479,15 +548,17 @@ export function createHandler(config: ApiConfig) {
 
       const t = new Timings();
       timings = t;
+      // La lecture de la sauvegarde part en meme temps que la verification
+      // de session: elle ne compte que si les deux designent le meme joueur.
+      const claimed = body.op === 'act' ? subOf(req) : null;
+      const early = claimed ? t.step('load', loadForAct(claimed)) : undefined;
+      early?.catch(() => undefined);
       const user = await t.step('auth', userFrom(req));
       const uid = user.id;
-      // Pour une action, la lecture de la sauvegarde part en meme temps que
-      // la limitation: deux allers-retours en moins sur le chemin critique.
-      const preloaded =
-        body.op === 'act' ? t.step('read', loadState(uid)) : undefined;
-      // Si la limitation refuse, personne n'attendra cette lecture.
-      preloaded?.catch(() => undefined);
-      await t.step('limit', limit(uid));
+      const loaded = early && claimed === uid ? await early : undefined;
+      if (!loaded || loaded === 'legacy') {
+        await t.step('limit', limit(uid));
+      }
 
       switch (body.op) {
         case 'bootstrap': {
@@ -507,7 +578,10 @@ export function createHandler(config: ApiConfig) {
           );
         }
         case 'act': {
-          const out = await act(uid, body.action, preloaded, t);
+          const out =
+            loaded && loaded !== 'legacy'
+              ? await actFast(uid, body.action, loaded, t)
+              : await act(uid, body.action, t);
           // Une action lente laisse sa trace dans les journaux Supabase.
           if (t.total() > 1500) console.warn('[api] lent', t.header());
           return json(

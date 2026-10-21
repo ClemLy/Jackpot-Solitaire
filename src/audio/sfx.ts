@@ -211,9 +211,12 @@ function note(
   const c = out.context;
   const osc = c.createOscillator();
   osc.type = opts.type ?? 'sine';
-  osc.frequency.setValueAtTime(opts.freq, t);
+  osc.frequency.setValueAtTime(Math.min(opts.freq, 20000), t);
   if (opts.to !== undefined) {
-    osc.frequency.exponentialRampToValueAtTime(opts.to, t + opts.dur);
+    osc.frequency.exponentialRampToValueAtTime(
+      Math.min(opts.to, 20000),
+      t + opts.dur,
+    );
   }
   let head: AudioNode = osc;
   if (opts.lowpass) {

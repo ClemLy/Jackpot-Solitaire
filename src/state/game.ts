@@ -232,6 +232,13 @@ interface GameStore {
   dismissLost: () => void;
 }
 
+/**
+ * Fin de la derniere sortie de table en cours aupres du serveur. L'ecran
+ * d'accueil s'affiche sans l'attendre, mais une nouvelle donne, elle, doit
+ * attendre qu'elle soit reglee pour partir d'un solde juste.
+ */
+let leaving: Promise<void> = Promise.resolve();
+
 let autoTimer: ReturnType<typeof setTimeout> | null = null;
 let shakeTimer: ReturnType<typeof setTimeout> | null = null;
 let chronoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -419,6 +426,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     if (get().busy) return false;
     set({ busy: true });
     try {
+      await leaving;
       const wantsGuarantee =
         useMetaStore.getState().settings.guaranteed &&
         mode !== 'daily' &&
@@ -731,19 +739,24 @@ export const useGameStore = create<GameStore>()((set, get) => {
     },
 
     goHome: async () => {
-      await closeCurrent();
-      // Un magot en suspens (manche perdue, ou gagnee sans encaisser) est
-      // perdu en quittant la table; l'assurance en rend une part.
-      if (useMetaStore.getState().session.awaiting !== 'none') {
-        try {
-          await economy.decide('leave');
-          playSound('bust');
-        } catch (err) {
-          reportFailure(err);
+      // L'accueil s'affiche tout de suite: le reglement aupres du serveur
+      // (manche abandonnee, magot perdu) se termine en arriere-plan.
+      const settle = (async () => {
+        await closeCurrent();
+        // Un magot en suspens (manche perdue, ou gagnee sans encaisser) est
+        // perdu en quittant la table; l'assurance en rend une part.
+        if (useMetaStore.getState().session.awaiting !== 'none') {
+          try {
+            await economy.decide('leave');
+            playSound('bust');
+          } catch (err) {
+            reportFailure(err);
+          }
         }
-      }
+        syncSession();
+      })();
+      leaving = settle;
       stopTimers();
-      syncSession();
       set({
         route: 'home',
         overlay: 'none',
@@ -761,6 +774,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
         win: null,
         lost: null,
       });
+      await settle;
     },
 
     newGame: async (options) => {
