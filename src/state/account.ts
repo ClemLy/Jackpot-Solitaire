@@ -10,6 +10,7 @@ import { create } from 'zustand';
 import {
   createClient,
   FunctionsHttpError,
+  FunctionsRelayError,
   type Session,
   type SupabaseClient,
 } from '@supabase/supabase-js';
@@ -169,19 +170,32 @@ function isTransient(error: unknown): boolean {
 export async function api<T>(body: Record<string, unknown>): Promise<T> {
   const attempts = SAFE_OPS.has(String(body.op)) ? 2 : 1;
   let last: unknown;
+  let elapsed = 0;
   for (let i = 0; i < attempts; i++) {
+    const t0 = performance.now();
     const { data, error } = await supabase().functions.invoke('api', {
       body,
       timeout: API_TIMEOUT_MS,
     });
+    elapsed = Math.round(performance.now() - t0);
     if (!error) return data as T;
     last = error;
     if (!isTransient(error)) break;
   }
-  return fail<T>(last, String(body.op));
+  return fail<T>(last, String(body.op), elapsed);
 }
 
-async function fail<T>(error: unknown, op: string): Promise<T> {
+async function fail<T>(
+  error: unknown,
+  op: string,
+  elapsed: number,
+): Promise<T> {
+  // Trace pour diagnostiquer: quelle operation, quelle cause, apres combien de ms.
+  console.warn(
+    `[api] ${op} en échec après ${elapsed} ms`,
+    error instanceof Error ? `${error.name}: ${error.message}` : error,
+    error instanceof FunctionsHttpError ? error.context.status : '',
+  );
   if (error instanceof FunctionsHttpError) {
     let message = 'Le croupier a eu un souci, réessaie.';
     let code = 'server';
@@ -195,11 +209,23 @@ async function fail<T>(error: unknown, op: string): Promise<T> {
     if (code === 'auth') await forgetSession();
     throw new AccountError(message, code);
   }
-  // Delai depasse ou reseau coupe. Pour une action sur les jetons, le
-  // serveur l'a peut-etre appliquee: l'ecran se resynchronise avant tout.
+  // Pas de reponse exploitable. Pour une action sur les jetons, le serveur
+  // l'a peut-etre appliquee: l'ecran se resynchronise avant tout.
   if (!SAFE_OPS.has(op) && op !== 'deleteAccount') void resync();
+  if (error instanceof FunctionsRelayError) {
+    throw new AccountError(
+      'Le serveur du jeu est indisponible pour le moment, réessaie dans un instant.',
+      'relay',
+    );
+  }
+  if (elapsed >= API_TIMEOUT_MS - 500) {
+    throw new AccountError(
+      'Le serveur met trop de temps à répondre. Réessaie dans un instant.',
+      'timeout',
+    );
+  }
   throw new AccountError(
-    'Le serveur met trop de temps à répondre. Vérifie ta connexion et réessaie.',
+    'Impossible de joindre le serveur. Vérifie ta connexion.',
     'network',
   );
 }
