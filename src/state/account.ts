@@ -145,29 +145,73 @@ async function currentSession(): Promise<Session | null> {
   return data.session;
 }
 
-/** Appel a la fonction serveur, avec la session en cours. */
-export async function api<T>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase().functions.invoke('api', { body });
-  if (error) {
-    if (error instanceof FunctionsHttpError) {
-      let message = 'Le croupier a eu un souci, réessaie.';
-      let code = 'server';
-      try {
-        const payload = await error.context.json();
-        message = payload.message ?? message;
-        code = payload.error ?? code;
-      } catch {
-        // Corps illisible: message generique.
-      }
-      if (code === 'auth') await forgetSession();
-      throw new AccountError(message, code);
-    }
-    throw new AccountError(
-      'Impossible de joindre le serveur. Vérifie ta connexion.',
-      'network',
-    );
+/** Delai maximal d'un appel: au-dela, on rend la main au joueur. */
+export const API_TIMEOUT_MS = 12_000;
+
+/** Operations sans effet de bord: on peut les rejouer sans risque. */
+const SAFE_OPS = new Set(['bootstrap', 'friends', 'friendCard']);
+
+/** Vrai pour une coupure reseau ou un delai depasse (jamais un refus serveur). */
+function isTransient(error: unknown): boolean {
+  if (error instanceof FunctionsHttpError) {
+    return error.context.status >= 502 && error.context.status <= 504;
   }
-  return data as T;
+  return true;
+}
+
+/**
+ * Appel a la fonction serveur, avec la session en cours.
+ *
+ * Chaque tentative a un delai maximal. Seules les lectures sont rejouees
+ * automatiquement: rejouer un achat ou une reclamation pourrait la payer deux
+ * fois si la premiere avait en fait abouti.
+ */
+export async function api<T>(body: Record<string, unknown>): Promise<T> {
+  const attempts = SAFE_OPS.has(String(body.op)) ? 2 : 1;
+  let last: unknown;
+  for (let i = 0; i < attempts; i++) {
+    const { data, error } = await supabase().functions.invoke('api', {
+      body,
+      timeout: API_TIMEOUT_MS,
+    });
+    if (!error) return data as T;
+    last = error;
+    if (!isTransient(error)) break;
+  }
+  return fail<T>(last, String(body.op));
+}
+
+async function fail<T>(error: unknown, op: string): Promise<T> {
+  if (error instanceof FunctionsHttpError) {
+    let message = 'Le croupier a eu un souci, réessaie.';
+    let code = 'server';
+    try {
+      const payload = await error.context.json();
+      message = payload.message ?? message;
+      code = payload.error ?? code;
+    } catch {
+      // Corps illisible: message generique.
+    }
+    if (code === 'auth') await forgetSession();
+    throw new AccountError(message, code);
+  }
+  // Delai depasse ou reseau coupe. Pour une action sur les jetons, le
+  // serveur l'a peut-etre appliquee: l'ecran se resynchronise avant tout.
+  if (!SAFE_OPS.has(op) && op !== 'deleteAccount') void resync();
+  throw new AccountError(
+    'Le serveur met trop de temps à répondre. Vérifie ta connexion et réessaie.',
+    'network',
+  );
+}
+
+/** Relit la sauvegarde du serveur apres une reponse perdue en route. */
+async function resync(): Promise<void> {
+  try {
+    const out = await api<Bootstrap>({ op: 'bootstrap', guest: null });
+    useMetaStore.getState().applyPlayer(out.state, []);
+  } catch {
+    // Toujours injoignable: la prochaine action reessaiera.
+  }
 }
 
 interface Bootstrap {

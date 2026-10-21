@@ -160,11 +160,26 @@ export function createHandler(config: ApiConfig) {
   async function refreshCard(
     uid: string,
     state: PlayerState,
+    known?: { pseudo: string; created_at: string },
   ): Promise<PublicCard> {
-    const profile = await profileOf(uid);
+    const profile = known ?? (await profileOf(uid));
     const card = publicCard(profile.pseudo, state, profile.created_at);
     await admin.from('profiles').update({ public_card: card }).eq('id', uid);
     return card;
+  }
+
+  /**
+   * Termine un travail qui ne conditionne pas la reponse (la carte publique
+   * pour les amis). Sur Supabase, la reponse part tout de suite et le travail
+   * s'acheve derriere; ailleurs (tests), on l'attend.
+   */
+  async function later(work: Promise<unknown>): Promise<void> {
+    const safe = work.catch((err) => console.error('[api] differe', err));
+    const runtime = (
+      globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }
+    ).EdgeRuntime;
+    if (runtime?.waitUntil) runtime.waitUntil(safe);
+    else await safe;
   }
 
   /** Cree la sauvegarde du compte, en reprenant au besoin celle de l'invite. */
@@ -196,11 +211,15 @@ export function createHandler(config: ApiConfig) {
   }
 
   /** Applique une action au joueur, avec verrou optimiste. */
-  async function act(uid: string, raw: unknown) {
+  async function act(
+    uid: string,
+    raw: unknown,
+    preloaded?: Promise<{ state: PlayerState; version: number } | null>,
+  ) {
     const action = parseAction(raw);
     for (let attempt = 0; attempt < 3; attempt++) {
       const loaded =
-        (await loadState(uid)) ??
+        (await (attempt === 0 && preloaded ? preloaded : loadState(uid))) ??
         (await bootstrap(uid, undefined).then(() => loadState(uid)));
       if (!loaded) throw new HttpError(500, 'state', 'Sauvegarde introuvable.');
       const out = dispatch(loaded.state, action, ctx());
@@ -216,7 +235,7 @@ export function createHandler(config: ApiConfig) {
         .select('version');
       if (error) throw error;
       if (data && data.length === 1) {
-        await refreshCard(uid, out.state);
+        await later(refreshCard(uid, out.state));
         return out;
       }
       // Version changee entre lecture et ecriture: on recommence.
@@ -427,8 +446,13 @@ export function createHandler(config: ApiConfig) {
         throw new HttpError(400, 'json', 'Requête illisible.');
 
       const user = await userFrom(req);
-      await limit(user.id);
       const uid = user.id;
+      // Pour une action, la lecture de la sauvegarde part en meme temps que
+      // la limitation: deux allers-retours en moins sur le chemin critique.
+      const preloaded = body.op === 'act' ? loadState(uid) : undefined;
+      // Si la limitation refuse, personne n'attendra cette lecture.
+      preloaded?.catch(() => undefined);
+      await limit(uid);
 
       switch (body.op) {
         case 'bootstrap': {
@@ -448,7 +472,7 @@ export function createHandler(config: ApiConfig) {
           );
         }
         case 'act': {
-          const out = await act(uid, body.action);
+          const out = await act(uid, body.action, preloaded);
           return json(
             { state: out.state, notices: out.notices, result: out.result },
             200,
