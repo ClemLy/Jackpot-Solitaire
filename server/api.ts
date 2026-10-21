@@ -59,6 +59,29 @@ class HttpError extends Error {
   }
 }
 
+/** Chronometre des etapes d'une requete, rendu dans l'en-tete Server-Timing. */
+class Timings {
+  private marks: [string, number][] = [];
+  private start = Date.now();
+  async step<T>(name: string, work: PromiseLike<T>): Promise<T> {
+    const t0 = Date.now();
+    try {
+      return await work;
+    } finally {
+      this.marks.push([name, Date.now() - t0]);
+    }
+  }
+  header(): string {
+    const total = Date.now() - this.start;
+    return [...this.marks, ['total', total] as [string, number]]
+      .map(([n, ms]) => `${n};dur=${ms}`)
+      .join(', ');
+  }
+  total(): number {
+    return Date.now() - this.start;
+  }
+}
+
 export function createHandler(config: ApiConfig) {
   const admin: SupabaseClient = createClient(config.url, config.serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -76,6 +99,7 @@ export function createHandler(config: ApiConfig) {
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers':
         'authorization, apikey, content-type, x-client-info',
+      'Access-Control-Expose-Headers': 'Server-Timing',
       'Access-Control-Max-Age': '86400',
     };
   }
@@ -84,6 +108,7 @@ export function createHandler(config: ApiConfig) {
     body: unknown,
     status: number,
     origin: string | null,
+    timing?: string,
   ): Response {
     return new Response(JSON.stringify(body), {
       status,
@@ -91,6 +116,7 @@ export function createHandler(config: ApiConfig) {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': 'no-store',
         'X-Content-Type-Options': 'nosniff',
+        ...(timing ? { 'Server-Timing': timing } : {}),
         ...cors(origin),
       },
     });
@@ -214,7 +240,9 @@ export function createHandler(config: ApiConfig) {
   async function act(
     uid: string,
     raw: unknown,
-    preloaded?: Promise<{ state: PlayerState; version: number } | null>,
+    preloaded:
+      Promise<{ state: PlayerState; version: number } | null> | undefined,
+    t: Timings,
   ) {
     const action = parseAction(raw);
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -223,19 +251,22 @@ export function createHandler(config: ApiConfig) {
         (await bootstrap(uid, undefined).then(() => loadState(uid)));
       if (!loaded) throw new HttpError(500, 'state', 'Sauvegarde introuvable.');
       const out = dispatch(loaded.state, action, ctx());
-      const { data, error } = await admin
-        .from('player_states')
-        .update({
-          state: out.state,
-          version: loaded.version + 1,
-          updated_at: new Date(now()).toISOString(),
-        })
-        .eq('user_id', uid)
-        .eq('version', loaded.version)
-        .select('version');
+      const { data, error } = await t.step(
+        'write',
+        admin
+          .from('player_states')
+          .update({
+            state: out.state,
+            version: loaded.version + 1,
+            updated_at: new Date(now()).toISOString(),
+          })
+          .eq('user_id', uid)
+          .eq('version', loaded.version)
+          .select('version'),
+      );
       if (error) throw error;
       if (data && data.length === 1) {
-        await later(refreshCard(uid, out.state));
+        await t.step('card', later(refreshCard(uid, out.state)));
         return out;
       }
       // Version changee entre lecture et ecriture: on recommence.
@@ -427,6 +458,7 @@ export function createHandler(config: ApiConfig) {
         origin,
       );
     }
+    let timings: Timings | null = null;
     try {
       const length = Number(req.headers.get('content-length') ?? 0);
       if (length > MAX_BODY) {
@@ -445,14 +477,17 @@ export function createHandler(config: ApiConfig) {
       if (!isRecord(body))
         throw new HttpError(400, 'json', 'Requête illisible.');
 
-      const user = await userFrom(req);
+      const t = new Timings();
+      timings = t;
+      const user = await t.step('auth', userFrom(req));
       const uid = user.id;
       // Pour une action, la lecture de la sauvegarde part en meme temps que
       // la limitation: deux allers-retours en moins sur le chemin critique.
-      const preloaded = body.op === 'act' ? loadState(uid) : undefined;
+      const preloaded =
+        body.op === 'act' ? t.step('read', loadState(uid)) : undefined;
       // Si la limitation refuse, personne n'attendra cette lecture.
       preloaded?.catch(() => undefined);
-      await limit(uid);
+      await t.step('limit', limit(uid));
 
       switch (body.op) {
         case 'bootstrap': {
@@ -472,11 +507,14 @@ export function createHandler(config: ApiConfig) {
           );
         }
         case 'act': {
-          const out = await act(uid, body.action, preloaded);
+          const out = await act(uid, body.action, preloaded, t);
+          // Une action lente laisse sa trace dans les journaux Supabase.
+          if (t.total() > 1500) console.warn('[api] lent', t.header());
           return json(
             { state: out.state, notices: out.notices, result: out.result },
             200,
             origin,
+            t.header(),
           );
         }
         case 'friends':
@@ -510,7 +548,7 @@ export function createHandler(config: ApiConfig) {
         return json({ error: err.code, message: err.message }, 422, origin);
       }
       // Erreur inattendue: rien de technique ne sort vers le navigateur.
-      console.error('[api]', err);
+      console.error('[api]', err, timings?.header() ?? '');
       return json(
         { error: 'server', message: 'Le croupier a eu un souci, réessaie.' },
         500,
