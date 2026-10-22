@@ -1218,3 +1218,36 @@ export function drawWheelSegment(roll = Math.random()): number {
   }
   return WHEEL_SEGMENTS.length - 1;
 }
+
+// ---------------------------------------------------------------------------
+// Ce qu'apporte chaque rang, rassemble pour l'ecran des rangs.
+// ---------------------------------------------------------------------------
+
+export interface TierUnlocks {
+  tier: VipTier;
+  /** Bonus ajoute au coffret hebdomadaire a ce rang. */
+  gift: ConsumableId | null;
+  /** Bonus sur les missions a ce rang (0 si aucun). */
+  missionBonus: number;
+  /** Tables a mise ouvertes a partir de ce rang. */
+  tables: StakeTable[];
+  /** Objets offerts au rang (cadres de portrait). */
+  gifts: Cosmetic[];
+  /** Objets de boutique reserves a partir de ce rang. */
+  exclusives: Cosmetic[];
+}
+
+export function tierUnlocks(id: VipTierId): TierUnlocks {
+  const tier = VIP_TIERS[tierIndex(id)];
+  const perk = RANK_PERKS.find((p) => p.tier === id);
+  const sameTier = (c: { minTier?: VipTierId }) =>
+    (c.minTier ?? 'bronze') === id;
+  return {
+    tier,
+    gift: perk?.gift ?? null,
+    missionBonus: perk?.missionBonus ?? 0,
+    tables: STAKE_TABLES.filter(sameTier),
+    gifts: COSMETICS.filter((c) => c.price === 0 && c.minTier === id),
+    exclusives: COSMETICS.filter((c) => c.price > 0 && sameTier(c)),
+  };
+}

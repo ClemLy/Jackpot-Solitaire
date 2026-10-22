@@ -947,24 +947,6 @@
   color: var(--text-3);
 }
 
-.vip-perks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  margin: 2px 0 4px;
-  font-size: 0.76rem;
-}
-.vip-perks__now {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  color: var(--gold-100);
-}
-.vip-perks__next {
-  color: var(--text-3);
-}
-
 .rule-tuto {
   margin-top: 14px;
 }

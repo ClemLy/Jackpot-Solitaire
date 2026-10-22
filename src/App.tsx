@@ -24,6 +24,7 @@ import { MissionsModal } from './components/MissionsModal';
 import { AuthModal } from './components/AuthModal';
 import { ProfileModal } from './components/ProfileModal';
 import { FriendsModal } from './components/FriendsModal';
+import { RanksModal } from './components/RanksModal';
 import { AchievementsModal } from './components/AchievementsModal';
 import { restoreSession } from './state/account';
 import { JokerBanner } from './components/Jokers';
@@ -156,6 +157,7 @@ export default function App() {
       {modal === 'profile' && <ProfileModal onClose={closeModal} />}
       {modal === 'friends' && <FriendsModal onClose={closeModal} />}
       {modal === 'achievements' && <AchievementsModal onClose={closeModal} />}
+      {modal === 'ranks' && <RanksModal onClose={closeModal} />}
       {modal === 'confirmLeave' && <ConfirmLeaveModal />}
       {preparing && <PreparingOverlay />}
       {route === 'game' && <Tutorial />}

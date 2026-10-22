@@ -1730,6 +1730,10 @@
 .vip-banner__next {
   font-size: 0.76rem;
   color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.vip-banner__next strong {
+  color: var(--text);
 }
 .meter {
   height: 6px;

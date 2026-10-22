@@ -272,6 +272,12 @@ l’accueil, la plaque et la carte de profil, la liste d’amis et la boutique.
 Chaque rang débloque aussi son cadre de portrait (cercle d’argent, d’or, de
 platine, couronne de diamants).
 
+Un écran **Rangs VIP** rassemble tout, depuis la jauge de l’accueil, la
+pastille de rang ou la boutique : le rang actuel et sa jauge chiffrée, ce
+qu’il reste à gagner pour le suivant, d’où viennent les jetons, puis une
+échelle de tous les rangs avec, pour chacun, la remise, le bonus de roue, le
+coffret, les tables, le cadre offert et les objets réservés.
+
 | Rang | Dès | Remise | Roue du jour | Ce qu’il ouvre |
 | --- | --- | --- | --- | --- |
 | Bronze | 0 | aucune | ×1 | La boutique de base |
@@ -480,6 +486,7 @@ src/
     Rank.tsx        Emblèmes et étiquettes des rangs VIP
     CardDecor.tsx   Ornements des cartes de profil
     AchievementsModal.tsx  Écran des hauts faits
+    RanksModal.tsx         Écran des rangs VIP
   styles/      Tokens et tapis, cartes, plateau, interface, comptes, rangs
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
 server/        Fonction api : authentifie, rejoue et enregistre

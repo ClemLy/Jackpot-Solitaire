@@ -272,3 +272,465 @@
     animation: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Ecran des rangs: ou j'en suis, comment monter, ce que chaque rang apporte.
+--------------------------------------------------------------------------- */
+
+.rk-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 22px;
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(
+      120% 140% at 0% 0%,
+      color-mix(in srgb, var(--tier) 22%, transparent),
+      transparent 60%
+    ),
+    rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 45%, transparent);
+}
+.rk-hero__emblem {
+  flex: none;
+}
+.rk-hero__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+.rk-hero__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.rk-hero__rank {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.rk-meter {
+  position: relative;
+  height: 14px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.rk-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: max(14px, calc(var(--p) * 100%));
+  border-radius: inherit;
+  background: var(--tier-metal);
+  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--tier) 70%, transparent);
+  animation: rkFill 900ms var(--ease-out) both;
+}
+@keyframes rkFill {
+  from {
+    width: 0;
+  }
+}
+.rk-meter__pct {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  translate: 0 -50%;
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+.rk-hero__legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.rk-hero__legend strong {
+  color: var(--text);
+}
+.rk-hero__next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  font-size: 0.95rem;
+  color: var(--text-2);
+}
+.rk-hero__next strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Comment monter ---- */
+
+.rk-how {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 20px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.rk-how p {
+  display: flex;
+  gap: 10px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.rk-how p > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--gold-300);
+}
+.rk-how strong {
+  color: var(--text);
+}
+.rk-sources {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rk-sources li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.05);
+}
+.rk-sources svg {
+  color: var(--gold-300);
+}
+
+/* ---- Echelle des rangs ---- */
+
+.rk-ladder {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  position: relative;
+}
+.rk-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 14px;
+}
+/* Rail vertical entre les noeuds: plein jusqu'au rang atteint. */
+.rk-step::before {
+  content: '';
+  position: absolute;
+  left: 25px;
+  top: 52px;
+  bottom: -12px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.rk-step:last-child::before {
+  display: none;
+}
+.rk-step[data-state='done']::before {
+  background: var(--tier-metal);
+}
+.rk-step__node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(12, 16, 14, 0.9);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 40%, transparent);
+}
+.rk-step[data-state='current'] .rk-step__node {
+  box-shadow:
+    inset 0 0 0 2px var(--tier),
+    0 0 0 5px color-mix(in srgb, var(--tier) 18%, transparent),
+    0 0 22px -2px color-mix(in srgb, var(--tier) 70%, transparent);
+  animation: rkPulse 2.6s ease-in-out infinite;
+}
+@keyframes rkPulse {
+  50% {
+    box-shadow:
+      inset 0 0 0 2px var(--tier),
+      0 0 0 9px color-mix(in srgb, var(--tier) 8%, transparent),
+      0 0 28px 0 color-mix(in srgb, var(--tier) 60%, transparent);
+  }
+}
+.rk-step[data-state='next'] .rk-step__node .rank-emblem,
+.rk-step[data-state='locked'] .rk-step__node .rank-emblem {
+  filter: grayscale(0.85) brightness(0.6);
+}
+.rk-step__card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.rk-step[data-state='current'] .rk-step__card {
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--tier) 14%, transparent),
+    rgba(255, 255, 255, 0.02)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 55%, transparent);
+}
+.rk-step[data-state='locked'] .rk-step__card {
+  opacity: 0.78;
+}
+.rk-step__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.rk-step__head .rank {
+  font-size: 0.95rem;
+}
+.rk-step__threshold {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.rk-step__status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.05);
+}
+.rk-step[data-state='done'] .rk-step__status {
+  color: var(--pos);
+}
+.rk-step[data-state='current'] .rk-step__status {
+  color: var(--on-gold);
+  background: var(--tier-metal);
+}
+.rk-step[data-state='next'] .rk-step__status {
+  color: var(--tier);
+  background: color-mix(in srgb, var(--tier) 14%, transparent);
+}
+.rk-step__meter {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.rk-step__meter span {
+  display: block;
+  height: 100%;
+  width: calc(var(--p) * 100%);
+  border-radius: inherit;
+  background: var(--tier-metal);
+}
+.rk-perks {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px 14px;
+}
+.rk-perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+.rk-perk strong {
+  color: var(--text);
+}
+.rk-perk__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  color: var(--tier);
+  background: color-mix(in srgb, var(--tier) 12%, transparent);
+}
+
+.rk-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* ---- Raccourci de progression sur l'accueil ---- */
+
+.rank-track {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+  width: min(100%, 420px);
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  text-align: left;
+  background: rgba(10, 14, 12, 0.55);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 40%, transparent);
+  transition:
+    transform 180ms var(--ease-out),
+    box-shadow 180ms ease;
+}
+@media (hover: hover) {
+  .rank-track:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 75%, transparent);
+  }
+}
+.rank-track__emblem {
+  grid-row: span 2;
+}
+.rank-track__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+.rank-track__line .rank {
+  font-size: 0.82rem;
+}
+.rank-track__arrow {
+  color: var(--text-3);
+}
+.rank-track__left {
+  margin-left: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.rank-track__left strong {
+  color: var(--text);
+}
+.rank-track__meter {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.rank-track__meter span {
+  display: block;
+  height: 100%;
+  width: max(6px, calc(var(--p) * 100%));
+  border-radius: inherit;
+  background: var(--tier-metal);
+}
+
+@media (max-width: 640px) {
+  /* Emblème à côté du nom, jauge et texte sur toute la largeur. */
+  .rk-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px 14px;
+    padding: 18px 16px;
+  }
+  .rk-hero__body {
+    display: contents;
+  }
+  .rk-hero__emblem {
+    grid-row: span 2;
+    width: 60px;
+    height: 60px;
+  }
+  .rk-hero__eyebrow {
+    align-self: end;
+  }
+  .rk-hero__rank {
+    align-self: start;
+  }
+  .rk-meter,
+  .rk-hero__legend,
+  .rk-hero__next {
+    grid-column: 1 / -1;
+  }
+  .rk-hero__rank {
+    font-size: 1.7rem;
+  }
+  .rk-step {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .rk-step::before {
+    left: 19px;
+    top: 40px;
+  }
+  .rk-step__node {
+    width: 40px;
+    height: 40px;
+  }
+  .rk-step__node .rank-emblem {
+    width: 28px;
+    height: 28px;
+  }
+  .rk-step__status {
+    margin-left: 0;
+  }
+  .rk-step__card {
+    padding: 12px;
+  }
+  .rk-perks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rk-foot .btn {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-meter__fill,
+  .rk-step[data-state='current'] .rk-step__node {
+    animation: none;
+  }
+}
+
+.vip-banner__more {
+  justify-self: start;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--tier);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--tier) 40%, transparent);
+  text-underline-offset: 3px;
+}
+@media (hover: hover) {
+  .vip-banner__more:hover {
+    text-decoration-color: currentColor;
+  }
+}

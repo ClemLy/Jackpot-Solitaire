@@ -1,7 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Check,
-  Gift,
   Layers,
   Lock,
   Play,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
+import { useGameStore } from '../state/game';
 import {
   CARD_BACKS,
   CARD_FACES,
@@ -28,15 +28,11 @@ import {
   nextVipTier,
   vipProgress,
   vipTierFor,
-  RANK_PERKS,
   AVATARS,
   FRAMES,
   PROFILE_CARDS,
   SLOT_OF,
   ownsCosmetic,
-  findConsumable,
-  missionBonusFor,
-  weeklyGiftFor,
   type Consumable,
   type Cosmetic,
   type CosmeticCategory,
@@ -237,6 +233,7 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
   const owned = useMetaStore((s) => s.inventory.owned);
   const consumables = useMetaStore((s) => s.inventory.consumables);
 
+  const openModal = useGameStore((s) => s.openModal);
   const lifetime = wallet.lifetimeEarned;
   const tier = vipTierFor(lifetime);
   const next = nextVipTier(lifetime);
@@ -323,12 +320,27 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
           >
             <span />
           </div>
-          <PerkLine lifetime={lifetime} />
           <div className="vip-banner__next">
-            {next
-              ? `Encore ${formatNumber(next.threshold - lifetime)} jetons gagnés pour le rang ${next.label}: −${Math.round(next.discount * 100)} %, roue ×${formatMultiplier(next.wheelBoost)} et ${nextUnlocks} objets exclusifs.`
-              : 'Rang maximum atteint. Tout est à portée, il ne reste qu’à tout s’offrir.'}
+            {next ? (
+              <>
+                <strong>
+                  {formatNumber(lifetime)} / {formatNumber(next.threshold)}
+                </strong>{' '}
+                · encore {formatNumber(next.threshold - lifetime)} pour{' '}
+                {next.label}: −{Math.round(next.discount * 100)} %, roue ×
+                {formatMultiplier(next.wheelBoost)} et {nextUnlocks} objets
+                exclusifs.
+              </>
+            ) : (
+              'Rang maximum atteint. Tout est à portée, il ne reste qu’à tout s’offrir.'
+            )}
           </div>
+          <button
+            className="vip-banner__more"
+            onClick={() => openModal('ranks')}
+          >
+            Voir tous les rangs et leurs avantages →
+          </button>
         </div>
         <ol className="vip-ladder" aria-label="Rangs VIP">
           {VIP_TIERS.map((t) => (
@@ -485,38 +497,5 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
         />
       )}
     </Modal>
-  );
-}
-
-/** Avantages concrets du rang: coffret de la semaine et bonus de missions. */
-function PerkLine({ lifetime }: { lifetime: number }) {
-  const gift = weeklyGiftFor(lifetime);
-  const bonus = missionBonusFor(lifetime);
-  const next = nextVipTier(lifetime);
-  const nextPerk = next ? RANK_PERKS.find((p) => p.tier === next.id) : null;
-  if (gift.length === 0 && !nextPerk) return null;
-  return (
-    <div className="vip-perks">
-      {gift.length > 0 ? (
-        <span className="vip-perks__now">
-          <Gift size={14} /> Coffret de la semaine:{' '}
-          {gift.map((id) => findConsumable(id).label).join(', ')}
-          {bonus > 0 && <> · missions +{Math.round(bonus * 100)} %</>}
-        </span>
-      ) : (
-        <span className="vip-perks__now">
-          <Gift size={14} /> Dès le rang Argent: un coffret de bonus chaque
-          semaine.
-        </span>
-      )}
-      {nextPerk?.gift && next && gift.length > 0 && (
-        <span className="vip-perks__next">
-          Rang {next.label}: + {findConsumable(nextPerk.gift).label}
-          {nextPerk.missionBonus
-            ? `, missions +${Math.round(nextPerk.missionBonus * 100)} %`
-            : ''}
-        </span>
-      )}
-    </div>
   );
 }

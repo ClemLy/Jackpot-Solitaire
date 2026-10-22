@@ -59,6 +59,25 @@ describe('accueil', () => {
   });
 });
 
+describe('rangs', () => {
+  it('montre le rang, ce qui manque et ce que chaque rang apporte', async () => {
+    useMetaStore.setState({
+      wallet: { balance: 0, lifetimeEarned: 120_000, spent: 0 },
+    });
+    render(<App />);
+    fireEvent.click(
+      screen.getByRole('button', { name: /encore 60\s000 jetons à gagner/i }),
+    );
+    expect(screen.getByRole('progressbar', { name: /Platine/ })).toBeTruthy();
+    const ladder = screen.getByRole('list', { name: 'Tous les rangs' });
+    const steps = ladder.querySelectorAll(':scope > li');
+    expect(steps).toHaveLength(5);
+    expect(steps[2].getAttribute('aria-current')).toBe('step');
+    expect(steps[3].textContent).toMatch(/Salon Platine/);
+    expect(steps[4].textContent).toMatch(/Table Légende/);
+  });
+});
+
 describe('hauts faits', () => {
   it('montre les paliers, la progression et les exploits', async () => {
     useMetaStore.setState({

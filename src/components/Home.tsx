@@ -245,7 +245,7 @@ export function Home() {
           <button
             className="vip-pill rank-pill"
             data-tier={tier.id}
-            onClick={() => openModal('shop')}
+            onClick={() => openModal('ranks')}
             aria-label={`Rang VIP ${tier.label}`}
             title={
               next
@@ -339,6 +339,48 @@ export function Home() {
               <span className="progressive__value">
                 <Chip size={18} />
                 <RollingNumber value={progressive} />
+              </span>
+            </button>
+            <button
+              className="rank-track"
+              data-tier={tier.id}
+              onClick={() => openModal('ranks')}
+              aria-label={
+                next
+                  ? `Rang ${tier.label}: encore ${formatNumber(next.threshold - lifetime)} jetons à gagner pour le rang ${next.label}. Voir les rangs.`
+                  : `Rang ${tier.label}, le plus haut. Voir les rangs.`
+              }
+            >
+              <RankEmblem
+                tier={tier.id}
+                size={34}
+                compact
+                className="rank-track__emblem"
+              />
+              <span className="rank-track__line">
+                <RankBadge tier={tier.id} emblem={false} />
+                {next && (
+                  <>
+                    <span className="rank-track__arrow" aria-hidden="true">
+                      →
+                    </span>
+                    <RankBadge tier={next.id} emblem={false} />
+                    <span className="rank-track__left">
+                      encore{' '}
+                      <strong>{formatNumber(next.threshold - lifetime)}</strong>
+                    </span>
+                  </>
+                )}
+                {!next && (
+                  <span className="rank-track__left">Rang maximum</span>
+                )}
+              </span>
+              <span
+                className="rank-track__meter"
+                style={{ '--p': vipProgress(lifetime) } as CSSProperties}
+                aria-hidden="true"
+              >
+                <span />
               </span>
             </button>
             {records.length > 0 && (
