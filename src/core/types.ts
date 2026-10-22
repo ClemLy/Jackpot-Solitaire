@@ -70,6 +70,8 @@ export interface MissionsState {
 export interface PerksState {
   /** Semaine (cle ISO) du dernier coffret de rang recupere. */
   lastGift: string | null;
+  /** Hauts faits dont la recompense en jetons a ete versee. */
+  paidAchievements: string[];
 }
 
 /** Objets equipes: dos, recto, tapis, effet, titre et profil. */

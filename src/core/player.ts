@@ -16,7 +16,11 @@ import {
   vipTierFor,
   type ConsumableId,
 } from '../state/catalog';
-import { ACHIEVEMENT_BY_ID, progressAchievements } from '../state/achievements';
+import {
+  ACHIEVEMENT_BY_ID,
+  achievementReward,
+  progressAchievements,
+} from '../state/achievements';
 import {
   activeMissions,
   advance,
@@ -95,7 +99,7 @@ export function initialPlayer(
       daily: { key: ctx.today, progress: {}, claimed: [] },
       weekly: { key: ctx.week, progress: {}, claimed: [] },
     },
-    perks: { lastGift: null },
+    perks: { lastGift: null, paidAchievements: [] },
     equipped: {
       cardBack: DEFAULT_CARD_BACK,
       cardFace: DEFAULT_CARD_FACE,
@@ -175,13 +179,27 @@ export class Tx {
       (this.s.inventory.consumables[id] ?? 0) + n;
   }
 
-  /** Accorde des hauts faits (annonces a la fin de la transaction). */
+  /**
+   * Accorde des hauts faits (annonces a la fin de la transaction) et verse
+   * aussitot leur recompense en jetons.
+   */
   grant(ids: string[]): void {
     for (const id of new Set(ids)) {
       if (this.s.achievements[id] || !ACHIEVEMENT_BY_ID.has(id)) continue;
       this.s.achievements[id] = this.ctx.now;
       this.unlocked.push(id);
+      this.pay(id);
     }
+  }
+
+  /** Verse la recompense d'un haut fait, une seule fois. */
+  pay(id: string): number {
+    const paid = this.s.perks.paidAchievements;
+    if (paid.includes(id)) return 0;
+    paid.push(id);
+    const amount = achievementReward(id);
+    this.credit(amount);
+    return amount;
   }
 
   /**
@@ -200,16 +218,17 @@ export class Tx {
         this.notify({
           kind: 'achievement',
           title: a.title,
-          text: a.description,
+          text: `${a.description} +${formatNumber(achievementReward(a.id))} jetons.`,
         });
       }
       return;
     }
     const names = list.slice(0, 3).map((a) => a.title);
+    const total = list.reduce((sum, a) => sum + achievementReward(a.id), 0);
     this.notify({
       kind: 'achievement',
       title: `${list.length} hauts faits débloqués`,
-      text: `${names.join(', ')}${list.length > 3 ? '…' : '.'}`,
+      text: `${names.join(', ')}${list.length > 3 ? '…' : '.'} +${formatNumber(total)} jetons.`,
     });
   }
 
@@ -290,8 +309,13 @@ export class Tx {
   }
 
   done<T>(result: T) {
-    // Les paliers suivent la progression: on les verifie a chaque fois.
-    this.grant(progressAchievements(this.s));
+    // Les paliers suivent la progression: on les verifie a chaque fois. Une
+    // recompense peut elle-meme faire monter de rang, d'ou la boucle.
+    for (let i = 0; i < 4; i++) {
+      const before = this.unlocked.length;
+      this.grant(progressAchievements(this.s));
+      if (this.unlocked.length === before) break;
+    }
     this.announce();
     return { state: this.s, notices: this.notices, result };
   }

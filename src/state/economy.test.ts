@@ -1,3 +1,4 @@
+import { achievementReward } from './achievements';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   COSMETICS,
@@ -31,30 +32,32 @@ function resetStores(balance = 0, lifetimeEarned = 0): void {
 describe('rangs VIP', () => {
   it('attribue le bon rang selon le cumul gagne', () => {
     expect(vipTierFor(0).id).toBe('bronze');
-    expect(vipTierFor(4999).id).toBe('bronze');
-    expect(vipTierFor(5000).id).toBe('silver');
-    expect(vipTierFor(20000).id).toBe('gold');
-    expect(vipTierFor(1_000_000).id).toBe('diamond');
+    expect(vipTierFor(14_999).id).toBe('bronze');
+    expect(vipTierFor(15_000).id).toBe('silver');
+    expect(vipTierFor(60_000).id).toBe('gold');
+    expect(vipTierFor(180_000).id).toBe('platinum');
+    expect(vipTierFor(400_000).id).toBe('diamond');
+    expect(vipTierFor(5_000_000).id).toBe('diamond');
   });
 
   it('calcule la progression et le rang suivant', () => {
     expect(nextVipTier(0)?.id).toBe('silver');
-    expect(nextVipTier(200000)).toBeNull();
-    expect(vipProgress(2500)).toBeCloseTo(0.5);
-    expect(vipProgress(200000)).toBe(1);
+    expect(nextVipTier(500_000)).toBeNull();
+    expect(vipProgress(7500)).toBeCloseTo(0.5);
+    expect(vipProgress(500_000)).toBe(1);
   });
 
   it('verifie les rangs requis', () => {
     expect(meetsTier(0)).toBe(true);
     expect(meetsTier(0, 'silver')).toBe(false);
-    expect(meetsTier(25000, 'silver')).toBe(true);
+    expect(meetsTier(25_000, 'silver')).toBe(true);
   });
 
   it('applique la remise du rang, arrondie a la dizaine', () => {
     expect(discountedPrice(3000, 0)).toBe(3000);
-    expect(discountedPrice(3000, 5000)).toBe(2850);
-    expect(discountedPrice(1500, 20000)).toBe(1350);
-    expect(discountedPrice(0, 200000)).toBe(0);
+    expect(discountedPrice(3000, 15_000)).toBe(2850);
+    expect(discountedPrice(1500, 60_000)).toBe(1350);
+    expect(discountedPrice(0, 500_000)).toBe(0);
   });
 });
 
@@ -156,7 +159,10 @@ describe('passerelle de l economie', () => {
   it('execute le coeur sur place pour un invite', async () => {
     await perform({ type: 'buyConsumable', id: 'joker' });
     expect(meta().inventory.consumables.joker).toBe(1);
-    expect(meta().wallet.balance).toBe(5000 - 900);
+    // Le premier achat debloque aussi un haut fait, qui rapporte des jetons.
+    expect(meta().wallet.balance).toBe(
+      5000 - 900 + achievementReward('collector'),
+    );
   });
 
   it('rend un refus lisible', async () => {
@@ -230,19 +236,19 @@ describe('boutique', () => {
 
   it('offre les cadres de rang une fois le rang atteint', async () => {
     await expect(economy.equip('frame', 'cadre-rang-gold')).rejects.toThrow();
-    resetStores(0, 25_000);
+    resetStores(0, 70_000);
     await economy.equip('frame', 'cadre-rang-gold');
     expect(meta().equipped.frame).toBe('cadre-rang-gold');
   });
 
   it('decerne le Graal a l achat d une piece maitresse', async () => {
-    resetStores(2_000_000, 200_000);
+    resetStores(2_000_000, 500_000);
     await economy.buyCosmetic('nabab');
     expect(meta().achievements.grail).toBeGreaterThan(0);
   });
 
   it('multiplie les jetons de la roue selon le rang', async () => {
-    resetStores(0, 200_000);
+    resetStores(0, 500_000);
     const spin = await economy.spin();
     if (spin.reward.kind === 'chips') expect(spin.boost).toBe(3);
     await expect(economy.spin()).rejects.toThrow(/aujourd/);

@@ -118,4 +118,6 @@ export const economy = {
   claimMission: (scope: MissionScope, id: string) =>
     perform<{ amount: number }>({ type: 'claimMission', scope, id }),
   claimGift: () => perform<{ gift: ConsumableId[] }>({ type: 'claimGift' }),
+  claimAchievements: () =>
+    perform<{ amount: number; count: number }>({ type: 'claimAchievements' }),
 };

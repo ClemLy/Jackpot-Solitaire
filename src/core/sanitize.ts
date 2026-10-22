@@ -286,6 +286,21 @@ export function sanitizePlayer(
         typeof pk.lastGift === 'string' && PERIOD_KEY.test(pk.lastGift)
           ? pk.lastGift
           : null,
+      // Seulement des hauts faits reellement debloques. Une ancienne
+      // sauvegarde n'a rien: ses hauts faits deviennent un arriere a toucher.
+      paidAchievements: Array.isArray(pk.paidAchievements)
+        ? [
+            ...new Set(
+              pk.paidAchievements.filter(
+                (x): x is string =>
+                  typeof x === 'string' &&
+                  Object.prototype.hasOwnProperty.call(achievements, x),
+              ),
+            ),
+          ]
+        : fallback.perks.paidAchievements.filter((x) =>
+            Object.prototype.hasOwnProperty.call(achievements, x),
+          ),
     },
     equipped,
     session: session(p.session, fallback.session),
@@ -322,6 +337,9 @@ export function importGuest(raw: unknown, fresh: PlayerState): PlayerState {
       pot: Math.min(s.progressive.pot, IMPORT_CAPS.progressive),
       wins: s.progressive.wins,
     },
+    // Les hauts faits d'un navigateur ne sont pas verifiables: ils sont repris
+    // sans arriere de recompenses a toucher.
+    perks: { ...s.perks, paidAchievements: Object.keys(s.achievements) },
     // La session vient de l'etat neuf du compte (nonce tire par le serveur).
     session: fresh.session,
   };

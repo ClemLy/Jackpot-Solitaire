@@ -10,6 +10,9 @@ import { HalfCashOut } from './WinOverlay';
 
 type Phase = 'closed' | 'spinning' | 'open';
 
+/** A partir de ce multiplicateur, le coffre a sa mise en scene a part. */
+const JACKPOT_MULTIPLIER = 10;
+
 function VaultDoor({ phase }: { phase: Phase }) {
   return (
     <svg className="vault-door" viewBox="0 0 200 200" aria-hidden="true">
@@ -165,12 +168,26 @@ export function VaultOverlay() {
         openVault();
         const result = useGameStore.getState().vaultResult;
         playSound(result?.trapped ? 'penalty' : 'jackpot');
+        // Le gros lot sonne deux fois: il est assez rare pour le meriter.
+        if (result && result.multiplier >= JACKPOT_MULTIPLIER && !reduced) {
+          timers.current.push(setTimeout(() => playSound('coins'), 450));
+        }
         setPhase('open');
       }, total),
     );
   };
 
   const trapped = vaultResult?.trapped ?? false;
+  const multiplier = vaultResult?.multiplier ?? 1;
+  // Palier du resultat: gros lot (x10), belle prise (x5), ou ordinaire.
+  const prize =
+    phase !== 'open' || trapped
+      ? undefined
+      : multiplier >= JACKPOT_MULTIPLIER
+        ? 'jackpot'
+        : multiplier >= 5
+          ? 'big'
+          : undefined;
 
   return (
     <Stage label="Coffre-fort mystère" tone={trapped ? 'red' : 'gold'}>
@@ -180,11 +197,13 @@ export function VaultOverlay() {
       <button
         className="vault"
         data-phase={phase}
+        data-prize={prize}
         onClick={spin}
         disabled={phase !== 'closed'}
         aria-label="Tourner la molette du coffre"
       >
         <VaultDoor phase={phase} />
+        {prize === 'jackpot' && <span className="vault__rays" aria-hidden />}
         {phase === 'open' && vaultResult && (
           <span className={`vault__mult${trapped ? ' is-trap' : ''}`}>
             ×{formatMultiplier(vaultResult.multiplier)}
@@ -203,7 +222,11 @@ export function VaultOverlay() {
           <p className="stage__text">
             {trapped
               ? 'Piégé ! Le magot fond de moitié. On se refait ?'
-              : 'Jackpot ! Le magot prend de l’ampleur.'}
+              : prize === 'jackpot'
+                ? 'LE GROS LOT ! Le magot est multiplié par dix. Ça n’arrive presque jamais.'
+                : prize === 'big'
+                  ? 'Superbe prise ! Le magot est multiplié par cinq.'
+                  : 'Jackpot ! Le magot prend de l’ampleur.'}
           </p>
           <div className="jackpot-pot is-in">
             <span className="jackpot-pot__label">Magot en jeu</span>

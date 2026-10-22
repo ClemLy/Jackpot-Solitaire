@@ -25,6 +25,7 @@ import {
 import {
   buyConsumable,
   buyCosmetic,
+  claimAchievements,
   claimMission,
   claimWeeklyGift,
   equip,
@@ -51,7 +52,8 @@ export type Action =
   | { type: 'equip'; slot: EquipSlot; id: string }
   | { type: 'spin' }
   | { type: 'claimMission'; scope: 'daily' | 'weekly'; id: string }
-  | { type: 'claimGift' };
+  | { type: 'claimGift' }
+  | { type: 'claimAchievements' };
 
 const MODES: GameMode[] = [
   'classic',
@@ -242,6 +244,8 @@ export function parseAction(raw: unknown): Action {
       };
     case 'claimGift':
       return { type: 'claimGift' };
+    case 'claimAchievements':
+      return { type: 'claimAchievements' };
     default:
       bad();
   }
@@ -272,5 +276,7 @@ export function dispatch(
       return claimMission(state, action.scope, action.id, ctx);
     case 'claimGift':
       return claimWeeklyGift(state, ctx);
+    case 'claimAchievements':
+      return claimAchievements(state, ctx);
   }
 }

@@ -16,6 +16,8 @@ import {
   equip,
   spinWheel,
   claimWeeklyGift,
+  claimAchievements,
+  sanitizePlayer,
   type Ctx,
   type LogEntry,
   type PlayerState,
@@ -24,9 +26,15 @@ import {
 } from './index';
 import {
   ACHIEVEMENTS,
+  achievementReward,
   progressAchievements,
   winExploits,
 } from '../state/achievements';
+import {
+  VAULT_ODDS,
+  comboMultiplier,
+  drawVaultOutcome,
+} from '../state/gambling';
 import {
   CHRONO_LIMIT_MS,
   VEGAS_STAKE,
@@ -50,6 +58,13 @@ function ctx(now = T0, first?: number): Ctx {
       return ((n * 9301 + 49297) % 233280) / 233280;
     },
   };
+}
+
+/** Jetons verses par les hauts faits debloques entre deux etats. */
+function rewards(before: PlayerState, after: PlayerState): number {
+  return Object.keys(after.achievements)
+    .filter((id) => !(id in before.achievements))
+    .reduce((sum, id) => sum + achievementReward(id), 0);
 }
 
 function fresh(balance = 100_000, lifetime = 0): PlayerState {
@@ -141,7 +156,10 @@ describe('manche verifiee', () => {
     if (out.result.outcome !== 'win') return;
     const w = out.result.win;
     expect(w.tip).toBe(Math.round(w.roundScore * 0.1));
-    expect(out.state.wallet.balance).toBe(100_000 + w.tip);
+    // Le pourboire, plus les primes des hauts faits de cette victoire.
+    expect(out.state.wallet.balance).toBe(
+      100_000 + w.tip + rewards(state, out.state),
+    );
     expect(out.state.stats.gamesWon).toBe(1);
     expect(out.state.session.round).toBeNull();
     expect(out.state.session.lastScoredWin?.score).toBe(w.roundScore);
@@ -401,7 +419,9 @@ describe('Jackpot', () => {
       difficulty: 'normal',
       table: 'gold',
     });
-    expect(first.state.wallet.balance).toBe(100_000 - 2500);
+    expect(first.state.wallet.balance).toBe(
+      100_000 - 2500 + rewards(fresh(), first.state),
+    );
     expect(first.state.session.awaiting).toBe('decision');
     const pot1 = first.state.session.pot;
 
@@ -420,7 +440,9 @@ describe('Jackpot', () => {
       insure: false,
     });
     expect(half.state.wallet.balance).toBe(
-      second.state.wallet.balance + Math.floor(pot2 / 2),
+      second.state.wallet.balance +
+        Math.floor(pot2 / 2) +
+        rewards(second.state, half.state),
     );
     expect(half.state.session.pot).toBe(pot2 - Math.floor(pot2 / 2));
 
@@ -530,7 +552,9 @@ describe('Jackpot', () => {
     expect(() => decide(vault.state, 'vault', ctx())).toThrow(CoreError);
     const cash = decide(vault.state, 'cash', ctx());
     expect(cash.state.wallet.balance).toBe(
-      vault.state.wallet.balance + vault.state.session.pot,
+      vault.state.wallet.balance +
+        vault.state.session.pot +
+        rewards(vault.state, cash.state),
     );
     expect(cash.state.gambling.vaultsOpened).toBe(1);
   });
@@ -576,7 +600,7 @@ describe('boutique et recompenses', () => {
     expect(() => equip(fresh(), 'frame', 'cadre-rang-gold', ctx())).toThrow(
       CoreError,
     );
-    const gold = fresh(0, 25_000);
+    const gold = fresh(0, 70_000);
     expect(
       equip(gold, 'frame', 'cadre-rang-gold', ctx()).state.equipped.frame,
     ).toBe('cadre-rang-gold');
@@ -589,7 +613,7 @@ describe('boutique et recompenses', () => {
   });
 
   it('ouvre le coffret de rang une fois par semaine', () => {
-    const s = fresh(0, 70_000);
+    const s = fresh(0, 200_000);
     const out = claimWeeklyGift(s, ctx());
     expect(out.result.gift).toEqual(['hint', 'insurance', 'joker']);
     expect(() => claimWeeklyGift(out.state, ctx())).toThrow(CoreError);
@@ -689,6 +713,63 @@ describe('import d une sauvegarde d invite', () => {
 });
 
 // Garde-fou: les coups produits par le solveur restent applicables.
+describe('serie et coffre', () => {
+  it('ne plafonne plus le multiplicateur de serie', () => {
+    expect([0, 1, 2, 3, 4].map(comboMultiplier)).toEqual([1, 1.5, 2, 3, 5]);
+    expect(comboMultiplier(5)).toBe(6);
+    expect(comboMultiplier(10)).toBe(11);
+    expect(comboMultiplier(50)).toBe(51);
+  });
+
+  it('rend le piege rare et ajoute un gros lot x10', () => {
+    const total = VAULT_ODDS.reduce((sum, o) => sum + o.chance, 0);
+    expect(total).toBeCloseTo(1);
+    expect(drawVaultOutcome(0)).toEqual({ multiplier: 0.5, trapped: true });
+    expect(drawVaultOutcome(0.049).trapped).toBe(true);
+    expect(drawVaultOutcome(0.05)).toEqual({ multiplier: 1.5, trapped: false });
+    expect(drawVaultOutcome(0.97).multiplier).toBe(5);
+    expect(drawVaultOutcome(0.99)).toEqual({ multiplier: 10, trapped: false });
+    expect(drawVaultOutcome(0.999999).multiplier).toBe(10);
+  });
+});
+
+describe('recompenses des hauts faits', () => {
+  it('verse la prime selon la medaille, une seule fois', () => {
+    const s = fresh(0, 0);
+    const out = buyCosmetic(fresh(10_000), 'magicien', ctx());
+    expect(out.state.achievements.collector).toBeGreaterThan(0);
+    expect(out.state.perks.paidAchievements).toContain('collector');
+    expect(s.perks.paidAchievements).toEqual([]);
+    expect(out.notices.some((n) => /\+250 jetons/.test(n.text))).toBe(true);
+  });
+
+  it('paie l arriere d une ancienne sauvegarde, puis plus rien', () => {
+    // Sauvegarde d'avant les primes: des hauts faits, aucun paye.
+    const old = JSON.parse(JSON.stringify(fresh(0, 0)));
+    old.achievements = { 'first-win': 1, perfect: 2, grail: 3 };
+    delete old.perks.paidAchievements;
+    const s = sanitizePlayer(old, fresh(0, 0));
+    expect(s.perks.paidAchievements).toEqual([]);
+    const out = claimAchievements(s, ctx());
+    expect(out.result).toEqual({
+      amount: achievementReward('first-win') + 4000 + 15_000,
+      count: 3,
+    });
+    expect(out.state.wallet.balance).toBeGreaterThanOrEqual(out.result.amount);
+    expect(out.state.wallet.lifetimeEarned).toBeGreaterThanOrEqual(
+      out.result.amount,
+    );
+    expect(() => claimAchievements(out.state, ctx())).toThrow(CoreError);
+  });
+
+  it('ne laisse pas d arriere a une sauvegarde d invite importee', () => {
+    const guest = JSON.parse(JSON.stringify(fresh(0, 0)));
+    guest.achievements = { perfect: 1, grail: 2 };
+    const imported = importGuest(guest, fresh(0, 0));
+    expect(() => claimAchievements(imported, ctx())).toThrow(CoreError);
+  });
+});
+
 describe('hauts faits', () => {
   it('a des identifiants uniques', () => {
     const ids = ACHIEVEMENTS.map((a) => a.id);
@@ -700,7 +781,7 @@ describe('hauts faits', () => {
     s.stats.gamesWon = 30;
     s.stats.bestWinStreak = 5;
     s.stats.bestTimeMs = 100_000;
-    s.wallet.lifetimeEarned = 25_000;
+    s.wallet.lifetimeEarned = 70_000;
     const ids = progressAchievements(s);
     expect(ids).toEqual(
       expect.arrayContaining([

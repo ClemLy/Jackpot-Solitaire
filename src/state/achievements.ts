@@ -87,6 +87,14 @@ export interface Achievement {
 
 const MEDALS: Medal[] = ['bronze', 'silver', 'gold', 'diamond'];
 
+/** Jetons verses a la banque pour un haut fait, selon sa medaille. */
+export const MEDAL_REWARD: Record<Medal, number> = {
+  bronze: 250,
+  silver: 1000,
+  gold: 4000,
+  diamond: 15_000,
+};
+
 /** Paliers d'une famille: un par objectif, medailles dans l'ordre. */
 function tiers(
   entries: [id: string, goal: number, title: string][],
@@ -391,6 +399,23 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
 ];
 
 export const ACHIEVEMENT_BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
+
+/** Jetons rapportes par un haut fait (0 s'il est inconnu). */
+export function achievementReward(id: string): number {
+  const a = ACHIEVEMENT_BY_ID.get(id);
+  return a ? MEDAL_REWARD[a.medal] : 0;
+}
+
+/**
+ * Hauts faits debloques dont la recompense n'a pas encore ete versee: ceux
+ * obtenus avant que les hauts faits ne rapportent des jetons.
+ */
+export function unpaidAchievements(s: PlayerState): string[] {
+  const paid = new Set(s.perks.paidAchievements);
+  return Object.keys(s.achievements).filter(
+    (id) => !paid.has(id) && ACHIEVEMENT_BY_ID.has(id),
+  );
+}
 
 /** Vrai si la valeur atteint l'objectif du palier. */
 export function reaches(

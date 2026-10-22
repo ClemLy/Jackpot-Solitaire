@@ -160,8 +160,8 @@ Toutes les règles sont aussi expliquées dans le jeu (bouton Règles).
 | Bonus sans faute (aucun coup invalide, aucun annuler) | +100 |
 
 En mode Jackpot, chaque manche gagnée grossit le magot, multipliée par la
-série en cours (×1, ×1,5, ×2, ×3, puis ×5), par la table et par la
-difficulté. Après chaque victoire :
+série en cours (×1, ×1,5, ×2, ×3, ×5, puis +1 par victoire, sans plafond),
+par la table et par la difficulté. Après chaque victoire :
 
 - **Encaisser** : le magot rejoint la banque, définitivement.
 - **Quitte ou double** : on rejoue aussitôt en risquant tout. Une manche
@@ -180,7 +180,16 @@ table avec mise, sans annuler, sans indice ni joker, sur une donne non
 garantie ; il repart ensuite de 5 000 jetons.
 
 Trois victoires d’affilée ouvrent le coffre-fort : un multiplicateur
-surprise sur tout le magot, souvent généreux, parfois piégé (×0,5).
+surprise sur tout le magot.
+
+| Coffre | Chance |
+| --- | --- |
+| ×0,5 (piégé) | 5 % |
+| ×1,5 | 40 % |
+| ×2 | 32 % |
+| ×3 | 15 % |
+| ×5 | 6 % |
+| ×10 (le gros lot) | 2 % |
 
 Avant chaque série, on choisit sa table. La mise quitte la banque et entre
 dans le magot : on la récupère en encaissant, on la perd avec la série.
@@ -202,6 +211,7 @@ D’où viennent les jetons :
 - Un pourboire de 10 % du score sur toute autre victoire.
 - 500 jetons pour la première victoire du défi du jour.
 - La roue du jour : un tour gratuit par jour, pour des jetons ou un bonus.
+- Une prime pour chaque haut fait débloqué, selon sa médaille.
 - 1 000 jetons de bienvenue. Les sauvegardes d’avant la boutique gardent
   leur banque, convertie en solde.
 
@@ -265,10 +275,10 @@ platine, couronne de diamants).
 | Rang | Dès | Remise | Roue du jour | Ce qu’il ouvre |
 | --- | --- | --- | --- | --- |
 | Bronze | 0 | aucune | ×1 | La boutique de base |
-| Argent | 5 000 | 5 % | ×1,25 | Holographique, marbre, parchemin, Flambeur |
-| Or | 20 000 | 10 % | ×1,5 | Table Diamant, salon doré, blason, champagne |
-| Platine | 60 000 | 15 % | ×2 | Salon Platine, noir & or, obsidienne, Las Vegas |
-| Diamant | 150 000 | 20 % | ×3 | Table Légende et toutes les pièces maîtresses |
+| Argent | 15 000 | 5 % | ×1,25 | Holographique, marbre, parchemin, Flambeur |
+| Or | 60 000 | 10 % | ×1,5 | Table Diamant, salon doré, blason, champagne |
+| Platine | 180 000 | 15 % | ×2 | Salon Platine, noir & or, obsidienne, Las Vegas |
+| Diamant | 400 000 | 20 % | ×3 | Table Légende et toutes les pièces maîtresses |
 
 Un compteur de collection suit les objets possédés ; les hauts faits de
 collection récompensent le premier achat, 10 et 30 objets, le premier
@@ -280,6 +290,11 @@ Cinquante-quatre hauts faits, rangés en cinq catégories et réunis sur un
 écran dédié (« Hauts faits » sur l’accueil, ou depuis les statistiques) :
 un anneau de progression, le compte des médailles, puis une ligne par
 famille avec sa jauge vers le prochain palier.
+
+Chaque haut fait verse une prime à la banque dès qu’il tombe : 250 jetons
+en bronze, 1 000 en argent, 4 000 en or et 15 000 en diamant. Les hauts
+faits obtenus avant l’arrivée des primes forment un arriéré, à toucher en
+une fois depuis l’écran des hauts faits.
 
 - **Les paliers** se débloquent tout seuls avec la progression, de la
   médaille de bronze à celle de diamant : victoires (1, 25, 100, 500),

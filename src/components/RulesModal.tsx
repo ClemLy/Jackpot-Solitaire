@@ -21,6 +21,13 @@ import { GraduationCap } from 'lucide-react';
 import { useGameStore } from '../state/game';
 import { accountsEnabled } from '../state/account';
 import { formatMultiplier, formatNumber } from '../utils/format';
+import { VAULT_ODDS } from '../state/gambling';
+import { MEDAL_REWARD } from '../state/achievements';
+
+/** Une chance (0 a 1) en pourcentage lisible: 0,05 donne « 5 % ». */
+function formatChance(p: number): string {
+  return `${Math.round(p * 100)} %`;
+}
 
 interface Item {
   tone?: 'plus' | 'minus' | 'gold' | 'neutral';
@@ -252,7 +259,12 @@ const SECTIONS: Section[] = [
             {
               tone: 'gold',
               mark: '2',
-              text: "Deuxième d'affilée: ×1,5. Puis ×2, ×3, et jusqu'à ×5.",
+              text: "Deuxième d'affilée: ×1,5. Puis ×2, ×3 et ×5.",
+            },
+            {
+              tone: 'gold',
+              mark: '∞',
+              text: 'Sans plafond: au-delà, chaque victoire ajoute ×1 (×6, ×7, ×8…) tant que la série tient.',
             },
           ]}
         />
@@ -326,9 +338,16 @@ const SECTIONS: Section[] = [
         <p>
           Trois victoires de suite en quitte ou double débloquent le coffre.
           Ouvre-le pour appliquer un multiplicateur surprise à tout ton magot:
-          souvent un joli gain, mais parfois le coffre est piégé. C&rsquo;est
-          ça, le frisson.
+          presque toujours un gain, rarement un piège, et très rarement le gros
+          lot.
         </p>
+        <RuleList
+          items={VAULT_ODDS.map((o) => ({
+            tone: o.multiplier < 1 ? ('minus' as const) : ('gold' as const),
+            mark: `×${formatMultiplier(o.multiplier)}`,
+            text: `${formatChance(o.chance)} de chances${o.multiplier < 1 ? ', le piège: le magot fond de moitié' : o.multiplier >= 10 ? ', le gros lot' : ''}.`,
+          }))}
+        />
       </div>
     ),
   },
@@ -359,6 +378,11 @@ const SECTIONS: Section[] = [
               tone: 'plus',
               mark: '+',
               text: 'La roue du jour: un tour gratuit chaque jour, pour des jetons ou un bonus.',
+            },
+            {
+              tone: 'plus',
+              mark: '+',
+              text: `Chaque haut fait débloqué: ${formatNumber(MEDAL_REWARD.bronze)} jetons en bronze, ${formatNumber(MEDAL_REWARD.silver)} en argent, ${formatNumber(MEDAL_REWARD.gold)} en or et ${formatNumber(MEDAL_REWARD.diamond)} en diamant.`,
             },
           ]}
         />

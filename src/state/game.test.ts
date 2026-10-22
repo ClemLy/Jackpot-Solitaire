@@ -2,6 +2,7 @@
 // une vraie partie: le solveur joue la donne coup par coup, et le coeur du
 // jeu rejoue le journal avant de payer quoi que ce soit.
 
+import { achievementReward } from './achievements';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findSolution } from '../engine';
 import {
@@ -67,17 +68,25 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers());
 
+/** Jetons verses par les hauts faits debloques depuis `had`. */
+function rewardsSince(had: Record<string, number>): number {
+  return Object.keys(meta().achievements)
+    .filter((id) => !(id in had))
+    .reduce((sum, id) => sum + achievementReward(id), 0);
+}
+
 describe('partie classique', () => {
   it('paie une vraie victoire, rejouee par le coeur', async () => {
     nextDealWinnable('normal');
     await game().newGame({ mode: 'classic', difficulty: 'normal' });
     expect(game().phase).toBe('playing');
     expect(game().round?.seedSource).toBe('random');
+    const had = { ...meta().achievements };
     await winRound();
     const { win, overlay } = game();
     expect(overlay).toBe('win');
     expect(win!.tip).toBe(Math.round(win!.roundScore * 0.1));
-    expect(balance()).toBe(100_000 + win!.tip);
+    expect(balance()).toBe(100_000 + win!.tip + rewardsSince(had));
     expect(meta().stats.gamesWon).toBe(1);
     expect(errors()).toEqual([]);
   });
@@ -227,15 +236,17 @@ describe('Jackpot', () => {
     const pot2 = game().pot;
 
     const before = balance();
+    const had = { ...meta().achievements };
     nextDealWinnable('normal');
     await game().cashOutHalf();
-    expect(balance()).toBe(before + Math.floor(pot2 / 2));
+    expect(balance()).toBe(before + Math.floor(pot2 / 2) + rewardsSince(had));
     expect(game().pot).toBe(pot2 - Math.floor(pot2 / 2));
     await winRound();
     const pot3 = game().pot;
     const beforeCash = balance();
+    const hadCash = { ...meta().achievements };
     await game().cashOut();
-    expect(balance()).toBe(beforeCash + pot3);
+    expect(balance()).toBe(beforeCash + pot3 + rewardsSince(hadCash));
     expect(game().route).toBe('home');
     expect(meta().session.pot).toBe(0);
   });
@@ -273,13 +284,14 @@ describe('Jackpot', () => {
     });
     game().toggleSideBet('no-undo');
     const before = balance();
+    const had = { ...meta().achievements };
     await winRound();
     const stake = sideBetStake('gold');
     expect(game().win!.bets[0]).toMatchObject({
       won: true,
       payout: stake * 3,
     });
-    expect(balance()).toBe(before - stake + stake * 3);
+    expect(balance()).toBe(before - stake + stake * 3 + rewardsSince(had));
   });
 
   it('remet le jackpot progressif a l exploit en Expert', async () => {

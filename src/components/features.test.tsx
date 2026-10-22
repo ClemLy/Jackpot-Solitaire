@@ -44,7 +44,7 @@ describe('accueil', () => {
 
   it('signale les recompenses en attente sur le bouton Missions', async () => {
     useMetaStore.setState({
-      wallet: { balance: 0, lifetimeEarned: 6000, spent: 0 },
+      wallet: { balance: 0, lifetimeEarned: 20_000, spent: 0 },
     });
     render(<App />);
     expect(
@@ -70,7 +70,7 @@ describe('hauts faits', () => {
       achievements: { 'first-win': 1, 'wins-25': 2, 'clear-mind': 3 },
     });
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'Hauts faits' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Hauts faits/ }));
     expect(screen.getByRole('img', { name: /3 hauts faits sur/ })).toBeTruthy();
     expect(screen.getByText('Habitué du tapis')).toBeTruthy();
     expect(screen.getByText('30 / 100')).toBeTruthy();
@@ -85,7 +85,7 @@ describe('missions', () => {
     const key = periodKey('daily');
     const def = activeMissions('daily', key)[0];
     useMetaStore.setState((s) => ({
-      wallet: { balance: 0, lifetimeEarned: 6000, spent: 0 },
+      wallet: { balance: 0, lifetimeEarned: 20_000, spent: 0 },
       missions: {
         ...s.missions,
         daily: { key, progress: { [def.id]: def.target }, claimed: [] },

@@ -16,6 +16,8 @@ import {
   type ConsumableId,
   type WheelReward,
 } from '../state/catalog';
+import { unpaidAchievements } from '../state/achievements';
+import { formatNumber } from '../utils/format';
 import {
   findMission,
   isClaimable,
@@ -173,4 +175,24 @@ export function claimWeeklyGift(
   for (const id of gift) tx.addConsumable(id);
   tx.s.perks.lastGift = ctx.week;
   return tx.done({ gift });
+}
+
+/** Verse en une fois les recompenses des hauts faits obtenus auparavant. */
+export function claimAchievements(
+  state: PlayerState,
+  ctx: Ctx,
+): Outcome<{ amount: number; count: number }> {
+  const tx = new Tx(state, ctx);
+  const ids = unpaidAchievements(tx.s);
+  if (ids.length === 0) {
+    throw new CoreError('state', 'Aucune récompense de haut fait en attente.');
+  }
+  let amount = 0;
+  for (const id of ids) amount += tx.pay(id);
+  tx.notify({
+    kind: 'reward',
+    title: 'Hauts faits récompensés',
+    text: `+${formatNumber(amount)} jetons pour ${ids.length} hauts faits.`,
+  });
+  return tx.done({ amount, count: ids.length });
 }

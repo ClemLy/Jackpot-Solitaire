@@ -1606,6 +1606,78 @@
   color: var(--ivory);
   text-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
 }
+/* Belle prise (x5) et gros lot (x10). */
+.vault[data-prize='big'] .vault__mult {
+  font-size: 4.2rem;
+}
+.vault[data-prize='jackpot'] {
+  animation: vaultJackpot 1.6s ease-in-out 900ms infinite;
+}
+.vault[data-prize='jackpot'] .vault__mult {
+  font-size: 4.6rem;
+  background: linear-gradient(
+    100deg,
+    #8f6418 0%,
+    #fff1bf 35%,
+    #e3b95a 50%,
+    #fff1bf 65%,
+    #8f6418 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 3px 0 rgba(60, 35, 5, 0.65))
+    drop-shadow(0 0 18px rgba(255, 225, 140, 0.55));
+  animation:
+    stampIn 700ms var(--ease-spring) 300ms both,
+    jackpotShine 2.2s linear 1s infinite;
+}
+.vault__rays {
+  position: absolute;
+  inset: -38%;
+  z-index: -1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    rgba(255, 225, 140, 0.32) 0deg 8deg,
+    transparent 8deg 22deg
+  );
+  mask: radial-gradient(circle, #000 30%, transparent 70%);
+  animation:
+    raysIn 800ms var(--ease-out) 250ms both,
+    raysSpin 14s linear infinite;
+}
+@keyframes vaultJackpot {
+  50% {
+    transform: scale(1.04);
+  }
+}
+@keyframes jackpotShine {
+  to {
+    background-position: -220% 0;
+  }
+}
+@keyframes raysIn {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@keyframes raysSpin {
+  to {
+    rotate: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault[data-prize='jackpot'],
+  .vault__rays {
+    animation: none;
+  }
+  .vault[data-prize='jackpot'] .vault__mult {
+    animation: none;
+  }
+}
 
 /* ---- Boutique ---- */
 

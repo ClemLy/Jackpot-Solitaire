@@ -235,6 +235,79 @@
   opacity: 0.7;
 }
 
+/* ---- Primes ---- */
+
+.achv-reward {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--gold-200);
+  font-variant-numeric: tabular-nums;
+}
+.exploit__state .achv-reward {
+  margin-right: 6px;
+}
+
+.achs-backlog {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(
+    100deg,
+    rgba(227, 185, 90, 0.22),
+    rgba(227, 185, 90, 0.06)
+  );
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+  animation: backlogIn 420ms var(--ease-out) both;
+}
+.achs-backlog__chip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  animation: backlogChip 2.4s ease-in-out infinite;
+}
+.achs-backlog__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.achs-backlog__body strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+.achs-backlog__body span {
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+@keyframes backlogIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes backlogChip {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-3px) rotate(-8deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .achs-backlog,
+  .achs-backlog__chip {
+    animation: none;
+  }
+}
+
 /* ---- Exploits ---- */
 
 .exploit-grid {
@@ -342,6 +415,12 @@
 }
 
 @media (max-width: 640px) {
+  .achs-backlog {
+    flex-wrap: wrap;
+  }
+  .achs-backlog .btn {
+    width: 100%;
+  }
   .achs__summary {
     padding: 14px;
     gap: 14px;

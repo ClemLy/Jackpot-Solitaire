@@ -17,6 +17,7 @@ import { Portrait } from './Portrait';
 import { RankBadge, RankEmblem } from './Rank';
 import { useGameStore, type GameMode } from '../state/game';
 import { pendingRewards, useMetaStore } from '../state/meta';
+import { unpaidAchievements } from '../state/achievements';
 import {
   CHRONO_LIMIT_MS,
   VEGAS_STAKE,
@@ -161,6 +162,7 @@ export function Home() {
   const balance = useMetaStore((s) => s.wallet.balance);
   const progressive = useMetaStore((s) => s.progressive.pot);
   const pending = useMetaStore(pendingRewards);
+  const unpaid = useMetaStore((s) => unpaidAchievements(s).length);
   const tutorialDone = useMetaStore((s) => s.tutorial.done);
   const completeTutorial = useMetaStore((s) => s.completeTutorial);
   const startTutorial = useGameStore((s) => s.startTutorial);
@@ -375,8 +377,16 @@ export function Home() {
           <button
             className="link-btn"
             onClick={() => openModal('achievements')}
+            aria-label={
+              unpaid > 0 ? `Hauts faits, ${unpaid} primes à toucher` : undefined
+            }
           >
             <Trophy size={18} /> Hauts faits
+            {unpaid > 0 && (
+              <span className="link-btn__badge" aria-hidden="true">
+                {unpaid}
+              </span>
+            )}
           </button>
           <button className="link-btn" onClick={() => openModal('missions')}>
             <Target size={18} /> Missions

@@ -25,13 +25,19 @@ import {
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { RankEmblem } from './Rank';
+import { Chip } from './ui';
 import { useMetaStore, pickPlayer } from '../state/meta';
+import { economy, reportFailure } from '../state/economy';
+import { playSound } from '../audio/sfx';
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_CATEGORIES,
   ACHIEVEMENT_FAMILIES,
   EXPLOITS,
+  MEDAL_REWARD,
+  achievementReward,
   reaches,
+  unpaidAchievements,
   type AchievementCategory,
   type AchievementFamily,
   type AchievementIcon,
@@ -76,6 +82,15 @@ function formatValue(family: AchievementFamily, value: number): string {
   if (family.format === 'time') return formatDuration(value);
   if (family.format === 'rank') return RANKS[value] ?? '—';
   return formatNumber(value);
+}
+
+/** Prime en jetons d'un haut fait. */
+function Reward({ amount }: { amount: number }) {
+  return (
+    <span className="achv-reward" title="Prime versée à la banque">
+      <Chip size={13} />+{formatNumber(amount)}
+    </span>
+  );
 }
 
 function unlockedOn(at: number | undefined): string | null {
@@ -142,6 +157,7 @@ function FamilyRow({
             <span />
           </span>
           <span className="achv__caption">{caption}</span>
+          {next && <Reward amount={MEDAL_REWARD[next.medal]} />}
         </div>
       </div>
       <ol className="achv__tiers" aria-label="Paliers">
@@ -182,6 +198,7 @@ function ExploitCard({ exploit, at }: { exploit: Exploit; at?: number }) {
         <strong>{exploit.title}</strong>
         <span className="exploit__desc">{exploit.description}</span>
         <span className="exploit__state">
+          {!on && <Reward amount={MEDAL_REWARD[exploit.medal]} />}
           {on ? (
             <>
               <Check size={13} /> Obtenu le {unlockedOn(at)}
@@ -203,6 +220,25 @@ export function AchievementsModal({ onClose }: { onClose: () => void }) {
   const player = pickPlayer(store);
   const unlocked = player.achievements;
   const [tab, setTab] = useState<'all' | AchievementCategory>('all');
+  const [claiming, setClaiming] = useState(false);
+  const unpaid = unpaidAchievements(player);
+  const backlog = unpaid.reduce((sum, id) => sum + achievementReward(id), 0);
+  const earned = ACHIEVEMENTS.filter((a) => unlocked[a.id]).reduce(
+    (sum, a) => sum + MEDAL_REWARD[a.medal],
+    0,
+  );
+
+  const claimBacklog = async () => {
+    setClaiming(true);
+    try {
+      await economy.claimAchievements();
+      playSound('coins');
+    } catch (err) {
+      reportFailure(err);
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   const total = ACHIEVEMENTS.length;
   const done = ACHIEVEMENTS.filter((a) => unlocked[a.id]).length;
@@ -257,8 +293,10 @@ export function AchievementsModal({ onClose }: { onClose: () => void }) {
               {Math.round(ratio * 100)} % des hauts faits débloqués
             </strong>
             <span>
-              Les paliers se débloquent tout seuls avec ta progression ; les
-              exploits, sur une partie réussie.
+              Chaque haut fait rapporte une prime selon sa médaille, de{' '}
+              {formatNumber(MEDAL_REWARD.bronze)} à{' '}
+              {formatNumber(MEDAL_REWARD.diamond)} jetons. Déjà touché :{' '}
+              {formatNumber(earned - backlog)} jetons.
             </span>
             <ul className="achs__medals">
               {medals.map((m) => (
@@ -273,6 +311,31 @@ export function AchievementsModal({ onClose }: { onClose: () => void }) {
             </ul>
           </div>
         </section>
+
+        {unpaid.length > 0 && (
+          <section className="achs-backlog" aria-label="Arriéré de primes">
+            <span className="achs-backlog__chip">
+              <Chip size={30} />
+            </span>
+            <div className="achs-backlog__body">
+              <strong>
+                Arriéré : {formatNumber(backlog)} jetons à toucher
+              </strong>
+              <span>
+                {unpaid.length === 1
+                  ? 'Un haut fait obtenu avant que les primes existent.'
+                  : `${unpaid.length} hauts faits obtenus avant que les primes existent.`}
+              </span>
+            </div>
+            <button
+              className="btn btn--gold"
+              onClick={claimBacklog}
+              disabled={claiming}
+            >
+              Toucher
+            </button>
+          </section>
+        )}
 
         <div className="tabs achs__tabs" role="tablist">
           <button
