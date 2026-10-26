@@ -11,6 +11,7 @@ import {
   Sun,
   Award,
   Moon,
+  Orbit,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
@@ -117,6 +118,7 @@ const FX_ICON: Record<string, ReactNode> = {
   supernova: <Sun size={30} />,
   'pluie-noire': <BlackChip size={34} />,
   'eclipse-totale': <Moon size={30} />,
+  'trou-noir': <Orbit size={30} />,
 };
 
 export function Preview({

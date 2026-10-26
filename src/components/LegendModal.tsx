@@ -61,6 +61,13 @@ import { formatMultiplier, formatNumber } from '../utils/format';
 
 type Tab = 'shop' | 'path' | 'black';
 
+/** La boutique se range par paliers de dix niveaux. */
+const SHOP_GROUPS: [number, number][] = [
+  [1, 10],
+  [11, 20],
+  [21, 30],
+];
+
 const PERK_ICON: Record<LegendPerkId, ReactNode> = {
   black: <BlackChip size={16} />,
   shop: <ShoppingBag size={15} />,
@@ -81,9 +88,9 @@ const CATEGORY_LABEL: Record<Cosmetic['category'], string> = {
   card: 'Carte de profil',
 };
 
-/** Les niveaux montres sur la voie: au moins jusqu'au XV, et un peu au-dela. */
+/** Les niveaux montres sur la voie: au moins jusqu'au XXX, et un peu au-dela. */
 function pathLevels(level: number): number[] {
-  const last = Math.max(15, level + 4);
+  const last = Math.max(30, level + 4);
   return Array.from({ length: last }, (_, i) => i + 1);
 }
 
@@ -330,98 +337,134 @@ function LegendShop() {
           <span />
         </span>
       </div>
-      <div className="shop-grid lg-shop">
-        {LEGEND_COSMETICS.map((item) => {
-          const isOwned = ownsCosmetic(item, owned, lifetime, level);
-          const isEquipped = equipped[SLOT_OF[item.category]] === item.id;
-          const locked = !isOwned && !canUnlock(item, lifetime, level);
-          const poor = !isOwned && !locked && black < item.price;
-          return (
-            <article
-              key={item.id}
-              className="item item--legend"
-              data-locked={locked}
-              data-grail={item.grail ? 'true' : undefined}
-              data-equipped={isEquipped}
-              data-flash={flash === item.id}
-              data-denied={denied === item.id}
-            >
-              <Preview
-                item={item}
-                avatar={equipped.avatar}
-                frame={equipped.frame}
-              />
-              <span className="item__badges">
-                <span className="lg-level-tag">
-                  {legendLabel(item.minLevel ?? 1)}
-                </span>
-                {item.grail && <span className="grail-tag">Graal</span>}
-              </span>
-              {locked && (
-                <span className="item__lock" aria-hidden="true">
-                  <Lock size={18} />
-                </span>
-              )}
-              {item.category === 'fx' && (
-                <button
-                  className="item__peek"
-                  onClick={() => setPreviewFx(item.id)}
-                  aria-label={`Aperçu de l'effet ${item.label}`}
-                >
-                  <Play size={14} /> Aperçu
-                </button>
-              )}
-              <div className="item__body">
-                <span className="lg-kind">{CATEGORY_LABEL[item.category]}</span>
-                <h3 className="item__name">{item.label}</h3>
-                <p className="item__hint">{item.hint}</p>
-              </div>
-              <button
-                className={`item__action${isEquipped ? ' is-equipped' : isOwned ? ' is-owned' : ''}`}
-                onClick={() => act(item)}
-                disabled={isEquipped || locked}
-                aria-label={
-                  isEquipped
-                    ? `${item.label}, équipé`
-                    : isOwned
-                      ? `Équiper ${item.label}`
-                      : locked
-                        ? `${item.label}, au niveau ${legendLabel(item.minLevel ?? 1)}`
-                        : `Acheter ${item.label} pour ${item.price} jetons noirs`
-                }
-              >
-                {isEquipped ? (
-                  <>
-                    <Check size={16} /> Équipé
-                  </>
-                ) : isOwned ? (
-                  item.price === 0 ? (
-                    'Offert · Équiper'
-                  ) : (
-                    'Équiper'
-                  )
-                ) : locked ? (
-                  <>
-                    <Lock size={14} /> Niveau {roman(item.minLevel ?? 1)}
-                  </>
+      {SHOP_GROUPS.map(([from, to]) => {
+        const items = LEGEND_COSMETICS.filter((c) => {
+          const lv = c.minLevel ?? 1;
+          return lv >= from && lv <= to;
+        }).sort((a, b) => (a.minLevel ?? 1) - (b.minLevel ?? 1));
+        if (items.length === 0) return null;
+        const open = level >= from;
+        const mine = items.filter((c) =>
+          ownsCosmetic(c, owned, lifetime, level),
+        ).length;
+        return (
+          <section
+            key={from}
+            className="lg-shelf"
+            data-open={open}
+            aria-label={`Niveaux ${roman(from)} à ${roman(to)}`}
+          >
+            <header className="lg-shelf__head">
+              <strong>
+                Niveaux {roman(from)} à {roman(to)}
+              </strong>
+              <span>
+                {open ? (
+                  `${mine} / ${items.length} possédés`
                 ) : (
                   <>
-                    <span className="price">
-                      <BlackChip size={16} />
-                      {formatNumber(item.price)}
-                    </span>
-                    {poor && (
-                      <span className="item__poor">
-                        il manque {item.price - black}
-                      </span>
-                    )}
+                    <Lock size={12} /> Dès {legendLabel(from)}
                   </>
                 )}
-              </button>
-            </article>
-          );
-        })}
-      </div>
+              </span>
+            </header>
+            <div className="shop-grid lg-shop">
+              {items.map((item) => {
+                const isOwned = ownsCosmetic(item, owned, lifetime, level);
+                const isEquipped = equipped[SLOT_OF[item.category]] === item.id;
+                const locked = !isOwned && !canUnlock(item, lifetime, level);
+                const poor = !isOwned && !locked && black < item.price;
+                return (
+                  <article
+                    key={item.id}
+                    className="item item--legend"
+                    data-locked={locked}
+                    data-grail={item.grail ? 'true' : undefined}
+                    data-equipped={isEquipped}
+                    data-flash={flash === item.id}
+                    data-denied={denied === item.id}
+                  >
+                    <Preview
+                      item={item}
+                      avatar={equipped.avatar}
+                      frame={equipped.frame}
+                    />
+                    <span className="item__badges">
+                      <span className="lg-level-tag">
+                        {legendLabel(item.minLevel ?? 1)}
+                      </span>
+                      {item.grail && <span className="grail-tag">Graal</span>}
+                    </span>
+                    {locked && (
+                      <span className="item__lock" aria-hidden="true">
+                        <Lock size={18} />
+                      </span>
+                    )}
+                    {item.category === 'fx' && (
+                      <button
+                        className="item__peek"
+                        onClick={() => setPreviewFx(item.id)}
+                        aria-label={`Aperçu de l'effet ${item.label}`}
+                      >
+                        <Play size={14} /> Aperçu
+                      </button>
+                    )}
+                    <div className="item__body">
+                      <span className="lg-kind">
+                        {CATEGORY_LABEL[item.category]}
+                      </span>
+                      <h3 className="item__name">{item.label}</h3>
+                      <p className="item__hint">{item.hint}</p>
+                    </div>
+                    <button
+                      className={`item__action${isEquipped ? ' is-equipped' : isOwned ? ' is-owned' : ''}`}
+                      onClick={() => act(item)}
+                      disabled={isEquipped || locked}
+                      aria-label={
+                        isEquipped
+                          ? `${item.label}, équipé`
+                          : isOwned
+                            ? `Équiper ${item.label}`
+                            : locked
+                              ? `${item.label}, au niveau ${legendLabel(item.minLevel ?? 1)}`
+                              : `Acheter ${item.label} pour ${item.price} jetons noirs`
+                      }
+                    >
+                      {isEquipped ? (
+                        <>
+                          <Check size={16} /> Équipé
+                        </>
+                      ) : isOwned ? (
+                        item.price === 0 ? (
+                          'Offert · Équiper'
+                        ) : (
+                          'Équiper'
+                        )
+                      ) : locked ? (
+                        <>
+                          <Lock size={14} /> Niveau {roman(item.minLevel ?? 1)}
+                        </>
+                      ) : (
+                        <>
+                          <span className="price">
+                            <BlackChip size={16} />
+                            {formatNumber(item.price)}
+                          </span>
+                          {poor && (
+                            <span className="item__poor">
+                              il manque {item.price - black}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
       {previewFx && (
         <VictoryLayer
           fx={previewFx}

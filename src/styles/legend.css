@@ -1825,3 +1825,497 @@
       0 12px 26px -14px rgba(176, 124, 255, 0.7);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Boutique Legendaire, niveaux XVI a XXX
+--------------------------------------------------------------------------- */
+
+/* ---- Tapis: Abysse et Salle du trone ---- */
+
+[data-table='abysse'],
+[data-table-preview='abysse'] {
+  --felt-base: #062a40;
+  --felt-edge: #010509;
+  --felt-spot: rgba(90, 230, 255, 0.16);
+  --felt-pattern:
+    radial-gradient(circle, rgba(130, 240, 255, 0.55) 0.8px, transparent 1.4px)
+      0 0,
+    radial-gradient(circle, rgba(90, 200, 255, 0.35) 1.4px, transparent 2.4px)
+      17px 23px;
+  --felt-pattern-size: 31px 37px, 71px 83px;
+  --slot-line: rgba(130, 240, 255, 0.26);
+  --slot-mark: rgba(130, 240, 255, 0.45);
+}
+.app[data-table='abysse']::before {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      100deg,
+      transparent 20%,
+      rgba(120, 230, 255, 0.07) 26%,
+      transparent 32%,
+      transparent 52%,
+      rgba(120, 230, 255, 0.05) 58%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 30% 20% at 70% 80%,
+      rgba(60, 200, 220, 0.1),
+      transparent 70%
+    );
+  animation: abyssDrift 18s ease-in-out infinite alternate;
+}
+@keyframes abyssDrift {
+  to {
+    translate: 4% -3%;
+  }
+}
+
+[data-table='trone'],
+[data-table-preview='trone'] {
+  --felt-base: #3d0f33;
+  --felt-edge: #0c0210;
+  --felt-spot: rgba(243, 210, 124, 0.18);
+  --felt-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M22 38L20 27L26 31L32 23L38 31L44 27L42 38Z' fill='%23E3B95A' fill-opacity='.16'/%3E%3Crect x='22' y='39' width='20' height='2.4' fill='%23E3B95A' fill-opacity='.16'/%3E%3Ccircle cx='0' cy='0' r='1.4' fill='%23E3B95A' fill-opacity='.3'/%3E%3Ccircle cx='64' cy='64' r='1.4' fill='%23E3B95A' fill-opacity='.3'/%3E%3Ccircle cx='0' cy='64' r='1.4' fill='%23E3B95A' fill-opacity='.3'/%3E%3Ccircle cx='64' cy='0' r='1.4' fill='%23E3B95A' fill-opacity='.3'/%3E%3C/svg%3E");
+  --felt-pattern-size: 64px 64px;
+  --slot-line: rgba(243, 210, 124, 0.3);
+  --slot-mark: rgba(243, 210, 124, 0.5);
+}
+
+/* ---- Dos: Sablier d'or et Constellation ---- */
+
+.app[data-back='sablier'],
+[data-back-preview='sablier'] {
+  --back-bg:
+    linear-gradient(
+      115deg,
+      transparent 42%,
+      rgba(255, 241, 191, 0.16) 50%,
+      transparent 58%
+    ),
+    radial-gradient(circle at 50% 40%, #2a1d10, #070503 75%);
+  --back-border: #a4761f;
+  --back-line: rgba(243, 210, 124, 0.7);
+  --back-pattern: radial-gradient(
+    circle,
+    rgba(243, 210, 124, 0.45) 0.6px,
+    transparent 1px
+  );
+  --back-size: 6px 6px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23000' fill-opacity='.55' stroke='%23F3D27C' stroke-width='2.5'/%3E%3Crect x='28' y='16' width='44' height='5' rx='2' fill='%23F3D27C'/%3E%3Crect x='28' y='79' width='44' height='5' rx='2' fill='%23F3D27C'/%3E%3Cpath d='M33 21H67C67 38 54 44 52 50C54 56 67 62 67 79H33C33 62 46 56 48 50C46 44 33 38 33 21Z' fill='none' stroke='%23F3D27C' stroke-width='2.4'/%3E%3Cpath d='M38 26H62C60 36 52 42 50 47C48 42 40 36 38 26Z M50 54L51 74H40C42 64 48 60 50 54Z M50 54L49 74H60C58 64 52 60 50 54Z' fill='%23E3B95A'/%3E%3C/svg%3E");
+}
+
+.app[data-back='constellation'],
+[data-back-preview='constellation'] {
+  --back-bg:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(120, 140, 255, 0.22),
+      transparent 60%
+    ),
+    linear-gradient(160deg, #0b1236, #020410);
+  --back-border: #1c2756;
+  --back-line: rgba(200, 215, 255, 0.5);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M4 8L15 4L22 14M22 14L34 10M22 14L19 27L30 33M8 30L19 27' fill='none' stroke='%23F3D27C' stroke-opacity='.3' stroke-width='.5'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='4' cy='8' r='.9'/%3E%3Ccircle cx='15' cy='4' r='.7'/%3E%3Ccircle cx='22' cy='14' r='1.1'/%3E%3Ccircle cx='34' cy='10' r='.7'/%3E%3Ccircle cx='19' cy='27' r='.9'/%3E%3Ccircle cx='30' cy='33' r='.7'/%3E%3Ccircle cx='8' cy='30' r='.6'/%3E%3C/g%3E%3C/svg%3E");
+  --back-size: 26px 26px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23020410' fill-opacity='.7' stroke='%23C8D7FF' stroke-width='2'/%3E%3Cpath d='M22 64L18 34L36 48L50 24L64 48L82 34L78 64Z' fill='none' stroke='%23F3D27C' stroke-width='1.6'/%3E%3Cpath d='M22 64H78' stroke='%23F3D27C' stroke-width='1.6'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='18' cy='34' r='3'/%3E%3Ccircle cx='36' cy='48' r='2.2'/%3E%3Ccircle cx='50' cy='24' r='3.6'/%3E%3Ccircle cx='64' cy='48' r='2.2'/%3E%3Ccircle cx='82' cy='34' r='3'/%3E%3Ccircle cx='22' cy='64' r='2.4'/%3E%3Ccircle cx='78' cy='64' r='2.4'/%3E%3Ccircle cx='50' cy='64' r='2'/%3E%3C/g%3E%3C/svg%3E");
+}
+.app[data-back='sablier'] .card__back,
+[data-back-preview='sablier'] .card__back {
+  background-size:
+    300% 100%,
+    auto;
+  animation: backGlint 6s ease-in-out infinite;
+}
+.app[data-back='constellation'] .card__back::before,
+[data-back-preview='constellation'] .card__back::before {
+  animation: constellationTwinkle 4s ease-in-out infinite alternate;
+}
+@keyframes constellationTwinkle {
+  to {
+    opacity: 0.55;
+  }
+}
+
+/* ---- Recto: Cristal noir ---- */
+
+.app[data-face='cristal'],
+[data-face-preview='cristal'] {
+  --face-paper: #262b35;
+  --face-paper-2: #0f1218;
+  --face-hi: rgba(255, 255, 255, 0.16);
+  --face-texture: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.07) 0 30%,
+    transparent 30% 55%,
+    rgba(255, 255, 255, 0.05) 55% 70%,
+    transparent 70%
+  );
+  --face-edge: rgba(220, 232, 255, 0.55);
+  --face-red: #ff8a97;
+  --face-black: #e4ecf7;
+  --face-court-red: radial-gradient(ellipse at 50% 30%, #3a2a33, #1a1418);
+  --face-court-black: radial-gradient(ellipse at 50% 30%, #2c3442, #12161d);
+  --face-frame: #c9d3e0;
+  --face-sheen: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 58%
+  );
+}
+.app[data-face='cristal'] .card__front::after,
+[data-face-preview='cristal'] .card__front::after {
+  animation: faceSheen 6.5s ease-in-out infinite;
+}
+.item--legend .preview--face[data-face-preview='cristal'] {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(200, 220, 255, 0.12), transparent),
+    #10141c;
+}
+
+/* ---- Titres ---- */
+
+.plaque[data-title='maitre-du-temps'] {
+  --plate: linear-gradient(160deg, #1d2a5a, #0a0f24);
+  --plate-ink: #f3d27c;
+  --plate-edge: rgba(243, 210, 124, 0.5);
+  text-shadow: 0 0 10px rgba(243, 210, 124, 0.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(243, 210, 124, 0.55),
+    0 6px 18px -6px rgba(90, 120, 255, 0.5);
+}
+.plaque[data-title='eternel'] {
+  --plate:
+    linear-gradient(
+      110deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.7) 50%,
+      transparent 60%
+    ),
+    linear-gradient(160deg, #fff6da, #e3b95a 55%, #fff1bf);
+  --plate-ink: #2b1d05;
+  background-size:
+    300% 100%,
+    auto;
+  animation: backGlint 4.5s ease-in-out infinite;
+  box-shadow:
+    inset 0 0 0 1px #fff1bf,
+    0 0 22px -4px rgba(255, 241, 191, 0.8);
+}
+.plaque[data-title='croupier-supreme'] {
+  --plate: linear-gradient(160deg, #1d1430, #050307);
+  --plate-ink: #fff1bf;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(160deg, #1d1430, #050307) padding-box,
+    conic-gradient(
+        from var(--rank-angle),
+        #f3d27c,
+        #ff9ad5,
+        #c9a0ff,
+        #8fd3ff,
+        #9dffd8,
+        #f3d27c
+      )
+      border-box;
+  text-shadow: 0 0 12px rgba(255, 241, 191, 0.6);
+  box-shadow: 0 0 28px -6px rgba(201, 160, 255, 0.9);
+  animation: rankBorder 5s linear infinite;
+}
+
+/* ---- Cadres: Orbite et Ouroboros ---- */
+
+.portrait[data-frame='cadre-orbite'] {
+  filter: drop-shadow(0 0 7px rgba(143, 211, 255, 0.45));
+}
+.portrait[data-frame='cadre-ouroboros'] {
+  filter: drop-shadow(0 0 8px rgba(243, 210, 124, 0.5));
+}
+.frame-orbit {
+  transform-box: view-box;
+  transform-origin: 60px 60px;
+  animation: frameSpin var(--d, 20s) linear infinite;
+}
+.frame-orbit--reverse {
+  animation-direction: reverse;
+}
+.frame-serpent {
+  transform-box: view-box;
+  transform-origin: 60px 60px;
+  animation: frameSpin 90s linear infinite;
+}
+
+/* ---- Cartes de profil: Grands fonds et Big Bang ---- */
+
+[data-style='carte-abysse'] {
+  --pc-bg:
+    radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      rgba(120, 230, 255, 0.28),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #0a3a56, #031320 70%, #010509);
+  --pc-edge: rgba(130, 240, 255, 0.6);
+}
+[data-style='carte-big-bang'] {
+  --pc-bg:
+    radial-gradient(
+      circle at 50% 30%,
+      rgba(255, 246, 218, 0.9) 0%,
+      rgba(243, 210, 124, 0.55) 9%,
+      rgba(255, 154, 213, 0.32) 22%,
+      rgba(176, 124, 255, 0.25) 38%,
+      transparent 62%
+    ),
+    linear-gradient(170deg, #1a0f2e, #040209);
+  --pc-edge: #fff1bf;
+  animation: voidGlow 4s ease-in-out infinite alternate;
+}
+.pcard__rays {
+  inset: -10% 0 auto;
+  height: 80%;
+  background:
+    linear-gradient(
+      100deg,
+      transparent 18%,
+      rgba(160, 240, 255, 0.16) 24%,
+      transparent 30%
+    ),
+    linear-gradient(
+      80deg,
+      transparent 52%,
+      rgba(160, 240, 255, 0.12) 57%,
+      transparent 62%
+    ),
+    linear-gradient(
+      95deg,
+      transparent 70%,
+      rgba(160, 240, 255, 0.1) 74%,
+      transparent 78%
+    );
+  mask: linear-gradient(#000, transparent);
+  -webkit-mask: linear-gradient(#000, transparent);
+  animation: abyssDrift 9s ease-in-out infinite alternate;
+}
+.pcard__particle--bubble {
+  background: transparent;
+  border: 1px solid rgba(170, 245, 255, 0.8);
+  box-shadow: 0 0 4px rgba(120, 230, 255, 0.6);
+}
+.pcard__burst {
+  left: 50%;
+  top: 30%;
+  width: 160%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 241, 191, 0.18) 0deg 2deg,
+    transparent 2deg 12deg
+  );
+  mask: radial-gradient(circle, #000 8%, transparent 60%);
+  -webkit-mask: radial-gradient(circle, #000 8%, transparent 60%);
+  animation: frameSpin 60s linear infinite;
+}
+.pcard__shard {
+  width: calc(var(--s) * 1.6cqw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff1bf;
+  box-shadow: 0 0 6px #ffd9a8;
+  animation: pcardBurst 6s ease-out infinite;
+  animation-delay: calc(var(--i) * -0.75s);
+}
+@keyframes pcardBurst {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+    scale: 0.4;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    translate: var(--dx, 0) var(--dy, 0);
+    opacity: 0;
+    scale: 1.2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app[data-table='abysse']::before,
+  .frame-orbit,
+  .frame-serpent,
+  .pcard__rays,
+  .pcard__burst,
+  .pcard__shard,
+  [data-style='carte-big-bang'] {
+    animation: none !important;
+  }
+}
+.pcard__inlay--abyss {
+  border-color: rgba(130, 240, 255, 0.45);
+}
+
+/* Rayons de la Boutique Legendaire, par paliers de dix niveaux. */
+.lg-shelf + .lg-shelf {
+  margin-top: 22px;
+}
+.lg-shelf__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(201, 160, 255, 0.16);
+}
+.lg-shelf__head strong {
+  font-family: var(--font-display);
+  font-weight: 650;
+  font-size: 1.05rem;
+  color: #f1dcff;
+}
+.lg-shelf__head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.lg-shelf[data-open='false'] .lg-shelf__head strong {
+  color: var(--text-2);
+}
+
+/* ---- Damier d'onyx, Voie lactee et Aurore polaire ---- */
+
+.app[data-back='damier-onyx'],
+[data-back-preview='damier-onyx'] {
+  --back-bg:
+    linear-gradient(
+      115deg,
+      transparent 42%,
+      rgba(255, 241, 191, 0.18) 50%,
+      transparent 58%
+    ),
+    #0b0910;
+  --back-border: #a4761f;
+  --back-line: rgba(243, 210, 124, 0.75);
+  --back-pattern: conic-gradient(
+    rgba(227, 185, 90, 0.32) 0 25%,
+    transparent 0 50%,
+    rgba(227, 185, 90, 0.32) 0 75%,
+    transparent 0
+  );
+  --back-size: 12px 12px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 6L94 50L50 94L6 50Z' fill='%230B0910' stroke='%23F3D27C' stroke-width='3'/%3E%3Cpath d='M50 22L78 50L50 78L22 50Z' fill='none' stroke='%23F3D27C' stroke-opacity='.6' stroke-width='1.5'/%3E%3Cpath d='M50 36L64 50L50 64L36 50Z' fill='%23E3B95A'/%3E%3C/svg%3E");
+}
+
+.app[data-back='voie-lactee'],
+[data-back-preview='voie-lactee'] {
+  --back-bg:
+    radial-gradient(
+      ellipse 70% 22% at 50% 50%,
+      rgba(255, 236, 210, 0.55),
+      rgba(201, 160, 255, 0.25) 45%,
+      transparent 75%
+    ),
+    radial-gradient(circle at 30% 20%, #1c1440, #03020a 75%);
+  --back-border: #d8ccff;
+  --back-line: rgba(216, 204, 255, 0.55);
+  --back-pattern:
+    radial-gradient(circle, rgba(255, 255, 255, 0.7) 0.6px, transparent 1px),
+    radial-gradient(circle, rgba(201, 160, 255, 0.6) 0.8px, transparent 1.3px);
+  --back-size: 9px 11px, 17px 13px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M50 50C50 38 64 34 70 42C78 54 64 72 46 70C24 68 18 44 30 30C44 14 74 16 84 34' stroke='%23FFF1BF' stroke-width='3'/%3E%3Cpath d='M50 50C50 62 36 66 30 58C22 46 36 28 54 30C76 32 82 56 70 70C56 86 26 84 16 66' stroke='%23C9A0FF' stroke-width='3'/%3E%3C/g%3E%3Ccircle cx='50' cy='50' r='6' fill='%23FFF6DA'/%3E%3C/svg%3E");
+}
+.app[data-back='voie-lactee'] .card__back::after,
+[data-back-preview='voie-lactee'] .card__back::after {
+  animation: frameSpin 40s linear infinite;
+}
+.app[data-back='damier-onyx'] .card__back,
+[data-back-preview='damier-onyx'] .card__back {
+  background-size:
+    300% 100%,
+    auto;
+  animation: backGlint 6s ease-in-out infinite;
+}
+
+.app[data-face='aurore'],
+[data-face-preview='aurore'] {
+  --face-paper: #0e2a2f;
+  --face-paper-2: #071419;
+  --face-hi: rgba(120, 255, 200, 0.14);
+  --face-texture: linear-gradient(
+    170deg,
+    transparent 20%,
+    rgba(80, 255, 180, 0.12) 35%,
+    rgba(176, 124, 255, 0.12) 55%,
+    transparent 70%
+  );
+  --face-edge: rgba(150, 255, 210, 0.5);
+  --face-red: #ff9ad5;
+  --face-black: #9dffd8;
+  --face-court-red: radial-gradient(ellipse at 50% 30%, #2a1f3a, #120d1c);
+  --face-court-black: radial-gradient(ellipse at 50% 30%, #12343a, #08181c);
+  --face-frame: #9dffd8;
+  --face-sheen: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(157, 255, 216, 0.25) 46%,
+    rgba(201, 160, 255, 0.22) 54%,
+    transparent 62%
+  );
+}
+.app[data-face='aurore'] .card__front::after,
+[data-face-preview='aurore'] .card__front::after {
+  animation: faceSheen 8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app[data-back='voie-lactee'] .card__back::after,
+  [data-back-preview='voie-lactee'] .card__back::after {
+    animation: none;
+  }
+}
+
+/* ---- L'Initie et Pique noir ---- */
+
+.plaque[data-title='initie'] {
+  --plate: linear-gradient(160deg, #2a1d40, #0f0a18);
+  --plate-ink: #e9cdff;
+  --plate-edge: rgba(201, 160, 255, 0.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(243, 210, 124, 0.45),
+    0 6px 16px -6px rgba(176, 124, 255, 0.45);
+}
+
+.app[data-back='pique-noir'],
+[data-back-preview='pique-noir'] {
+  --back-bg:
+    linear-gradient(
+      115deg,
+      transparent 42%,
+      rgba(201, 160, 255, 0.18) 50%,
+      transparent 58%
+    ),
+    radial-gradient(circle at 50% 40%, #241634, #050307 75%);
+  --back-border: #3a2260;
+  --back-line: rgba(201, 160, 255, 0.6);
+  --back-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M7 3C5 5 4 6.5 4 7.6C4 9 5.6 9.6 6.6 8.6L6 11H8L7.4 8.6C8.4 9.6 10 9 10 7.6C10 6.5 9 5 7 3Z' fill='%23C9A0FF' fill-opacity='.18'/%3E%3C/svg%3E");
+  --back-size: 12px 12px;
+  --back-medal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23050307' stroke='%23F3D27C' stroke-width='2.5'/%3E%3Cpath d='M50 18C38 32 28 42 28 54C28 66 42 70 48 61L44 80H56L52 61C58 70 72 66 72 54C72 42 62 32 50 18Z' fill='%23120C1C' stroke='%23C9A0FF' stroke-width='2'/%3E%3Cpath d='M50 26V74M40 46L50 56L60 46' fill='none' stroke='%23F3D27C' stroke-width='1.4' opacity='.8'/%3E%3C/svg%3E");
+}
+.app[data-back='pique-noir'] .card__back,
+[data-back-preview='pique-noir'] .card__back {
+  background-size:
+    300% 100%,
+    auto;
+  animation: backGlint 6s ease-in-out infinite;
+}

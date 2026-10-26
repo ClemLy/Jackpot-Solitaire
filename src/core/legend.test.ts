@@ -22,7 +22,7 @@ import {
   type PlayerState,
   type Round,
 } from './index';
-import { findDifficulty } from '../state/catalog';
+import { COSMETICS, LEGEND_COSMETICS, findDifficulty } from '../state/catalog';
 import { progressAchievements } from '../state/achievements';
 import {
   ASCENSION_GIFT,
@@ -341,5 +341,23 @@ describe('rang Legendaire: sauvegardes', () => {
   it('montre le niveau Legendaire sur la carte publique', () => {
     expect(publicCard('Ace', legendary(4)).legend).toBe(4);
     expect(publicCard('Ace', player(0, 0)).legend).toBe(0);
+  });
+});
+
+describe('Boutique Legendaire: catalogue', () => {
+  it('va jusqu au niveau XXX, en rayons complets de quatre', () => {
+    const levels = LEGEND_COSMETICS.map((c) => c.minLevel ?? 1);
+    expect(Math.max(...levels)).toBe(30);
+    // Rayons I-X, XI-XX, XXI-XXX: des rangees pleines a 2 et 4 colonnes.
+    for (const [from, to] of [
+      [1, 10],
+      [11, 20],
+      [21, 30],
+    ]) {
+      const n = levels.filter((l) => l >= from && l <= to).length;
+      expect(n % 4).toBe(0);
+    }
+    const ids = new Set(COSMETICS.map((c) => c.id));
+    expect(ids.size).toBe(COSMETICS.length);
   });
 });

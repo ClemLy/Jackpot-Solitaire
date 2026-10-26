@@ -350,17 +350,24 @@ le taux du niveau) :
 ou la pastille de jetons noirs (la jauge de rang, elle, mène toujours à
 l’écran des rangs). Il rassemble tout, en trois onglets :
 
-- **Boutique** : seize objets payés en jetons noirs, chacun réservé à un
-  niveau. Sceau légendaire (cadre) et « Fin du tutoriel » (titre) sont
-  offerts à l’accession ; puis le dos Onyx et la Pluie noire (effet de
-  victoire) au I, le tapis Salon noir et la carte Laque d’onyx au II,
-  l’Ombre (avatar) au III, le dos Éclipse au IV, « L’Immortel » au V, la
-  Couronne d’éclipse (cadre) et le recto Néant au VI, le Phénix au VII, le
-  tapis Nébuleuse au VIII, l’Éclipse totale (effet) au X, la carte Infini
-  au XII et « Le Dernier Boss » au XV.
-- **Voie légendaire** : chaque niveau, sa prime et ce qu’il débloque (le
-  coffret noir au II, la Table Noire au III, la roue noire au V), jusqu’au
-  « et ainsi de suite, sans fin ».
+- **Boutique** : trente-quatre objets payés en jetons noirs, chacun réservé
+  à un niveau, rangés en trois rayons (I à X, XI à XX, XXI à XXX). Sceau
+  légendaire (cadre) et « Fin du tutoriel » (titre) sont offerts à
+  l’accession.
+  - I à X : dos Onyx, Éclipse et Pique noir, Pluie noire et Éclipse totale
+    (effets), tapis Salon noir et Nébuleuse, carte Laque d’onyx, l’Ombre et
+    le Phénix (avatars), Couronne d’éclipse (cadre), recto Néant, titres
+    « L’Initié » et « L’Immortel ».
+  - XI à XX : carte Infini, dos Damier d’onyx et Sablier d’or, titres « Le
+    Dernier Boss » et « Maître du temps », tapis Abysse, l’Oracle, cadre
+    Orbite (trois astres en orbite).
+  - XXI à XXX : recto Cristal noir et Aurore polaire, effet Trou noir, carte
+    Grands fonds, le Sphinx, dos Constellation et Voie lactée, tapis Salle du
+    trône, titre « L’Éternel », cadre Ouroboros, et deux pièces maîtresses
+    au XXX : la carte Big Bang et le titre « Le Croupier suprême ».
+- **Voie légendaire** : chaque niveau jusqu’au XXX, sa prime et ce qu’il
+  débloque (le coffret noir au II, la Table Noire au III, la roue noire au
+  V), puis « et ainsi de suite, sans fin ».
 - **Jetons noirs** : toutes les sources, chiffrées à son propre niveau, et
   le bureau de change (lots de 1, 5 et 20).
 

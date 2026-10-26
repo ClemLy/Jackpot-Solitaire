@@ -800,6 +800,114 @@ const AVATARS: Record<string, AvatarDef> = {
       </>
     ),
   },
+  // L'Oracle: capuche d'azur, yeux clos, troisieme oeil et boule de cristal.
+  oracle: {
+    bg: ['#2A6B8F', '#071624'],
+    draw: () => (
+      <>
+        <path
+          d="M10 104 C13 82 28 72 50 72 C72 72 87 82 90 104 Z"
+          fill="#183A5C"
+        />
+        <path
+          d="M50 72 L40 104 M50 72 L60 104"
+          stroke="#C9D3E0"
+          strokeWidth="1.2"
+          opacity="0.7"
+        />
+        <path
+          d="M26 70 C24 44 34 20 50 18 C66 20 76 44 74 70 C68 75 32 75 26 70 Z"
+          fill="#1F4C74"
+        />
+        <path
+          d="M31 66 C30 46 38 28 50 27 C62 28 70 46 69 66"
+          fill="none"
+          stroke="#C9D3E0"
+          strokeWidth="1.1"
+          opacity="0.8"
+        />
+        <rect x="44" y="58" width="12" height="12" rx="3" fill="#C98E62" />
+        <circle cx="50" cy="47" r="15" fill={SKINS.warm} />
+        <path
+          d="M41 48 Q44 50.4 47 48 M53 48 Q56 50.4 59 48"
+          fill="none"
+          stroke={INK}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <Cheeks y={53} />
+        <path
+          d="M46.5 56 Q50 58 53.5 56"
+          fill="none"
+          stroke={INK}
+          strokeWidth="1.4"
+          strokeLinecap="round"
+        />
+        <path d="M50 37 L52 40 L50 43 L48 40 Z" fill="#7FE3FF" />
+      </>
+    ),
+  },
+  // Le Sphinx: nemes raye d'or et de lapis, regard souligne de khol.
+  sphinx: {
+    bg: ['#F3C46A', '#6B3A12'],
+    draw: () => (
+      <>
+        <Body color="#C99532" deep="#7A5517">
+          <path d="M30 78 Q50 90 70 78 L70 84 Q50 96 30 84 Z" fill="#1F4E9A" />
+          <path
+            d="M32 83 Q50 93 68 83"
+            fill="none"
+            stroke="#F3D27C"
+            strokeWidth="1.2"
+          />
+        </Body>
+        <path
+          d="M28 28 C30 18 40 14 50 14 C60 14 70 18 72 28 L78 70 L64 66 L62 38 L38 38 L36 66 L22 70 Z"
+          fill="#F3D27C"
+        />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <path
+            key={i}
+            d={`M${29 - i * 1.4} ${36 + i * 7} L${37 - i * 0.2} ${36 + i * 6} M${71 + i * 1.4} ${36 + i * 7} L${63 + i * 0.2} ${36 + i * 6}`}
+            stroke="#1F4E9A"
+            strokeWidth="3"
+          />
+        ))}
+        <path
+          d="M34 22 Q50 14 66 22"
+          fill="none"
+          stroke="#1F4E9A"
+          strokeWidth="3"
+        />
+        <rect x="44" y="58" width="12" height="12" rx="3" fill="#B07A4C" />
+        <circle cx="50" cy="47" r="14" fill={SKINS.tan} />
+        <path
+          d="M39.5 46 Q43 43.6 46.5 46 Q43 48 39.5 46 Z M53.5 46 Q57 43.6 60.5 46 Q57 48 53.5 46 Z"
+          fill={INK}
+        />
+        <path
+          d="M38 46 L36 47 M62 46 L64 47"
+          stroke={INK}
+          strokeWidth="1.3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M46.5 55 Q50 57 53.5 55"
+          fill="none"
+          stroke="#5A3519"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+        />
+        <rect x="47.5" y="60" width="5" height="10" rx="1.5" fill="#1F4E9A" />
+        <path
+          d="M46 30 C46 26 54 26 54 30 C54 33 51 33 50 36 C49 33 46 33 46 30 Z"
+          fill="#C42A3D"
+          stroke="#F3D27C"
+          strokeWidth="0.8"
+        />
+      </>
+    ),
+  },
   nabab: {
     bg: ['#F3D27C', '#8F6418'],
     draw: () => (
@@ -1546,6 +1654,99 @@ const EXTRAS: Record<
             fill="#FFE7A0"
           />
         ))}
+      </>
+    ),
+  },
+
+  // Boutique Legendaire: etoiles, boule de cristal qui luit et tourbillonne.
+  oracle: {
+    scene: () => (
+      <Twinkles
+        points={[
+          [14, 18, 2],
+          [86, 22, 1.6],
+          [12, 52, 1.3],
+          [88, 56, 1.8],
+          [24, 32, 1.1],
+        ]}
+        fill="#BFEFFF"
+      />
+    ),
+    fx: () => (
+      <>
+        <circle
+          className="av-pulse"
+          cx="50"
+          cy="86"
+          r="16"
+          fill="#7FE3FF"
+          opacity="0.35"
+        />
+        <circle
+          cx="50"
+          cy="86"
+          r="11"
+          fill="#0E3A5C"
+          stroke="#BFEFFF"
+          strokeWidth="1.2"
+        />
+        <g className="av-spin" style={{ animationDuration: '6s' }}>
+          <path
+            d="M43 86 C43 80 50 78 53 82 C56 86 52 90 48 88"
+            fill="none"
+            stroke="#7FE3FF"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </g>
+        <ellipse cx="46" cy="81" rx="3" ry="1.8" fill="#fff" opacity="0.6" />
+        <path d="M40 97 H60 L57 101 H43 Z" fill="#C9D3E0" />
+        <circle
+          className="av-pulse"
+          cx="50"
+          cy="40"
+          r="4.5"
+          fill="#7FE3FF"
+          opacity="0.4"
+        />
+      </>
+    ),
+  },
+
+  // Boutique Legendaire: soleil du desert, pyramides et sable qui vole.
+  sphinx: {
+    scene: () => (
+      <>
+        <circle cx="76" cy="26" r="14" fill="#FFF1BF" opacity="0.55" />
+        <path d="M-4 104 L22 66 L48 104 Z" fill="#B97A2E" opacity="0.7" />
+        <path d="M52 104 L80 62 L108 104 Z" fill="#A86A24" opacity="0.7" />
+        <path
+          d="M22 66 L30 104 M80 62 L88 104"
+          stroke="#7A4A16"
+          opacity="0.5"
+        />
+      </>
+    ),
+    fx: () => (
+      <>
+        {[0, 1, 2, 3].map((i) => (
+          <circle
+            key={i}
+            className="av-fall"
+            style={anim(i)}
+            cx={[16, 34, 70, 86][i]}
+            cy="6"
+            r="0.9"
+            fill="#FFF1BF"
+          />
+        ))}
+        <Twinkles
+          points={[
+            [43, 45.5, 2],
+            [57, 45.5, 2],
+          ]}
+          fill="#7FE3FF"
+        />
       </>
     ),
   },

@@ -229,6 +229,44 @@ function InfinitySign() {
   );
 }
 
+const BUBBLES: [number, number, number][] = [
+  [14, 96, 1.1],
+  [30, 100, 0.7],
+  [48, 94, 1],
+  [66, 102, 0.6],
+  [82, 96, 1.2],
+  [22, 108, 0.8],
+  [74, 110, 0.9],
+];
+
+/** Eclats du Big Bang: ils jaillissent du centre dans toutes les directions. */
+function Shards() {
+  return (
+    <>
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2 + 0.3;
+        const d = 34 + (i % 3) * 10;
+        return (
+          <span
+            key={i}
+            className="pcard__shard"
+            style={
+              {
+                left: '50%',
+                top: '30%',
+                '--s': 0.7 + (i % 4) * 0.25,
+                '--i': i,
+                '--dx': `${Math.cos(a) * d}cqw`,
+                '--dy': `${Math.sin(a) * d}cqw`,
+              } as CSSProperties
+            }
+          />
+        );
+      })}
+    </>
+  );
+}
+
 /** Decor d'une carte de profil, selon son style. */
 export function CardDecor({ style }: { style: string }) {
   let decor: ReactNode = null;
@@ -327,6 +365,28 @@ export function CardDecor({ style }: { style: string }) {
             className="pcard__particle pcard__particle--violet"
             points={PARTICLES}
           />
+        </>
+      );
+      break;
+    case 'carte-abysse':
+      decor = (
+        <>
+          <span className="pcard__rays" />
+          <Dots
+            className="pcard__particle pcard__particle--bubble"
+            points={BUBBLES}
+          />
+          <span className="pcard__inlay pcard__inlay--stitch pcard__inlay--abyss" />
+        </>
+      );
+      break;
+    case 'carte-big-bang':
+      decor = (
+        <>
+          <span className="pcard__burst" />
+          <Shards />
+          <Dots className="pcard__star" points={VOID_STARS} />
+          <span className="pcard__rainbow" />
         </>
       );
       break;

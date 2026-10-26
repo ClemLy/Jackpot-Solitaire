@@ -185,6 +185,8 @@ export function Home() {
   const rank = useRank();
   const ownedSet = new Set(owned);
   const collected = COLLECTIBLES.filter((c) => ownedSet.has(c.id)).length;
+  // Le menu se cale sur son nombre de tuiles: jamais de tuile orpheline.
+  const hubCount = 3 + Number(accountsEnabled) + Number(legend.level >= 1);
 
   const tier = vipTierFor(lifetime);
   const next = nextVipTier(lifetime);
@@ -418,7 +420,21 @@ export function Home() {
         />
 
         <nav className="hub" aria-label="Menu">
-          <div className="hub__tiles">
+          <div
+            className="hub__tiles"
+            data-count={hubCount}
+            style={{ '--n': hubCount } as CSSProperties}
+          >
+            {legendary && (
+              <HubTile
+                tone="legend"
+                icon={<BlackChip size={24} />}
+                label="Salon légendaire"
+                shortLabel="Le Salon"
+                meta={`${formatNumber(legend.black)} jetons noirs`}
+                onClick={() => openModal('legend')}
+              />
+            )}
             <HubTile
               icon={<ShoppingBag size={20} />}
               label="Boutique"
@@ -457,16 +473,6 @@ export function Home() {
                 badge={account.incoming}
                 badgeLabel={`${account.incoming} demande${account.incoming > 1 ? 's' : ''} d’ami`}
                 onClick={() => openModal('friends')}
-              />
-            )}
-            {legendary && (
-              <HubTile
-                tone="legend"
-                icon={<BlackChip size={24} />}
-                label="Salon légendaire"
-                shortLabel="Le Salon"
-                meta={`${formatNumber(legend.black)} jetons noirs`}
-                onClick={() => openModal('legend')}
               />
             )}
           </div>

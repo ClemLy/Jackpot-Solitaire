@@ -692,17 +692,22 @@
 }
 .hub__tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
   gap: 10px;
   width: 100%;
+  max-width: calc(var(--n, 3) * 200px);
 }
+/* Tuiles verticales: icone en haut, nom et etat dessous, toutes de meme
+   hauteur sur une seule rangee. */
 .hub-tile {
   position: relative;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
-  min-height: 64px;
-  padding: 10px 12px 10px 10px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 14px 14px 13px;
   border-radius: var(--r-md);
   text-align: left;
   color: var(--on-felt);
@@ -743,7 +748,7 @@
   box-shadow: 0 0 0 2px #0d1511;
 }
 .hub-tile__text {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   display: grid;
   gap: 1px;
@@ -767,6 +772,9 @@
   display: none;
 }
 .hub-tile__chev {
+  position: absolute;
+  top: 14px;
+  right: 12px;
   flex: none;
   color: var(--on-felt-2);
   opacity: 0.6;
@@ -2944,17 +2952,33 @@
   .mode-card__meta {
     font-size: 0.72rem;
   }
+  /* Sur telephone: tuiles en ligne, deux par rangee. A cinq, le Salon
+     ouvre la grille sur toute la largeur; a trois, une rangee de trois. */
   .hub__tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    max-width: none;
   }
-  /* Une tuile seule sur sa ligne prend toute la largeur. */
-  .hub-tile:last-child:nth-child(odd) {
+  .hub__tiles[data-count='5'] > .hub-tile:first-child {
     grid-column: 1 / -1;
   }
-  .hub-tile {
+  .hub__tiles:not([data-count='3']) .hub-tile {
+    flex-direction: row;
+    align-items: center;
     gap: 10px;
+    min-height: 64px;
     padding: 10px;
+  }
+  .hub__tiles[data-count='3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .hub__tiles[data-count='3'] .hub-tile {
+    gap: 10px;
+    min-height: 0;
+    padding: 12px 10px 11px;
+  }
+  .hub__tiles[data-count='3'] .hub-tile__text strong {
+    font-size: 0.92rem;
   }
   .hub-tile__icon {
     width: 38px;

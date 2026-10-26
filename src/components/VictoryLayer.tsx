@@ -915,6 +915,86 @@ function eclipseScene(width: number, height: number, preview: boolean): Scene {
   };
 }
 
+/**
+ * Trou noir: un disque d'accretion qui tourne, et toute la lumiere de la
+ * table aspiree en spirale vers le centre.
+ */
+function blackHoleScene(
+  width: number,
+  height: number,
+  preview: boolean,
+): Scene {
+  const cx = width / 2;
+  const cy = height * 0.42;
+  const R = Math.min(width, height) * 0.08;
+  const maxD = Math.hypot(width, height) * 0.6;
+  type Mote = { a: number; d: number; v: number; c: string; s: number };
+  const palette = ['#FFF1BF', '#F3D27C', '#C9A0FF', '#8FD3FF', '#FFFFFF'];
+  const motes: Mote[] = [];
+  const spawn = (d = maxD * (0.6 + Math.random() * 0.4)): Mote => ({
+    a: Math.random() * Math.PI * 2,
+    d,
+    v: 0.6 + Math.random() * 1.2,
+    c: palette[Math.floor(Math.random() * palette.length)],
+    s: 0.8 + Math.random() * 1.8,
+  });
+  for (let i = 0; i < (preview ? 220 : 340); i++) {
+    motes.push(spawn(R * 1.5 + Math.random() * maxD));
+  }
+  const duration = preview ? 4200 : Infinity;
+  return {
+    trails: true,
+    frame: (ctx, t, dt) => {
+      const k = dt / 16.67;
+      const open = Math.min(1, t / 700);
+      const fade =
+        duration === Infinity
+          ? 1
+          : Math.max(0, Math.min(1, (duration - t) / 700));
+      const a = open * fade;
+
+      for (const m of motes) {
+        // Plus on approche, plus on tourne vite et plus on tombe vite.
+        const pull = (R * 3) / Math.max(m.d, R);
+        m.a += (0.004 + 0.05 * pull) * k;
+        m.d -= m.v * (1 + pull * 3) * k;
+        if (m.d < R * 0.9) Object.assign(m, spawn());
+        const x = cx + Math.cos(m.a) * m.d;
+        const y = cy + Math.sin(m.a) * m.d * 0.55;
+        ctx.globalAlpha = a * Math.min(1, m.d / (R * 2));
+        ctx.fillStyle = m.c;
+        ctx.beginPath();
+        ctx.arc(x, y, m.s * (0.5 + Math.min(1, pull)), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Disque d'accretion et horizon: un anneau incandescent autour du noir.
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(1, 0.55);
+      const disk = ctx.createRadialGradient(0, 0, R * 0.9, 0, 0, R * 2.6);
+      disk.addColorStop(0, `rgba(255, 246, 218, ${0.9 * a})`);
+      disk.addColorStop(0.25, `rgba(243, 210, 124, ${0.55 * a})`);
+      disk.addColorStop(0.6, `rgba(176, 124, 255, ${0.2 * a})`);
+      disk.addColorStop(1, 'rgba(176, 124, 255, 0)');
+      ctx.fillStyle = disk;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = `rgba(3, 2, 5, ${a})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255, 241, 191, ${0.8 * a})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      return t < duration;
+    },
+  };
+}
+
 const SCENES: Record<
   string,
   (w: number, h: number, preview: boolean) => Scene
@@ -928,6 +1008,7 @@ const SCENES: Record<
   supernova: supernovaScene,
   'pluie-noire': blackRainScene,
   'eclipse-totale': eclipseScene,
+  'trou-noir': blackHoleScene,
 };
 
 export function VictoryLayer({

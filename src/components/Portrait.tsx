@@ -1060,6 +1060,153 @@ const FRAMES: Record<string, () => ReactNode> = {
     </g>
   ),
 
+  // Orbite: un anneau de nuit, et trois astres qui tournent a des vitesses
+  // differentes sur leurs orbites.
+  'cadre-orbite': () => (
+    <g>
+      <circle
+        cx="60"
+        cy="60"
+        r="54"
+        fill="none"
+        stroke="#0B1236"
+        strokeWidth="8"
+      />
+      <circle
+        cx="60"
+        cy="60"
+        r="58.2"
+        fill="none"
+        stroke="#C8D7FF"
+        strokeWidth="1"
+        opacity="0.8"
+      />
+      <circle
+        cx="60"
+        cy="60"
+        r="50.4"
+        fill="none"
+        stroke="#C8D7FF"
+        strokeWidth="0.7"
+        opacity="0.6"
+      />
+      <g
+        className="frame-orbit frame-orbit--reverse"
+        style={{ '--d': '70s' } as CSSProperties}
+      >
+        {around(18, 54, 5).map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="0.7" fill="#fff" opacity="0.8" />
+        ))}
+      </g>
+      <circle
+        cx="60"
+        cy="60"
+        r="61.5"
+        fill="none"
+        stroke="#8FD3FF"
+        strokeWidth="0.6"
+        strokeDasharray="2 3"
+        opacity="0.55"
+      />
+      <g className="frame-orbit" style={{ '--d': '26s' } as CSSProperties}>
+        {(() => {
+          const [gx, gy] = polar(0, 61.5);
+          const [vx, vy] = polar(120, 61.5);
+          const [bx, by] = polar(240, 61.5);
+          return (
+            <>
+              <circle
+                cx={gx}
+                cy={gy}
+                r="4.2"
+                fill="#F3D27C"
+                stroke="#8F6418"
+                strokeWidth="0.8"
+              />
+              <circle
+                cx={gx - 1.4}
+                cy={gy - 1.4}
+                r="1.3"
+                fill="#fff"
+                opacity="0.7"
+              />
+              <circle cx={vx} cy={vy} r="3.8" fill="#8A4FE0" />
+              <ellipse
+                cx={vx}
+                cy={vy}
+                rx="7"
+                ry="2"
+                fill="none"
+                stroke="#E9CDFF"
+                strokeWidth="0.9"
+                transform={`rotate(-25 ${vx} ${vy})`}
+              />
+              <circle cx={bx} cy={by} r="2.6" fill="#8FD3FF" />
+            </>
+          );
+        })()}
+      </g>
+    </g>
+  ),
+
+  // Ouroboros: le serpent d'or se mord la queue, un cycle sans fin.
+  'cadre-ouroboros': () => (
+    <g className="frame-serpent">
+      <defs>
+        <linearGradient id="frame-ouro" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFF1BF" />
+          <stop offset="0.5" stopColor="#E3B95A" />
+          <stop offset="1" stopColor="#7A5517" />
+        </linearGradient>
+      </defs>
+      <path
+        d={`M${polar(18, 55)[0]} ${polar(18, 55)[1]} A55 55 0 1 1 ${polar(352, 55)[0]} ${polar(352, 55)[1]}`}
+        fill="none"
+        stroke="url(#frame-ouro)"
+        strokeWidth="9"
+        strokeLinecap="round"
+      />
+      <path
+        d={`M${polar(22, 55)[0]} ${polar(22, 55)[1]} A55 55 0 1 1 ${polar(350, 55)[0]} ${polar(350, 55)[1]}`}
+        fill="none"
+        stroke="#7A5517"
+        strokeWidth="9"
+        strokeDasharray="2.4 3.2"
+        opacity="0.35"
+      />
+      <path
+        d={`M${polar(22, 51.4)[0]} ${polar(22, 51.4)[1]} A51.4 51.4 0 1 1 ${polar(350, 51.4)[0]} ${polar(350, 51.4)[1]}`}
+        fill="none"
+        stroke="#FFF6DA"
+        strokeWidth="0.8"
+        opacity="0.7"
+      />
+      {(() => {
+        const [hx, hy] = polar(0, 55);
+        return (
+          <g
+            transform={`translate(${hx} ${hy}) rotate(4) scale(1.5) translate(${-hx} ${-hy})`}
+          >
+            <path
+              d={`M${hx - 8} ${hy - 6} C${hx + 2} ${hy - 9} ${hx + 11} ${hy - 4} ${hx + 11} ${hy} C${hx + 11} ${hy + 4} ${hx + 2} ${hy + 9} ${hx - 8} ${hy + 6} Z`}
+              fill="url(#frame-ouro)"
+              stroke="#7A5517"
+              strokeWidth="0.8"
+            />
+            <circle cx={hx + 3} cy={hy - 3} r="1.6" fill="#C42A3D" />
+            <circle cx={hx + 3.4} cy={hy - 3.4} r="0.5" fill="#fff" />
+            <path
+              d={`M${hx + 11} ${hy + 0.5} L${hx + 15} ${hy - 1.5} M${hx + 11} ${hy + 0.5} L${hx + 15} ${hy + 2.5}`}
+              stroke="#C42A3D"
+              strokeWidth="0.9"
+              strokeLinecap="round"
+            />
+          </g>
+        );
+      })()}
+    </g>
+  ),
+
   'cadre-royal': () => (
     <g className="frame-glow-royal">
       <Rays
