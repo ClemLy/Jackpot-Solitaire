@@ -65,6 +65,8 @@ export interface AchievementFamily {
   /** Vrai pour un record de temps: plus c'est bas, mieux c'est. */
   lowerIsBetter?: boolean;
   format?: 'number' | 'time' | 'rank' | 'legend';
+  /** Famille gardee secrete tant que rien n'est obtenu: nom et indice. */
+  secret?: { label: string; hint: string };
   describe: (goal: number) => string;
   tiers: AchievementTier[];
 }
@@ -298,6 +300,10 @@ export const ACHIEVEMENT_FAMILIES: readonly AchievementFamily[] = [
     label: 'Rang Légendaire',
     value: (s) => s.legend.level,
     format: 'legend',
+    secret: {
+      label: 'Rang scellé',
+      hint: 'Briser le sceau: amasser un million et vaincre la Table Légende.',
+    },
     describe: (n) =>
       n === 1
         ? 'Atteindre le rang Légendaire: 1 000 000 jetons gagnés et une victoire à la Table Légende.'

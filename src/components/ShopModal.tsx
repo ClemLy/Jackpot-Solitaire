@@ -398,8 +398,7 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
                   <strong>
                     {formatNumber(lifetime)} / {formatNumber(LEGEND_THRESHOLD)}
                   </strong>{' '}
-                  · au-delà du Diamant, le rang Légendaire ouvre une boutique
-                  payée en jetons noirs.
+                  · un dernier rang reste scellé.
                 </>
               )}
             </div>
@@ -409,7 +408,7 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
             >
               {next
                 ? 'Voir tous les rangs et leurs avantages →'
-                : 'Découvrir le rang Légendaire →'}
+                : 'Examiner le sceau →'}
             </button>
           </div>
           <ol className="vip-ladder" aria-label="Rangs VIP">
@@ -424,8 +423,8 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
               </li>
             ))}
             <li data-tier="legend" data-on="false">
-              <RankEmblem tier="legend" size={14} compact />
-              Légendaire
+              <RankEmblem tier="legend" level={0} size={14} compact />
+              ???
             </li>
           </ol>
         </div>
@@ -451,13 +450,19 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
         data-unlocked={legendary}
         onClick={() => openModal('legend')}
       >
-        <BlackChip size={34} className="lg-entry__chip" />
+        {legendary ? (
+          <BlackChip size={34} className="lg-entry__chip" />
+        ) : (
+          <RankEmblem tier="legend" level={0} size={34} />
+        )}
         <span className="lg-entry__text">
-          <strong>Boutique Légendaire</strong>
+          <strong>
+            {legendary ? 'Boutique Légendaire' : 'Vitrine scellée'}
+          </strong>
           <span>
             {legendary
               ? `Des objets introuvables ailleurs, en jetons noirs. Solde: ${formatNumber(legend.black)}.`
-              : 'Réservée au rang Légendaire. Ce qui s’y vend ne se trouve nulle part ailleurs.'}
+              : 'Ses rideaux ne se lèvent que pour ceux qui ont brisé le sceau.'}
           </span>
         </span>
         {legendary ? (

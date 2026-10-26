@@ -181,9 +181,8 @@ export function RanksModal({ onClose }: { onClose: () => void }) {
               </>
             ) : (
               <p className="rk-hero__next">
-                <strong>{formatNumber(lifetime)}</strong> jetons gagnés. Le
-                Diamant n&rsquo;est pas le sommet: un rang Légendaire attend
-                plus haut.
+                <strong>{formatNumber(lifetime)}</strong> jetons gagnés. Un
+                dernier rang reste scellé: il ne cède que devant deux épreuves.
               </p>
             )}
           </div>
@@ -328,8 +327,8 @@ function LegendHero() {
 }
 
 /**
- * Derniere marche de l'echelle: le rang Legendaire. Ses deux epreuves sont
- * affichees des le depart, pour qu'on sache qu'il existe et comment y aller.
+ * Derniere marche de l'echelle. Avant l'accession, c'est un rang scelle: on
+ * sait qu'il existe et ce qui l'ouvre, pas ce qu'il renferme ni son nom.
  */
 function LegendStep({ state }: { state: StepState }) {
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
@@ -346,15 +345,13 @@ function LegendStep({ state }: { state: StepState }) {
       aria-current={state === 'current' ? 'step' : undefined}
     >
       <span className="rk-step__node" aria-hidden="true">
-        <RankEmblem tier="legend" level={legend.level || 1} size={36} compact />
+        <RankEmblem tier="legend" level={legend.level} size={36} compact />
       </span>
       <div className="rk-step__card">
         <div className="rk-step__head">
-          <RankBadge tier="legend" level={legend.level || 1} emblem={false} />
+          <RankBadge tier="legend" level={legend.level} emblem={false} />
           <span className="rk-step__threshold">
-            {legendary
-              ? 'Puis des niveaux sans fin'
-              : 'Le rang au-delà du Diamant'}
+            {legendary ? 'Des niveaux sans fin' : 'Rang scellé'}
           </span>
           <span className="rk-step__status">
             {legendary ? (
@@ -367,41 +364,49 @@ function LegendStep({ state }: { state: StepState }) {
             )}
           </span>
         </div>
-        {!legendary && (
-          <ul className="rk-trials">
-            <li data-done={chipsDone}>
-              {chipsDone ? <Check size={14} /> : <Chip size={14} />}
-              <span>
-                <strong>{formatNumber(LEGEND_THRESHOLD)} jetons gagnés</strong>
-                {!chipsDone &&
-                  ` · encore ${formatNumber(LEGEND_THRESHOLD - lifetime)}`}
-              </span>
-            </li>
-            <li data-done={tableDone}>
-              {tableDone ? <Check size={14} /> : <Crown size={14} />}
-              <span>
-                <strong>Gagner une manche à la Table Légende</strong>
-                {!tableDone && ' · ouverte au rang Diamant'}
-              </span>
-            </li>
+        {legendary ? (
+          <ul className="rk-perks">
+            <Perk icon={<BlackChip size={14} />}>
+              <strong>Jetons noirs</strong> à chaque victoire
+            </Perk>
+            <Perk icon={<ShoppingBag size={14} />}>
+              <strong>Boutique Légendaire</strong> et bureau de change
+            </Perk>
+            <Perk icon={<InfinityIcon size={14} />}>
+              Légendaire I, II, III… <strong>sans fin</strong>
+            </Perk>
           </ul>
+        ) : (
+          <>
+            <p className="rk-seal-text">
+              Personne ne sait ce qui dort derrière ce sceau. Il ne cède que
+              devant deux épreuves.
+            </p>
+            <ul className="rk-trials">
+              <li data-done={chipsDone}>
+                {chipsDone ? <Check size={14} /> : <Chip size={14} />}
+                <span>
+                  <strong>Amasser un million</strong>
+                  {chipsDone
+                    ? ' · accomplie'
+                    : ` · ${formatNumber(lifetime)} / ${formatNumber(LEGEND_THRESHOLD)}`}
+                </span>
+              </li>
+              <li data-done={tableDone}>
+                {tableDone ? <Check size={14} /> : <Crown size={14} />}
+                <span>
+                  <strong>Vaincre la Table Légende</strong>
+                  {tableDone ? ' · accomplie' : ' · une manche gagnée suffit'}
+                </span>
+              </li>
+            </ul>
+          </>
         )}
-        <ul className="rk-perks">
-          <Perk icon={<BlackChip size={14} />}>
-            <strong>Jetons noirs</strong>, une seconde monnaie
-          </Perk>
-          <Perk icon={<ShoppingBag size={14} />}>
-            <strong>Boutique Légendaire</strong> et bureau de change
-          </Perk>
-          <Perk icon={<InfinityIcon size={14} />}>
-            Légendaire I, II, III… <strong>sans fin</strong>
-          </Perk>
-        </ul>
         <button
           className="vip-banner__more rk-step__salon"
           onClick={() => openModal('legend')}
         >
-          {legendary ? 'Entrer dans le Salon →' : 'Découvrir le Salon →'}
+          {legendary ? 'Entrer dans le Salon →' : 'Examiner le sceau →'}
         </button>
       </div>
     </li>

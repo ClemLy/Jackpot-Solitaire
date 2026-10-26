@@ -104,7 +104,7 @@ export function ProfileCard({
             ? `En route vers ${legendLabel(level + 1)}`
             : next
               ? `${formatNumber(next.threshold - card.lifetimeEarned)} jetons avant ${next.label}`
-              : 'En route vers le rang Légendaire'}
+              : 'Face au sceau'}
         </small>
       </div>
 

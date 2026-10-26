@@ -129,10 +129,10 @@ export function blackFor(base: number, level: number): number {
 
 /** Jetons noirs de base pour une victoire, selon la difficulte. */
 export const BLACK_PER_WIN: Record<DifficultyId, number> = {
-  easy: 0,
-  normal: 1,
-  hard: 2,
-  expert: 4,
+  easy: 1,
+  normal: 2,
+  hard: 3,
+  expert: 5,
 };
 
 /** Bonus de base pour une victoire a une table haute. */

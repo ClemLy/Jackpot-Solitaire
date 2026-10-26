@@ -76,10 +76,10 @@ describe('rangs', () => {
     expect(steps[2].textContent).toMatch(/Salon Platine/);
     expect(steps[3].textContent).toMatch(/Table Diamant/);
     expect(steps[4].textContent).toMatch(/Table Légende/);
-    // Le rang Legendaire est annonce des le depart, avec ses deux epreuves.
-    expect(steps[5].textContent).toMatch(/Légendaire/);
-    expect(steps[5].textContent).toMatch(/1\s000\s000 jetons gagnés/);
-    expect(steps[5].textContent).toMatch(/Table Légende/);
+    // Un dernier rang est annonce des le depart, scelle, avec ses epreuves.
+    expect(steps[5].textContent).toMatch(/Rang scellé/);
+    expect(steps[5].textContent).toMatch(/Amasser un million/);
+    expect(steps[5].textContent).toMatch(/Vaincre la Table Légende/);
   });
 });
 
@@ -89,10 +89,23 @@ describe('rang Legendaire', () => {
       wallet: { balance: 0, lifetimeEarned: 600_000, spent: 0 },
     });
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: /Salon légendaire/ }));
-    const dialog = screen.getByRole('dialog', { name: 'Salon Légendaire' });
+    // Aucun lien direct: le rang se decouvre depuis l'ecran des rangs.
+    expect(
+      screen.queryByRole('button', { name: /Salon légendaire/ }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /un rang scellé/ }));
+    const ranks = screen.getByRole('dialog', { name: 'Rangs VIP' });
+    // Le nom reste secret avant l'accession.
+    expect(ranks.textContent).not.toMatch(/Légendaire/);
+    expect(ranks.textContent).toMatch(/Rang scellé/);
+    fireEvent.click(screen.getByRole('button', { name: /Examiner le sceau/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Le sceau' });
+    expect(dialog.textContent).toMatch(/Amasser un million/);
     expect(dialog.textContent).toMatch(/Vaincre la Table Légende/);
-    expect(dialog.textContent).toMatch(/Encore 400\s000 jetons/);
+    expect(dialog.textContent).toMatch(
+      /600\s000 jetons gagnés sur 1\s000\s000/,
+    );
+    expect(dialog.textContent).not.toMatch(/Légendaire I/);
     expect(screen.getByRole('button', { name: /S.asseoir/ })).toBeTruthy();
   });
 

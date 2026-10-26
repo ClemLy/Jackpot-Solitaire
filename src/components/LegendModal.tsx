@@ -99,37 +99,43 @@ function Seal() {
   const tableDone = tableWins > 0;
   const diamond = meetsTier(lifetime, 'diamond');
   const legendTable = STAKE_TABLES.find((t) => t.id === 'legend')!;
+  const broken = Number(chipsDone) + Number(tableDone);
 
   return (
     <div className="lg-seal">
       <section className="lg-seal__hero">
         <span className="lg-seal__emblem" aria-hidden="true">
-          <RankEmblem tier="legend" size={96} />
-          <span className="lg-seal__lock">
-            <Lock size={18} />
-          </span>
+          <RankEmblem tier="legend" level={0} size={96} />
         </span>
         <div className="lg-seal__copy">
-          <span className="lg-eyebrow">Au-delà du Diamant</span>
-          <h3 className="lg-seal__title">Rang Légendaire</h3>
+          <span className="lg-eyebrow">Rang scellé</span>
+          <h3 className="lg-seal__title">???</h3>
           <p>
-            Le Diamant n&rsquo;est pas le sommet. Deux épreuves ouvrent la porte
-            du Salon, et derrière, le vrai jeu commence.
+            Personne ne sait ce qui dort derrière ce sceau. On raconte seulement
+            qu&rsquo;il cède devant deux épreuves.
           </p>
         </div>
+        <span
+          className="lg-seal__count"
+          aria-label={`${broken} épreuve${broken > 1 ? 's' : ''} sur 2`}
+        >
+          {broken}
+          <small>/ 2</small>
+        </span>
       </section>
 
-      <ol className="lg-trials" aria-label="Conditions d'accès">
+      <ol className="lg-trials" aria-label="Les deux épreuves">
         <li className="lg-trial" data-done={chipsDone}>
           <span className="lg-trial__mark" aria-hidden="true">
-            {chipsDone ? <Check size={16} /> : <Chip size={18} />}
+            {chipsDone ? <Check size={16} /> : 'I'}
           </span>
           <div className="lg-trial__body">
-            <strong>{formatNumber(LEGEND_THRESHOLD)} jetons gagnés</strong>
+            <span className="lg-trial__kicker">Première épreuve</span>
+            <strong>Amasser un million</strong>
             <span>
               {chipsDone
-                ? 'Épreuve réussie.'
-                : `Encore ${formatNumber(LEGEND_THRESHOLD - lifetime)} jetons à gagner.`}
+                ? 'Accomplie.'
+                : `${formatNumber(lifetime)} jetons gagnés sur ${formatNumber(LEGEND_THRESHOLD)}.`}
             </span>
             <span
               className="lg-trial__meter"
@@ -150,16 +156,17 @@ function Seal() {
         </li>
         <li className="lg-trial" data-done={tableDone}>
           <span className="lg-trial__mark" aria-hidden="true">
-            {tableDone ? <Check size={16} /> : <Crown size={16} />}
+            {tableDone ? <Check size={16} /> : 'II'}
           </span>
           <div className="lg-trial__body">
+            <span className="lg-trial__kicker">Seconde épreuve</span>
             <strong>Vaincre la Table Légende</strong>
             <span>
               {tableDone
-                ? 'Épreuve réussie.'
+                ? 'Accomplie.'
                 : diamond
-                  ? `Gagne une manche à la Table Légende (mise ${formatNumber(legendTable.stake)}).`
-                  : 'Gagne une manche à la Table Légende, ouverte au rang Diamant.'}
+                  ? `Une manche gagnée suffit. Mise de ${formatNumber(legendTable.stake)}.`
+                  : 'Une manche gagnée suffit. Ses portes s’ouvrent au rang Diamant.'}
             </span>
           </div>
           {!tableDone && diamond && (
@@ -173,26 +180,25 @@ function Seal() {
         </li>
       </ol>
 
-      <h3 className="lg-section">Ce qui t&rsquo;attend derrière la porte</h3>
-      <ul className="lg-teasers">
+      <h3 className="lg-section">Ce que l&rsquo;on murmure</h3>
+      <ul className="lg-rumors">
         <li>
-          <BlackChip size={34} />
-          <strong>Les jetons noirs</strong>
-          <span>Une seconde monnaie, gagnée à chaque victoire.</span>
+          <span className="lg-rumors__glyph" aria-hidden="true">
+            <BlackChip size={30} />
+          </span>
+          <span>Une monnaie qui n&rsquo;a jamais circulé sur ces tables.</span>
         </li>
         <li>
-          <span className="lg-teasers__icon">
-            <ShoppingBag size={24} />
+          <span className="lg-rumors__glyph" aria-hidden="true">
+            <ShoppingBag size={22} />
           </span>
-          <strong>La Boutique Légendaire</strong>
-          <span>{LEGEND_COSMETICS.length} objets introuvables ailleurs.</span>
+          <span>Une vitrine que personne n&rsquo;a jamais vue éclairée.</span>
         </li>
         <li>
-          <span className="lg-teasers__icon">
-            <InfinityIcon size={26} />
+          <span className="lg-rumors__glyph" aria-hidden="true">
+            <InfinityIcon size={24} />
           </span>
-          <strong>Des niveaux sans fin</strong>
-          <span>Légendaire I, II, III… et plus on monte, plus ça paie.</span>
+          <span>Un chemin qui, dit-on, ne finit jamais.</span>
         </li>
       </ul>
       <ul className="lg-silhouettes" aria-hidden="true">
@@ -205,6 +211,9 @@ function Seal() {
             </li>
           ))}
       </ul>
+      <p className="lg-whisper">
+        Ce qu&rsquo;il renferme ne se révèle qu&rsquo;à ceux qui le brisent.
+      </p>
     </div>
   );
 }
@@ -594,10 +603,15 @@ function BlackChips() {
       <ul className="lg-sources">
         <Source
           icon={<Trophy size={16} />}
+          label="Victoire en Facile"
+          base={BLACK_PER_WIN.easy}
+          level={level}
+        />
+        <Source
+          icon={<Trophy size={16} />}
           label="Victoire en Normal"
           base={BLACK_PER_WIN.normal}
           level={level}
-          note="Rien en Facile"
         />
         <Source
           icon={<Trophy size={16} />}
@@ -722,7 +736,7 @@ export function LegendModal({ onClose }: { onClose: () => void }) {
 
   if (level < 1) {
     return (
-      <Modal title="Salon Légendaire" onClose={onClose} size="lg">
+      <Modal title="Le sceau" onClose={onClose} size="lg">
         <div className="lg">
           <Seal />
         </div>

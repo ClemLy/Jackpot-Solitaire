@@ -110,7 +110,7 @@ test('amis: demande, acceptation et carte de profil', async ({ browser }) => {
   await expect(b.getByRole('status')).toContainText(`Demande envoyée`);
 
   await a.reload();
-  await expect(a.locator('.link-btn__badge')).toHaveText('1');
+  await expect(a.locator('.hub-tile__badge')).toHaveText('1');
   await a.getByRole('button', { name: /^Amis/ }).click();
   await a.getByRole('button', { name: `Accepter ${bob}` }).click();
   await a.getByRole('button', { name: `Voir la carte de ${bob}` }).click();

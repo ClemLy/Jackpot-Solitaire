@@ -311,11 +311,14 @@ Le Diamant n’est pas le sommet. Deux épreuves ouvrent le rang Légendaire :
 2. avoir remporté **au moins une manche à la Table Légende** (rang Diamant,
    mise de 75 000).
 
-Le rang n’est pas caché : il figure en dernière marche de l’écran des
-rangs, sur la jauge de l’accueil une fois Diamant (« Diamant → Légendaire »),
-dans la boutique et dans le menu (« Salon légendaire », avec un cadenas). Le
-Salon montre alors le sceau, l’avancement des deux épreuves et, en
-silhouettes floutées, ce qui attend derrière la porte.
+Avant l’accession, le rang reste **scellé** : il figure en dernière marche
+de l’écran des rangs sous le nom « ??? », avec un cachet de cire noire et
+ses deux épreuves, et la jauge de l’accueil d’un joueur Diamant mène vers
+lui (« Diamant → ??? »). Le sceau montre l’avancement des épreuves, quelques
+rumeurs (« une monnaie qui n’a jamais circulé sur ces tables ») et des
+objets en silhouettes floutées : ni le nom du rang, ni ses jetons noirs,
+ni sa boutique ne sont dévoilés. Les règles et les hauts faits gardent le
+même secret.
 
 L’accession déclenche une cérémonie plein écran (« Tout ce qui précède
 n’était que le tutoriel. ») et offre 25 jetons noirs. Puis tout
@@ -332,7 +335,7 @@ le taux du niveau) :
 
 | Source | Jetons noirs |
 | --- | --- |
-| Victoire en Normal, Difficile, Expert (rien en Facile) | 1, 2, 4 |
+| Victoire en Facile, Normal, Difficile, Expert | 1, 2, 3, 5 |
 | Manche gagnée à la Table Légende, à la Table Noire | +2, +5 |
 | Magot encaissé | 1 par tranche de 50 000 |
 | Première victoire du défi du jour | 5 |
@@ -343,7 +346,9 @@ le taux du niveau) :
 | Nouveau niveau | 10 + 5 × le niveau |
 | Bureau de change | 1 contre 50 000 jetons de la banque |
 
-**Le Salon Légendaire** rassemble tout, en trois onglets :
+**Le Salon Légendaire** s’ouvre depuis sa tuile dans le menu de l’accueil
+ou la pastille de jetons noirs (la jauge de rang, elle, mène toujours à
+l’écran des rangs). Il rassemble tout, en trois onglets :
 
 - **Boutique** : seize objets payés en jetons noirs, chacun réservé à un
   niveau. Sceau légendaire (cadre) et « Fin du tutoriel » (titre) sont
@@ -384,6 +389,8 @@ une fois depuis l’écran des hauts faits.
   progressif, défis du jour, rang VIP, rang Légendaire (I, V, X, XXV) et
   collection. Une progression déjà
   acquise est reconnue d’un coup, en un seul message.
+- Une famille reste secrète (« Rang scellé ») tant que son premier palier
+  n’est pas atteint.
 - **Les exploits** se gagnent sur une partie : sans indice, en Expert, au
   Chrono, avec un bénéfice à Vegas, en pioche par 3 sans faute, la partie
   parfaite, les trois paris annexes gagnés, une manche à la table Diamant,

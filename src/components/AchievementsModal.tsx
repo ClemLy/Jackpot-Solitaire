@@ -115,6 +115,8 @@ function FamilyRow({
   unlocked: Record<string, number>;
 }) {
   const reached = family.tiers.filter((t) => unlocked[t.id]);
+  // Une famille secrete ne livre ni son nom ni ses paliers avant le premier.
+  const secret = reached.length === 0 ? family.secret : undefined;
   const top = reached[reached.length - 1];
   const next = family.tiers.find((t) => !unlocked[t.id]);
 
@@ -136,7 +138,7 @@ function FamilyRow({
           : family.format === 'legend'
             ? v > 0
               ? `${formatValue(family, v)} · objectif ${formatValue(family, next.goal)}`
-              : 'Le rang au-delà du Diamant'
+              : 'Scellé'
             : `${formatNumber(v)} / ${formatNumber(next.goal)}`;
     }
   } else {
@@ -148,11 +150,15 @@ function FamilyRow({
       <span className="achv__icon">{ICONS[family.icon](20)}</span>
       <div className="achv__body">
         <div className="achv__head">
-          <strong>{family.label}</strong>
+          <strong>{secret ? secret.label : family.label}</strong>
           <span className="achv__title">{top ? top.title : 'À débloquer'}</span>
         </div>
         <p className="achv__desc">
-          {next ? family.describe(next.goal) : family.describe(top!.goal)}
+          {secret
+            ? secret.hint
+            : next
+              ? family.describe(next.goal)
+              : family.describe(top!.goal)}
         </p>
         <div className="achv__meter">
           <span
@@ -173,11 +179,15 @@ function FamilyRow({
             <li
               key={t.id}
               data-on={on}
-              title={`${t.title} (${MEDAL_LABEL[t.medal]}): ${family.describe(t.goal)}`}
+              title={
+                secret
+                  ? '???'
+                  : `${t.title} (${MEDAL_LABEL[t.medal]}): ${family.describe(t.goal)}`
+              }
             >
               <RankEmblem tier={t.medal} size={22} compact />
               <span className="sr-only">
-                {t.title}, {on ? 'obtenu' : 'à débloquer'}
+                {secret ? '???' : t.title}, {on ? 'obtenu' : 'à débloquer'}
               </span>
             </li>
           );

@@ -352,19 +352,6 @@
     translate 160ms ease,
     color 160ms ease;
 }
-.link-btn__badge {
-  display: inline-grid;
-  place-items: center;
-  min-width: 18px;
-  height: 18px;
-  margin-left: 4px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--crimson);
-  color: var(--ivory);
-  font-size: 0.66rem;
-  font-weight: 800;
-}
 
 /* ---- Carte de profil ---- */
 

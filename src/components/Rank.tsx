@@ -370,15 +370,18 @@ export function RankEmblem({
       break;
     }
     case 'legend':
-      body = (
-        <LegendBody
-          uid={uid}
-          level={level}
-          compact={compact}
-          metal={metal}
-          sweep={sweep}
-        />
-      );
+      body =
+        level < 1 ? (
+          <SealBody uid={uid} compact={compact} />
+        ) : (
+          <LegendBody
+            uid={uid}
+            level={level}
+            compact={compact}
+            metal={metal}
+            sweep={sweep}
+          />
+        );
       break;
   }
 
@@ -386,7 +389,10 @@ export function RankEmblem({
     <svg
       className={`rank-emblem${className ? ` ${className}` : ''}`}
       data-tier={tier}
-      data-aura={tier === 'legend' ? legendAura(level) : undefined}
+      data-aura={
+        tier === 'legend' && level >= 1 ? legendAura(level) : undefined
+      }
+      data-sealed={tier === 'legend' && level < 1 ? 'true' : undefined}
       viewBox="0 0 48 48"
       width={size}
       height={size}
@@ -563,6 +569,62 @@ function LegendBody({
   );
 }
 
+/**
+ * Rang encore scelle: un cachet de cire noire, une tranche d'or ebrechee et
+ * un point d'interrogation qui luit. Rien ne dit ce qu'il y a derriere.
+ */
+function SealBody({ uid, compact }: { uid: string; compact: boolean }) {
+  const glow = `rk-seal-${uid}`;
+  return (
+    <>
+      <defs>
+        <radialGradient id={glow} cx="0.5" cy="0.45" r="0.55">
+          <stop offset="0" stopColor="#3A2260" />
+          <stop offset="0.75" stopColor="#120C1C" />
+          <stop offset="1" stopColor="#07050B" />
+        </radialGradient>
+      </defs>
+      <path
+        d="M24 2.6 C28 3.4 30.6 2 34 4.4 C37.4 6.8 40.6 7.2 42.4 11 C44.2 14.8 46 16.6 45.6 21 C45.2 25.4 46.4 28 44.2 31.8 C42 35.6 41.8 38.6 38 41 C34.2 43.4 32 45.8 27.6 45.4 C23.2 45 20.4 46.4 16.6 44.2 C12.8 42 9.6 41.8 7.2 38 C4.8 34.2 2.4 32 2.6 27.6 C2.8 23.2 1.6 20.4 3.8 16.6 C6 12.8 6.2 9.6 10 7.2 C13.8 4.8 19.6 1.8 24 2.6 Z"
+        fill={`url(#${glow})`}
+        stroke="#7A5517"
+        strokeWidth="1"
+      />
+      <circle
+        cx="24"
+        cy="24"
+        r="16.5"
+        fill="none"
+        stroke="#E3B95A"
+        strokeOpacity="0.55"
+        strokeWidth="0.8"
+        strokeDasharray={compact ? undefined : '5 2 1 2'}
+      />
+      {!compact && (
+        <path
+          d="M30 8.6 L27.6 14 L30.4 16.4 L28.4 21"
+          fill="none"
+          stroke="#07050B"
+          strokeWidth="0.9"
+          strokeLinecap="round"
+        />
+      )}
+      <text
+        className="rank-emblem__mark"
+        x="24"
+        y="31.6"
+        textAnchor="middle"
+        fontFamily="Georgia, serif"
+        fontWeight="700"
+        fontSize="21"
+        fill="#C9A0FF"
+      >
+        ?
+      </text>
+    </>
+  );
+}
+
 /** Rang avec son emblème et son nom, stylé selon le rang. */
 export function RankBadge({
   tier,
@@ -581,11 +643,13 @@ export function RankBadge({
   className?: string;
 }) {
   const label =
-    tier === 'legend'
-      ? short
-        ? `Lég. ${roman(level)}`
-        : legendLabel(level)
-      : (VIP_TIERS.find((t) => t.id === tier)?.label ?? tier);
+    tier === 'legend' && level < 1
+      ? '???'
+      : tier === 'legend'
+        ? short
+          ? `Lég. ${roman(level)}`
+          : legendLabel(level)
+        : (VIP_TIERS.find((t) => t.id === tier)?.label ?? tier);
   return (
     <span
       className={`rank${className ? ` ${className}` : ''}`}

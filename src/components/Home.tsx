@@ -3,7 +3,6 @@ import {
   BarChart3,
   BookOpen,
   ChevronRight,
-  Crown,
   GraduationCap,
   Settings,
   ShoppingBag,
@@ -11,7 +10,6 @@ import {
   Trophy,
   UserRound,
   Users,
-  Lock,
 } from 'lucide-react';
 import { accountsEnabled, useAccountStore } from '../state/account';
 import {
@@ -24,9 +22,10 @@ import { Portrait } from './Portrait';
 import { RankBadge, RankEmblem } from './Rank';
 import { useGameStore, type GameMode } from '../state/game';
 import { pendingRewards, useMetaStore, useRank } from '../state/meta';
-import { unpaidAchievements } from '../state/achievements';
+import { ACHIEVEMENTS, unpaidAchievements } from '../state/achievements';
 import {
   CHRONO_LIMIT_MS,
+  COLLECTIBLES,
   VEGAS_STAKE,
   findCosmetic,
   meetsTier,
@@ -38,7 +37,7 @@ import { formatDuration, formatNumber, percent } from '../utils/format';
 import { dailySeed, todayISO } from '../utils/seed';
 import type { Card } from '../engine';
 import { CardView } from './CardView';
-import { Balance, BlackBalance, Chip, RollingNumber } from './ui';
+import { Balance, BlackBalance, BlackChip, Chip, RollingNumber } from './ui';
 import { ModeDeck, type ModeCardData } from './ModeDeck';
 
 type ModeCard = Omit<ModeCardData, 'meta'>;
@@ -179,7 +178,13 @@ export function Home() {
   const account = useAccountStore();
   const title = findCosmetic(titleId);
   const legend = useMetaStore((s) => s.legend);
+  const owned = useMetaStore((s) => s.inventory.owned);
+  const achievementsDone = useMetaStore(
+    (s) => Object.keys(s.achievements).length,
+  );
   const rank = useRank();
+  const ownedSet = new Set(owned);
+  const collected = COLLECTIBLES.filter((c) => ownedSet.has(c.id)).length;
 
   const tier = vipTierFor(lifetime);
   const next = nextVipTier(lifetime);
@@ -259,8 +264,8 @@ export function Home() {
             <button
               className="vip-pill rank-pill"
               data-tier="legend"
-              onClick={() => openModal('legend')}
-              aria-label={`Rang ${rank.label}, Salon Légendaire`}
+              onClick={() => openModal('ranks')}
+              aria-label={`Rang ${rank.label}`}
               title={`Encore ${formatNumber(lp.step - lp.into)} jetons gagnés pour ${legendLabel(legend.level + 1)}`}
             >
               <RankBadge tier="legend" level={legend.level} size={20} />
@@ -412,58 +417,123 @@ export function Home() {
           }
         />
 
-        <nav className="home__links" aria-label="Menu">
-          <button className="link-btn" onClick={() => openModal('profile')}>
-            <UserRound size={18} /> Profil
-          </button>
-          {accountsEnabled && (
-            <button className="link-btn" onClick={() => openModal('friends')}>
-              <Users size={18} /> Amis
-              {account.incoming > 0 && (
-                <span className="link-btn__badge">{account.incoming}</span>
-              )}
-            </button>
-          )}
-          <button
-            className="link-btn"
-            onClick={() => openModal('achievements')}
-            aria-label={
-              unpaid > 0 ? `Hauts faits, ${unpaid} primes à toucher` : undefined
-            }
-          >
-            <Trophy size={18} /> Hauts faits
-            {unpaid > 0 && (
-              <span className="link-btn__badge" aria-hidden="true">
-                {unpaid}
-              </span>
+        <nav className="hub" aria-label="Menu">
+          <div className="hub__tiles">
+            <HubTile
+              icon={<ShoppingBag size={20} />}
+              label="Boutique"
+              meta={`${collected} / ${COLLECTIBLES.length} objets`}
+              onClick={() => openModal('shop')}
+            />
+            <HubTile
+              icon={<Trophy size={20} />}
+              label="Hauts faits"
+              meta={`${achievementsDone} / ${ACHIEVEMENTS.length}`}
+              badge={unpaid}
+              badgeLabel={`${unpaid} prime${unpaid > 1 ? 's' : ''} à toucher`}
+              onClick={() => openModal('achievements')}
+            />
+            <HubTile
+              icon={<BarChart3 size={20} />}
+              label="Statistiques"
+              meta={
+                stats.gamesWon > 0
+                  ? `${formatNumber(stats.gamesWon)} victoire${stats.gamesWon > 1 ? 's' : ''}`
+                  : 'Aucune victoire'
+              }
+              onClick={() => openModal('stats')}
+            />
+            {accountsEnabled && (
+              <HubTile
+                icon={<Users size={20} />}
+                label="Amis"
+                meta={
+                  account.status !== 'online'
+                    ? 'Avec un compte'
+                    : account.incoming > 0
+                      ? `${account.incoming} demande${account.incoming > 1 ? 's' : ''}`
+                      : 'Cartes et records'
+                }
+                badge={account.incoming}
+                badgeLabel={`${account.incoming} demande${account.incoming > 1 ? 's' : ''} d’ami`}
+                onClick={() => openModal('friends')}
+              />
             )}
-          </button>
-          <button className="link-btn" onClick={() => openModal('missions')}>
-            <Target size={18} /> Missions
-          </button>
-          <button
-            className="link-btn link-btn--legend"
-            data-unlocked={legendary}
-            onClick={() => openModal('legend')}
-          >
-            <Crown size={18} /> Salon légendaire
-            {!legendary && <Lock size={13} aria-hidden="true" />}
-          </button>
-          <button className="link-btn" onClick={() => openModal('shop')}>
-            <ShoppingBag size={18} /> Boutique
-          </button>
-          <button className="link-btn" onClick={() => openModal('stats')}>
-            <BarChart3 size={18} /> Statistiques
-          </button>
-          <button className="link-btn" onClick={() => openModal('rules')}>
-            <BookOpen size={18} /> Règles
-          </button>
-          <button className="link-btn" onClick={() => openModal('settings')}>
-            <Settings size={18} /> Réglages
-          </button>
+            {legendary && (
+              <HubTile
+                tone="legend"
+                icon={<BlackChip size={24} />}
+                label="Salon légendaire"
+                shortLabel="Le Salon"
+                meta={`${formatNumber(legend.black)} jetons noirs`}
+                onClick={() => openModal('legend')}
+              />
+            )}
+          </div>
+          <div className="hub__more">
+            <button className="hub__link" onClick={() => openModal('profile')}>
+              <UserRound size={16} /> Profil
+            </button>
+            <button className="hub__link" onClick={() => openModal('rules')}>
+              <BookOpen size={16} /> Règles
+            </button>
+            <button className="hub__link" onClick={() => openModal('settings')}>
+              <Settings size={16} /> Réglages
+            </button>
+          </div>
         </nav>
       </main>
     </div>
+  );
+}
+
+/** Raccourci du menu de l'accueil: icone, nom et etat en un coup d'oeil. */
+function HubTile({
+  icon,
+  label,
+  shortLabel,
+  meta,
+  badge = 0,
+  badgeLabel,
+  tone,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  /** Nom abrege, sur telephone. */
+  shortLabel?: string;
+  meta: string;
+  badge?: number;
+  badgeLabel?: string;
+  tone?: 'legend';
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className="hub-tile"
+      data-tone={tone}
+      onClick={onClick}
+      aria-label={`${label}, ${meta}${badge > 0 && badgeLabel ? `, ${badgeLabel}` : ''}`}
+    >
+      <span className="hub-tile__icon" aria-hidden="true">
+        {icon}
+        {badge > 0 && <span className="hub-tile__badge">{badge}</span>}
+      </span>
+      <span className="hub-tile__text">
+        <strong>
+          {shortLabel ? (
+            <>
+              <span className="hub-tile__long">{label}</span>
+              <span className="hub-tile__short">{shortLabel}</span>
+            </>
+          ) : (
+            label
+          )}
+        </strong>
+        <span>{meta}</span>
+      </span>
+      <ChevronRight className="hub-tile__chev" size={16} aria-hidden="true" />
+    </button>
   );
 }
 
@@ -597,8 +667,8 @@ function RankTrack() {
       <button
         className="rank-track"
         data-tier="legend"
-        onClick={() => openModal('legend')}
-        aria-label={`${legendLabel(legend.level)}: encore ${formatNumber(left)} jetons à gagner pour ${legendLabel(legend.level + 1)}. Ouvrir le Salon légendaire.`}
+        onClick={() => openModal('ranks')}
+        aria-label={`${legendLabel(legend.level)}: encore ${formatNumber(left)} jetons à gagner pour ${legendLabel(legend.level + 1)}. Voir les rangs.`}
       >
         <RankEmblem
           tier="legend"
@@ -640,8 +710,8 @@ function RankTrack() {
       <button
         className="rank-track rank-track--sealed"
         data-tier={tier.id}
-        onClick={() => openModal('legend')}
-        aria-label={`Rang ${tier.label}. Prochain: le rang Légendaire. ${chipsLeft > 0 ? `Encore ${formatNumber(chipsLeft)} jetons à gagner` : 'Million atteint'}${needTable ? ', et une victoire à la Table Légende' : ''}.`}
+        onClick={() => openModal('ranks')}
+        aria-label={`Rang ${tier.label}. Prochain: un rang scellé. ${chipsLeft > 0 ? `Encore ${formatNumber(chipsLeft)} jetons à gagner` : 'Million atteint'}${needTable ? ', et une victoire à la Table Légende' : ''}. Voir les rangs.`}
       >
         <RankEmblem
           tier={tier.id}
@@ -654,10 +724,7 @@ function RankTrack() {
           <span className="rank-track__arrow" aria-hidden="true">
             →
           </span>
-          <span className="rank rank-track__secret" data-tier="legend">
-            <Lock size={11} aria-hidden="true" />
-            <span className="rank__label">Légendaire</span>
-          </span>
+          <RankBadge tier="legend" level={0} emblem={false} />
           <span className="rank-track__left">
             {chipsLeft > 0 ? (
               <>

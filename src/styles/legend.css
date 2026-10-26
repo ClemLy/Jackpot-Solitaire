@@ -118,15 +118,6 @@
 
 /* ---- Accueil ---- */
 
-.link-btn--legend {
-  color: #e9cdff;
-}
-.link-btn--legend[data-unlocked='false'] {
-  color: var(--on-felt-2);
-}
-.link-btn--legend[data-unlocked='false'] svg:last-child {
-  opacity: 0.6;
-}
 .rank-track[data-tier='legend'] {
   background:
     radial-gradient(
@@ -135,13 +126,6 @@
       transparent 60%
     ),
     rgba(11, 9, 16, 0.72);
-}
-.rank-track__secret {
-  gap: 4px;
-  font-size: 0.82rem;
-}
-.rank-track__secret svg {
-  color: var(--lg-violet-2);
 }
 .rank-track--sealed .rank-track__left strong {
   color: #e9cdff;
@@ -926,21 +910,7 @@
   flex: none;
 }
 .lg-seal__emblem .rank-emblem {
-  filter: grayscale(0.35) brightness(0.8)
-    drop-shadow(0 0 14px rgba(176, 124, 255, 0.55));
-}
-.lg-seal__lock {
-  position: absolute;
-  right: -4px;
-  bottom: 2px;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  color: #f1dcff;
-  background: #0b0910;
-  box-shadow: inset 0 0 0 1.5px var(--lg-violet-2);
+  filter: drop-shadow(0 0 16px rgba(176, 124, 255, 0.6));
 }
 .lg-seal__copy {
   display: grid;
@@ -1026,46 +996,6 @@
 .lg-trial__cta {
   align-self: center;
   flex: none;
-}
-
-.lg-teasers {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-.lg-teasers li {
-  display: grid;
-  justify-items: start;
-  gap: 4px;
-  padding: 14px;
-  border-radius: var(--r-md);
-  background: linear-gradient(
-    165deg,
-    rgba(40, 24, 62, 0.5),
-    rgba(11, 9, 16, 0.5)
-  );
-  box-shadow: inset 0 0 0 1px rgba(201, 160, 255, 0.16);
-  font-size: 0.8rem;
-  color: var(--text-2);
-}
-.lg-teasers li > :first-child {
-  margin-bottom: 4px;
-}
-.lg-teasers strong {
-  font-family: var(--font-display);
-  font-weight: 650;
-  font-size: 1rem;
-  color: #f1dcff;
-}
-.lg-teasers__icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  color: var(--lg-violet-2);
-  background: rgba(176, 124, 255, 0.14);
 }
 
 /* Silhouettes des objets: on devine, on ne voit pas. */
@@ -1284,10 +1214,6 @@
     width: 72px;
     height: 72px;
   }
-  .lg-seal__lock {
-    width: 28px;
-    height: 28px;
-  }
   .lg-hero .lg-eyebrow,
   .lg-seal .lg-eyebrow {
     align-self: end;
@@ -1306,18 +1232,8 @@
   .lg-seal__copy p {
     grid-column: 1 / -1;
   }
-  .lg-trials,
-  .lg-teasers {
+  .lg-trials {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .lg-teasers li {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    column-gap: 12px;
-  }
-  .lg-teasers li > :first-child {
-    grid-row: span 2;
-    margin: 0;
   }
   .lg-silhouettes {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1759,4 +1675,153 @@
   background:
     radial-gradient(ellipse at 50% 30%, rgba(201, 160, 255, 0.12), transparent),
     #140d1f;
+}
+
+/* ---- Rang scelle: avant l'accession, le mystere ---- */
+
+.rank-emblem[data-sealed='true'] {
+  filter: drop-shadow(0 0 6px rgba(176, 124, 255, 0.55));
+}
+.rank-emblem__mark {
+  animation: sealMark 3.4s ease-in-out infinite;
+}
+@keyframes sealMark {
+  50% {
+    fill: #f1dcff;
+    opacity: 0.55;
+  }
+}
+.rank[data-tier='legend'] .rank__label {
+  letter-spacing: 0.06em;
+}
+.lg-seal__hero {
+  position: relative;
+}
+.lg-seal__title {
+  letter-spacing: 0.12em;
+}
+.lg-seal__count {
+  flex: none;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  margin-left: auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #f1dcff;
+  background: rgba(11, 9, 16, 0.7);
+  box-shadow: inset 0 0 0 1px var(--lg-line);
+  font-variant-numeric: tabular-nums;
+}
+.lg-seal__count small {
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+.lg-trial__mark {
+  font-family: Georgia, var(--font-display), serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.lg-trial__kicker {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lg-violet-2);
+}
+.lg-rumors {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.lg-rumors li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: #e9dcf5;
+  background: linear-gradient(
+    165deg,
+    rgba(40, 24, 62, 0.5),
+    rgba(11, 9, 16, 0.5)
+  );
+  box-shadow: inset 0 0 0 1px rgba(201, 160, 255, 0.16);
+}
+.lg-rumors__glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--lg-violet-2);
+  background: rgba(11, 9, 16, 0.8);
+  box-shadow: inset 0 0 0 1px var(--lg-line);
+  filter: blur(0.6px) brightness(0.75);
+}
+.lg-whisper {
+  margin-top: 16px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--text-3);
+}
+@media (max-width: 640px) {
+  .lg-rumors {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lg-seal__count {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rank-emblem__mark {
+    animation: none;
+  }
+}
+.rk-seal-text {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: #e9dcf5;
+}
+
+/* ---- Tuile du Salon dans le menu de l'accueil ---- */
+
+.hub-tile[data-tone='legend'] {
+  background:
+    radial-gradient(
+      120% 200% at 0% 50%,
+      rgba(176, 124, 255, 0.22),
+      transparent 60%
+    ),
+    rgba(11, 9, 16, 0.6);
+  box-shadow: inset 0 0 0 1px var(--lg-line);
+}
+.hub-tile[data-tone='legend'] .hub-tile__icon {
+  background: rgba(11, 9, 16, 0.85);
+  box-shadow: inset 0 0 0 1px var(--lg-line);
+}
+.hub-tile[data-tone='legend'] .hub-tile__text strong {
+  color: #f1dcff;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hub-tile[data-tone='legend']:hover {
+    box-shadow:
+      inset 0 0 0 1px var(--lg-violet-2),
+      0 12px 26px -14px rgba(176, 124, 255, 0.7);
+  }
 }
