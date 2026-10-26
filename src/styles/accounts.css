@@ -111,10 +111,20 @@
   }
 }
 .portrait[data-frame='cadre-rang-diamond'] {
-  filter: drop-shadow(0 0 7px rgba(180, 205, 255, 0.55));
+  background: radial-gradient(
+    circle closest-side at 50% 52.9%,
+    transparent 76%,
+    rgba(180, 205, 255, 0.55) 89%,
+    transparent 100%
+  );
 }
 .portrait[data-frame='cadre-royal'] {
-  filter: drop-shadow(0 0 7px rgba(243, 210, 124, 0.5));
+  background: radial-gradient(
+    circle closest-side at 50% 52.9%,
+    transparent 76%,
+    rgba(243, 210, 124, 0.5) 89%,
+    transparent 100%
+  );
 }
 
 /* ---- Avatars: effets des avatars payants ---- */
@@ -265,7 +275,6 @@
   padding: 5px 12px 5px 5px;
   border-radius: 999px;
   background: var(--surface);
-  backdrop-filter: blur(10px);
   box-shadow:
     inset 0 0 0 1px var(--line-gold),
     0 10px 24px -14px rgba(0, 0, 0, 0.7);
@@ -755,7 +764,7 @@
   animation-delay: calc(var(--i) * -0.55s);
 }
 .pcard__sparkle {
-  filter: drop-shadow(0 0 3px #fff);
+  background: #fffaf0;
 }
 .pcard__comet {
   top: 14%;
@@ -812,7 +821,6 @@
 }
 .pcard__bulbs {
   --bulb: 1cqw;
-  filter: drop-shadow(0 0 2px rgba(255, 210, 90, 0.9));
   animation: pcardChase 0.8s steps(1) infinite;
 }
 .pcard__bulbs--top,

@@ -15,7 +15,6 @@
   padding: 0 14px;
   border-radius: 999px;
   background: var(--surface);
-  backdrop-filter: blur(10px);
   box-shadow: inset 0 0 0 1px var(--line);
   color: var(--text);
   font-size: 0.8rem;
@@ -313,7 +312,6 @@
   padding: 12px;
   border-radius: 20px;
   background: rgba(14, 19, 17, 0.97);
-  backdrop-filter: blur(16px);
   box-shadow:
     inset 0 0 0 1px var(--line-gold),
     var(--shadow-3);
@@ -468,7 +466,6 @@
   padding: 0 12px 0 14px;
   border-radius: 999px;
   background: rgba(10, 14, 12, 0.88);
-  backdrop-filter: blur(12px);
   box-shadow:
     inset 0 0 0 1px var(--line-gold),
     var(--shadow-1);
@@ -503,7 +500,6 @@
   padding: 10px 12px 12px;
   border-radius: 18px;
   background: rgba(10, 14, 12, 0.94);
-  backdrop-filter: blur(14px);
   box-shadow:
     inset 0 0 0 1px var(--line-gold),
     var(--shadow-2);
@@ -705,7 +701,6 @@
   text-align: left;
   color: var(--text);
   background: rgba(16, 22, 19, 0.88);
-  backdrop-filter: blur(10px);
   box-shadow: inset 0 0 0 1px var(--line-gold);
   transition:
     background-color 200ms ease,

@@ -1,0 +1,61 @@
+/* ---------------------------------------------------------------------------
+   Fluidite. Les animations decoratives ne tournent que la ou on les voit:
+   - l'ecran couvert par une fenetre (ou un bordereau de fin de manche) se
+     fige: il est cache sous un voile, inutile de le redessiner;
+   - les vignettes des grilles (boutique, Salon, profil) restent immobiles
+     et s'animent au survol: des dizaines d'animations simultanees saturent
+     les machines modestes.
+--------------------------------------------------------------------------- */
+
+.app[data-covered='true']::before,
+.app[data-covered='true'] > .home *,
+.app[data-covered='true'] > .home *::before,
+.app[data-covered='true'] > .home *::after,
+.app[data-covered='true'] > .game *,
+.app[data-covered='true'] > .game *::before,
+.app[data-covered='true'] > .game *::after {
+  animation-play-state: paused !important;
+}
+
+.item:not(:hover, :focus-within) .preview *,
+.item:not(:hover, :focus-within) .preview *::before,
+.item:not(:hover, :focus-within) .preview *::after,
+.item:not(:hover, :focus-within) .preview::after,
+.choice:not(:hover, :focus-visible) .choice__art *,
+.choice:not(:hover, :focus-visible) .choice__art *::before,
+.choice:not(:hover, :focus-visible) .choice__art *::after,
+.lg-silhouettes *,
+.lg-silhouettes *::before,
+.lg-silhouettes *::after {
+  /* Sans animation du tout (et non en pause): une animation en pause garde
+     sa couche de composition, et des centaines de couches coutent cher. */
+  animation: none !important;
+}
+
+/* Cartes decoratives (apercus de la boutique, eventail de l'accueil): elles
+   ne se retournent jamais. On les dessine a plat, sans la 3D du plateau, qui
+   donne a chaque face sa propre couche de composition (des centaines dans
+   les grilles de la boutique et du Salon). */
+.preview .card,
+.hero-fan .card {
+  perspective: none;
+}
+.preview .card__inner,
+.hero-fan .card__inner {
+  transform-style: flat;
+  transform: none !important;
+}
+.preview .card__front,
+.preview .card__back,
+.hero-fan .card__front,
+.hero-fan .card__back {
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  transform: none;
+}
+.preview .card[data-face-up='false'] .card__front,
+.hero-fan .card[data-face-up='false'] .card__front,
+.preview .card[data-face-up='true'] .card__back,
+.hero-fan .card[data-face-up='true'] .card__back {
+  display: none;
+}

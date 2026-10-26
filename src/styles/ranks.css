@@ -14,12 +14,16 @@
   flex: none;
   overflow: visible;
 }
+/* Halo des emblemes: une ombre portee par le cercle, et non un filtre, qui
+   serait recalcule a chaque image de leurs animations. */
 .rank-emblem[data-tier='gold'],
 .rank-emblem[data-tier='platinum'] {
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tier) 35%, transparent));
+  border-radius: 50%;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--tier) 35%, transparent);
 }
 .rank-emblem[data-tier='diamond'] {
-  filter: drop-shadow(0 0 8px rgba(180, 205, 255, 0.6));
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(180, 205, 255, 0.5);
 }
 .rank-emblem__shine {
   animation: rankShine 3.6s ease-in-out infinite;
@@ -86,9 +90,6 @@
   background-clip: text;
   color: transparent;
 }
-.rank[data-tier='gold'] .rank__label {
-  filter: drop-shadow(0 0 6px rgba(243, 210, 124, 0.35));
-}
 .rank[data-tier='platinum'] .rank__label {
   background:
     linear-gradient(
@@ -118,7 +119,6 @@
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
-  filter: drop-shadow(0 0 6px rgba(180, 205, 255, 0.55));
   animation: rankPrism 6s linear infinite;
 }
 @keyframes rankTextShine {
@@ -598,8 +598,7 @@
   padding: 10px 14px;
   border-radius: var(--r-md);
   text-align: left;
-  background: rgba(10, 14, 12, 0.55);
-  backdrop-filter: blur(8px);
+  background: rgba(10, 14, 12, 0.72);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tier) 40%, transparent);
   transition:
     transform 180ms var(--ease-out),

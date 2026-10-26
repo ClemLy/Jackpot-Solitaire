@@ -680,6 +680,35 @@ function drawBlackChip(ctx: CanvasRenderingContext2D, r: number): void {
   ctx.fill();
 }
 
+/**
+ * Jeton noir pre-dessine une fois, halo compris: le flou d'une ombre de
+ * canvas, recalcule pour chaque jeton a chaque image, coute trop cher.
+ */
+let blackChipSprite: HTMLCanvasElement | null = null;
+const SPRITE_R = 40;
+const SPRITE_PAD = 14;
+function blackChipImage(): HTMLCanvasElement {
+  if (blackChipSprite) return blackChipSprite;
+  const size = (SPRITE_R + SPRITE_PAD) * 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.translate(size / 2, size / 2);
+    ctx.shadowColor = 'rgba(176, 124, 255, 0.6)';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = '#0B0910';
+    ctx.beginPath();
+    ctx.arc(0, 0, SPRITE_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    drawBlackChip(ctx, SPRITE_R);
+  }
+  blackChipSprite = canvas;
+  return canvas;
+}
+
 /** Pluie noire: des jetons noirs tombent en tournoyant, des eclats d'or. */
 function blackRainScene(
   width: number,
@@ -715,9 +744,12 @@ function blackRainScene(
   const max = preview ? 36 : 70;
   let spawned = 0;
   let acc = 0;
+  const sprite = blackChipImage();
+  const half = sprite.width / 2;
   return {
     trails: false,
     frame: (ctx, t, dt) => {
+      const dpr = ctx.getTransform().a;
       const k = dt / 16.67;
       acc += dt;
       // En partie, la pluie ne cesse jamais; l'apercu s'arrete de lui-meme.
@@ -742,17 +774,22 @@ function blackRainScene(
           }
           continue;
         }
-        ctx.save();
-        ctx.translate(d.x, d.y);
-        ctx.rotate(d.rot);
         // Le jeton tourne sur lui-meme: on l'ecrase selon l'angle.
-        const sx = Math.cos(d.flip);
-        ctx.scale(Math.max(0.12, Math.abs(sx)), 1);
-        ctx.shadowColor = 'rgba(176, 124, 255, 0.55)';
-        ctx.shadowBlur = 10;
-        drawBlackChip(ctx, d.r);
-        ctx.restore();
+        const sx = Math.max(0.12, Math.abs(Math.cos(d.flip)));
+        const k2 = d.r / SPRITE_R;
+        const cos = Math.cos(d.rot);
+        const sin = Math.sin(d.rot);
+        ctx.setTransform(
+          dpr * cos * sx * k2,
+          dpr * sin * sx * k2,
+          -dpr * sin * k2,
+          dpr * cos * k2,
+          dpr * d.x,
+          dpr * d.y,
+        );
+        ctx.drawImage(sprite, -half, -half);
       }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       for (let i = glints.length - 1; i >= 0; i--) {
         const g = glints[i];
         g.life -= 0.03 * k;
@@ -850,13 +887,17 @@ function eclipseScene(width: number, height: number, preview: boolean): Scene {
       ctx.rotate(t / 9000);
       ctx.globalAlpha = 0.5 * a;
       ctx.strokeStyle = '#FFF1BF';
-      for (let i = 0; i < 48; i++) {
-        const ang = (i / 48) * Math.PI * 2;
-        const len = R * (1.5 + 0.5 * Math.sin(i * 1.7 + t / 500));
-        ctx.lineWidth = i % 3 === 0 ? 2 : 1;
+      // Deux traces en tout (rayons fins, rayons epais), et non un par rayon.
+      for (const thick of [false, true]) {
+        ctx.lineWidth = thick ? 2 : 1;
         ctx.beginPath();
-        ctx.moveTo(Math.cos(ang) * R * 1.02, Math.sin(ang) * R * 1.02);
-        ctx.lineTo(Math.cos(ang) * len, Math.sin(ang) * len);
+        for (let i = 0; i < 48; i++) {
+          if ((i % 3 === 0) !== thick) continue;
+          const ang = (i / 48) * Math.PI * 2;
+          const len = R * (1.5 + 0.5 * Math.sin(i * 1.7 + t / 500));
+          ctx.moveTo(Math.cos(ang) * R * 1.02, Math.sin(ang) * R * 1.02);
+          ctx.lineTo(Math.cos(ang) * len, Math.sin(ang) * len);
+        }
         ctx.stroke();
       }
       ctx.restore();

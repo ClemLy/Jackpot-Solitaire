@@ -581,7 +581,7 @@ src/
     LegendModal.tsx        Salon Légendaire (boutique, voie, jetons noirs)
     LegendCeremony.tsx     Cérémonie d'accession au rang Légendaire
   styles/      Tokens et tapis, cartes, plateau, interface, comptes, rangs,
-               rang Légendaire
+               rang Légendaire, fluidité (perf.css)
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
 server/        Fonction api : authentifie, rejoue et enregistre
 supabase/      Configuration, migration SQL (tables, verrous, quotas),
@@ -606,6 +606,13 @@ Choix techniques notables :
 - **Animations FLIP** via la Web Animations API, mesurées sur la position de
   mise en page plutôt que sur la position affichée : plusieurs cartes
   peuvent voler en même temps sans se fausser.
+- **Fluidité** : pas de flou d’arrière-plan (recalculé à chaque image dès
+  que quelque chose bouge dessous), des halos en ombres portées plutôt
+  qu’en filtres, des animations figées sous une fenêtre ouverte et, dans les
+  grilles de la boutique et du profil, des vignettes qui ne s’animent qu’au
+  survol. Les cartes décoratives sont dessinées à plat, et les effets de
+  victoire réutilisent des images pré-dessinées. Tout tient 60 images par
+  seconde, boutique et Salon compris.
 - **Colonnes adaptatives** : les écarts de chaque colonne sont calculés à
   partir de la hauteur réellement disponible.
 

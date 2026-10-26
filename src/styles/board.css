@@ -42,7 +42,6 @@
   color: var(--text);
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line);
-  backdrop-filter: blur(10px);
   transition: background-color 160ms ease;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -86,7 +85,6 @@
   border-radius: 999px;
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line);
-  backdrop-filter: blur(10px);
 }
 
 .hud__stat {
@@ -137,7 +135,6 @@
   box-shadow:
     inset 0 0 0 1px var(--line-gold),
     0 8px 24px -14px rgba(227, 185, 90, 0.7);
-  backdrop-filter: blur(10px);
   color: var(--gold-100);
 }
 .pot__body {
@@ -475,12 +472,11 @@
   margin: 6px auto max(12px, env(safe-area-inset-bottom));
   padding: 6px;
   border-radius: 22px;
-  background: rgba(10, 14, 12, 0.78);
+  background: rgba(10, 14, 12, 0.9);
   box-shadow:
     inset 0 0 0 1px var(--line),
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     var(--shadow-2);
-  backdrop-filter: blur(16px) saturate(130%);
   position: relative;
   z-index: 5;
 }

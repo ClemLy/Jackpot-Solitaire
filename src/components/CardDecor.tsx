@@ -217,6 +217,13 @@ function InfinitySign() {
         strokeWidth="1.2"
       />
       <path
+        d={d}
+        fill="none"
+        stroke="#C9A0FF"
+        strokeOpacity="0.2"
+        strokeWidth="5"
+      />
+      <path
         className="pcard__infinity-run"
         d={d}
         fill="none"

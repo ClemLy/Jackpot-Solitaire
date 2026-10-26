@@ -137,6 +137,7 @@ export default function App() {
       data-face={cardFace}
       data-motion={reducedMotion ? 'reduced' : 'full'}
       data-route={route}
+      data-covered={modal !== 'none' || overlay !== 'none' ? 'true' : undefined}
     >
       <SuitSprite />
       {route === 'home' ? <Home /> : <GameScreen />}

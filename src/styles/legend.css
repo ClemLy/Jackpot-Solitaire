@@ -29,12 +29,14 @@
 /* ---- Embleme ---- */
 
 .rank-emblem[data-tier='legend'] {
-  filter: drop-shadow(0 0 7px rgba(176, 124, 255, 0.5));
+  border-radius: 50%;
+  box-shadow: 0 0 7px rgba(176, 124, 255, 0.45);
 }
 .rank-emblem[data-aura='3'],
 .rank-emblem[data-aura='4'] {
-  filter: drop-shadow(0 0 10px rgba(243, 210, 124, 0.45))
-    drop-shadow(0 0 6px rgba(176, 124, 255, 0.6));
+  box-shadow:
+    0 0 10px rgba(243, 210, 124, 0.35),
+    0 0 6px rgba(176, 124, 255, 0.5);
 }
 .rank-emblem[data-tier='legend'] .rank-emblem__rays {
   animation-duration: 26s;
@@ -62,7 +64,6 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 6px rgba(176, 124, 255, 0.5));
   animation: rankPrism 7s linear infinite;
 }
 .rank-pill[data-tier='legend'] {
@@ -90,7 +91,6 @@
 
 .black-chip {
   flex: none;
-  filter: drop-shadow(0 0 4px rgba(176, 124, 255, 0.45));
 }
 .balance--black {
   color: #f1dcff;
@@ -157,7 +157,7 @@
 /* Meme verrouille, l'embleme legendaire garde son eclat: il doit donner envie. */
 .rk-step--legend[data-state='next'] .rk-step__node .rank-emblem,
 .rk-step--legend[data-state='locked'] .rk-step__node .rank-emblem {
-  filter: drop-shadow(0 0 6px rgba(176, 124, 255, 0.5)) brightness(0.85);
+  opacity: 0.88;
 }
 .rk-step--legend[data-state='current'] .rk-step__status {
   color: #1a0f2a;
@@ -208,7 +208,8 @@
   color: #e9cdff;
 }
 .vip-ladder li[data-tier='legend'] .rank-emblem {
-  filter: drop-shadow(0 0 4px rgba(176, 124, 255, 0.6));
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(176, 124, 255, 0.6);
 }
 
 .lg-entry {
@@ -910,7 +911,8 @@
   flex: none;
 }
 .lg-seal__emblem .rank-emblem {
-  filter: drop-shadow(0 0 16px rgba(176, 124, 255, 0.6));
+  border-radius: 50%;
+  box-shadow: 0 0 22px rgba(176, 124, 255, 0.5);
 }
 .lg-seal__copy {
   display: grid;
@@ -1489,10 +1491,20 @@
 /* ---- Cadres ---- */
 
 .portrait[data-frame='cadre-legende'] {
-  filter: drop-shadow(0 0 7px rgba(176, 124, 255, 0.55));
+  background: radial-gradient(
+    circle closest-side at 50% 52.9%,
+    transparent 76%,
+    rgba(176, 124, 255, 0.55) 89%,
+    transparent 100%
+  );
 }
 .portrait[data-frame='cadre-eclipse'] {
-  filter: drop-shadow(0 0 9px rgba(243, 210, 124, 0.45));
+  background: radial-gradient(
+    circle closest-side at 50% 52.9%,
+    transparent 76%,
+    rgba(243, 210, 124, 0.45) 89%,
+    transparent 100%
+  );
 }
 .frame-flame-legend {
   transform-box: fill-box;
@@ -1587,7 +1599,6 @@
   width: 96%;
   translate: -50% -50%;
   overflow: visible;
-  filter: drop-shadow(0 0 6px rgba(201, 160, 255, 0.8));
 }
 .pcard__infinity-run {
   stroke-dasharray: 22 78;
@@ -1680,7 +1691,8 @@
 /* ---- Rang scelle: avant l'accession, le mystere ---- */
 
 .rank-emblem[data-sealed='true'] {
-  filter: drop-shadow(0 0 6px rgba(176, 124, 255, 0.55));
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(176, 124, 255, 0.5);
 }
 .rank-emblem__mark {
   animation: sealMark 3.4s ease-in-out infinite;
@@ -2031,10 +2043,20 @@
 /* ---- Cadres: Orbite et Ouroboros ---- */
 
 .portrait[data-frame='cadre-orbite'] {
-  filter: drop-shadow(0 0 7px rgba(143, 211, 255, 0.45));
+  background: radial-gradient(
+    circle closest-side at 50% 52.9%,
+    transparent 76%,
+    rgba(143, 211, 255, 0.45) 89%,
+    transparent 100%
+  );
 }
 .portrait[data-frame='cadre-ouroboros'] {
-  filter: drop-shadow(0 0 8px rgba(243, 210, 124, 0.5));
+  background: radial-gradient(
+    circle closest-side at 50% 52.9%,
+    transparent 76%,
+    rgba(243, 210, 124, 0.5) 89%,
+    transparent 100%
+  );
 }
 .frame-orbit {
   transform-box: view-box;

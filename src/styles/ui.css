@@ -52,7 +52,6 @@
   height: 40px;
   border-radius: 999px;
   background: var(--surface);
-  backdrop-filter: blur(10px);
   font-weight: 800;
   transition: background-color 160ms ease;
 }
@@ -711,8 +710,7 @@
   border-radius: var(--r-md);
   text-align: left;
   color: var(--on-felt);
-  background: rgba(6, 10, 8, 0.32);
-  backdrop-filter: blur(8px);
+  background: rgba(6, 10, 8, 0.5);
   box-shadow: inset 0 0 0 1px var(--line);
   transition:
     transform 180ms var(--ease-out),
@@ -840,8 +838,9 @@
   place-items: center;
   grid-template-columns: minmax(0, 1fr);
   padding: 16px;
-  background: rgba(3, 7, 5, 0.62);
-  backdrop-filter: blur(8px) saturate(120%);
+  /* Pas de flou d'arriere-plan: il serait recalcule a chaque image des
+     qu'un element anime de la fenetre bouge. Un voile plus dense suffit. */
+  background: rgba(3, 7, 5, 0.78);
   animation: fadeIn 200ms var(--ease-out);
 }
 
@@ -1604,7 +1603,6 @@
 /* Interrupteur d'assurance avant un quitte ou double. */
 .insure {
   display: flex;
-  backdrop-filter: blur(10px);
   align-items: center;
   gap: 12px;
   width: 100%;
