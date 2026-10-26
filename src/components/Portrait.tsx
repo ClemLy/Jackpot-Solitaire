@@ -1060,152 +1060,310 @@ const FRAMES: Record<string, () => ReactNode> = {
     </g>
   ),
 
-  // Orbite: un anneau de nuit, et trois astres qui tournent a des vitesses
-  // differentes sur leurs orbites.
+  // Orbite: une sphere armillaire. Deux cercles d'or croises, une planete
+  // a anneau, une lune et une comete qui tournent a des vitesses differentes.
   'cadre-orbite': () => (
     <g>
+      <defs>
+        <radialGradient id="frame-orb-planet" cx="35%" cy="30%" r="70%">
+          <stop offset="0" stopColor="#E9DDFF" />
+          <stop offset="0.5" stopColor="#8A4FE0" />
+          <stop offset="1" stopColor="#2A1060" />
+        </radialGradient>
+        <linearGradient id="frame-orb-gold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFF1BF" />
+          <stop offset="0.5" stopColor="#E3B95A" />
+          <stop offset="1" stopColor="#7A5517" />
+        </linearGradient>
+        <linearGradient id="frame-orb-tail" x1="1" y1="0" x2="0" y2="0">
+          <stop offset="0" stopColor="#E9F6FF" />
+          <stop offset="1" stopColor="#8FD3FF" stopOpacity="0" />
+        </linearGradient>
+      </defs>
       <circle
         cx="60"
         cy="60"
-        r="54"
+        r="54.5"
         fill="none"
         stroke="#0B1236"
-        strokeWidth="8"
-      />
-      <circle
-        cx="60"
-        cy="60"
-        r="58.2"
-        fill="none"
-        stroke="#C8D7FF"
-        strokeWidth="1"
-        opacity="0.8"
-      />
-      <circle
-        cx="60"
-        cy="60"
-        r="50.4"
-        fill="none"
-        stroke="#C8D7FF"
-        strokeWidth="0.7"
-        opacity="0.6"
+        strokeWidth="9"
       />
       <g
         className="frame-orbit frame-orbit--reverse"
-        style={{ '--d': '70s' } as CSSProperties}
+        style={{ '--d': '80s' } as CSSProperties}
       >
-        {around(18, 54, 5).map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="0.7" fill="#fff" opacity="0.8" />
+        {around(24, 54.5, 5).map(([x, y], i) => (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={i % 3 ? 0.6 : 1}
+            fill="#FFFFFF"
+            opacity={i % 3 ? 0.6 : 0.95}
+          />
         ))}
       </g>
       <circle
         cx="60"
         cy="60"
-        r="61.5"
+        r="59.4"
         fill="none"
-        stroke="#8FD3FF"
-        strokeWidth="0.6"
-        strokeDasharray="2 3"
-        opacity="0.55"
+        stroke="url(#frame-orb-gold)"
+        strokeWidth="1.6"
       />
-      <g className="frame-orbit" style={{ '--d': '26s' } as CSSProperties}>
+      <circle
+        cx="60"
+        cy="60"
+        r="50.2"
+        fill="none"
+        stroke="url(#frame-orb-gold)"
+        strokeWidth="1.1"
+      />
+      {/* Cercles armillaires croises, en or: ils passent derriere le
+          portrait (decoupes hors du disque). */}
+      <clipPath id="frame-orb-out">
+        <path d={annulus(50.5, 90)} clipRule="evenodd" />
+      </clipPath>
+      <g clipPath="url(#frame-orb-out)">
+        <ellipse
+          cx="60"
+          cy="60"
+          rx="66"
+          ry="18"
+          fill="none"
+          stroke="url(#frame-orb-gold)"
+          strokeWidth="1.2"
+          opacity="0.75"
+          transform="rotate(-24 60 60)"
+        />
+        <ellipse
+          cx="60"
+          cy="60"
+          rx="66"
+          ry="14"
+          fill="none"
+          stroke="#C8D7FF"
+          strokeWidth="0.6"
+          strokeDasharray="2 2.6"
+          opacity="0.6"
+          transform="rotate(28 60 60)"
+        />
+      </g>
+      {[0, 90, 180, 270].map((deg) => {
+        const [x, y] = polar(deg, 59.4);
+        return <Gem key={deg} x={x} y={y} r={2.6} color="#2F6BD6" />;
+      })}
+      <g className="frame-orbit" style={{ '--d': '30s' } as CSSProperties}>
         {(() => {
-          const [gx, gy] = polar(0, 61.5);
-          const [vx, vy] = polar(120, 61.5);
-          const [bx, by] = polar(240, 61.5);
+          const [px, py] = polar(48, 64);
           return (
-            <>
-              <circle
-                cx={gx}
-                cy={gy}
-                r="4.2"
-                fill="#F3D27C"
-                stroke="#8F6418"
-                strokeWidth="0.8"
-              />
-              <circle
-                cx={gx - 1.4}
-                cy={gy - 1.4}
-                r="1.3"
-                fill="#fff"
-                opacity="0.7"
-              />
-              <circle cx={vx} cy={vy} r="3.8" fill="#8A4FE0" />
+            <g>
+              <circle cx={px} cy={py} r="7" fill="#8A4FE0" opacity="0.25" />
+              <circle cx={px} cy={py} r="5" fill="url(#frame-orb-planet)" />
               <ellipse
-                cx={vx}
-                cy={vy}
-                rx="7"
-                ry="2"
+                cx={px}
+                cy={py}
+                rx="9.4"
+                ry="2.4"
                 fill="none"
-                stroke="#E9CDFF"
-                strokeWidth="0.9"
-                transform={`rotate(-25 ${vx} ${vy})`}
+                stroke="#F3D27C"
+                strokeWidth="1"
+                transform={`rotate(-22 ${px} ${py})`}
               />
-              <circle cx={bx} cy={by} r="2.6" fill="#8FD3FF" />
-            </>
+            </g>
           );
         })()}
       </g>
+      <g className="frame-orbit" style={{ '--d': '12s' } as CSSProperties}>
+        {(() => {
+          const [mx, my] = polar(200, 62.5);
+          return (
+            <g>
+              <circle cx={mx} cy={my} r="2.6" fill="#E9EEFF" />
+              <circle cx={mx - 0.8} cy={my - 0.6} r="0.8" fill="#B8C4E8" />
+            </g>
+          );
+        })()}
+      </g>
+      <g
+        className="frame-orbit frame-orbit--reverse"
+        style={{ '--d': '18s' } as CSSProperties}
+      >
+        {(() => {
+          const [cx, cy] = polar(300, 66);
+          return (
+            <g transform={`rotate(-30 ${cx} ${cy})`}>
+              <path
+                d={`M${cx} ${cy - 1.4} L${cx - 16} ${cy} L${cx} ${cy + 1.4} Z`}
+                fill="url(#frame-orb-tail)"
+              />
+              <circle cx={cx} cy={cy} r="1.8" fill="#FFFFFF" />
+            </g>
+          );
+        })()}
+      </g>
+      <Shine id="frame-orb-shine" inner={50} outer={59.5} />
     </g>
   ),
 
-  // Ouroboros: le serpent d'or se mord la queue, un cycle sans fin.
-  'cadre-ouroboros': () => (
-    <g className="frame-serpent">
-      <defs>
-        <linearGradient id="frame-ouro" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFF1BF" />
-          <stop offset="0.5" stopColor="#E3B95A" />
-          <stop offset="1" stopColor="#7A5517" />
-        </linearGradient>
-      </defs>
-      <path
-        d={`M${polar(18, 55)[0]} ${polar(18, 55)[1]} A55 55 0 1 1 ${polar(352, 55)[0]} ${polar(352, 55)[1]}`}
-        fill="none"
-        stroke="url(#frame-ouro)"
-        strokeWidth="9"
-        strokeLinecap="round"
-      />
-      <path
-        d={`M${polar(22, 55)[0]} ${polar(22, 55)[1]} A55 55 0 1 1 ${polar(350, 55)[0]} ${polar(350, 55)[1]}`}
-        fill="none"
-        stroke="#7A5517"
-        strokeWidth="9"
-        strokeDasharray="2.4 3.2"
-        opacity="0.35"
-      />
-      <path
-        d={`M${polar(22, 51.4)[0]} ${polar(22, 51.4)[1]} A51.4 51.4 0 1 1 ${polar(350, 51.4)[0]} ${polar(350, 51.4)[1]}`}
-        fill="none"
-        stroke="#FFF6DA"
-        strokeWidth="0.8"
-        opacity="0.7"
-      />
-      {(() => {
-        const [hx, hy] = polar(0, 55);
-        return (
-          <g
-            transform={`translate(${hx} ${hy}) rotate(4) scale(1.5) translate(${-hx} ${-hy})`}
+  // Ouroboros: le serpent d'or, couvert d'ecailles et serti d'emeraudes, se
+  // mord la queue; un cercle de runes tourne a l'envers autour de lui.
+  'cadre-ouroboros': () => {
+    const R = 54.5;
+    const arc = (r: number, from: number, to: number) => {
+      const [x0, y0] = polar(from, r);
+      const [x1, y1] = polar(to, r);
+      return `M${x0} ${y0} A${r} ${r} 0 1 1 ${x1} ${y1}`;
+    };
+    return (
+      <g>
+        <defs>
+          <linearGradient id="frame-ouro" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#FFF6DA" />
+            <stop offset="0.35" stopColor="#E3B95A" />
+            <stop offset="0.7" stopColor="#B07A22" />
+            <stop offset="1" stopColor="#6B4410" />
+          </linearGradient>
+          <radialGradient
+            id="frame-ouro-glow"
+            cx="60"
+            cy="60"
+            r="72"
+            gradientUnits="userSpaceOnUse"
           >
+            <stop offset="0.7" stopColor="#F3D27C" stopOpacity="0.5" />
+            <stop offset="1" stopColor="#F3D27C" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <path
+          d={annulus(50, 72)}
+          fill="url(#frame-ouro-glow)"
+          fillRule="evenodd"
+        />
+        <g
+          className="frame-orbit frame-orbit--reverse"
+          style={{ '--d': '90s' } as CSSProperties}
+        >
+          <circle
+            cx="60"
+            cy="60"
+            r="66"
+            fill="none"
+            stroke="#E3B95A"
+            strokeWidth="0.5"
+            opacity="0.6"
+          />
+          {around(16, 66, 0).map(([x, y, a], i) => (
             <path
-              d={`M${hx - 8} ${hy - 6} C${hx + 2} ${hy - 9} ${hx + 11} ${hy - 4} ${hx + 11} ${hy} C${hx + 11} ${hy + 4} ${hx + 2} ${hy + 9} ${hx - 8} ${hy + 6} Z`}
-              fill="url(#frame-ouro)"
-              stroke="#7A5517"
-              strokeWidth="0.8"
-            />
-            <circle cx={hx + 3} cy={hy - 3} r="1.6" fill="#C42A3D" />
-            <circle cx={hx + 3.4} cy={hy - 3.4} r="0.5" fill="#fff" />
-            <path
-              d={`M${hx + 11} ${hy + 0.5} L${hx + 15} ${hy - 1.5} M${hx + 11} ${hy + 0.5} L${hx + 15} ${hy + 2.5}`}
-              stroke="#C42A3D"
-              strokeWidth="0.9"
+              key={i}
+              d={
+                [
+                  'M-1.6 -2 V2 M-1.6 -2 L1.6 0',
+                  'M0 -2 V2 M-1.6 -0.6 H1.6',
+                  'M-1.6 2 L0 -2 L1.6 2',
+                  'M-1.4 -2 L1.4 2 M1.4 -2 L-1.4 2',
+                ][i % 4]
+              }
+              transform={`translate(${x} ${y}) rotate(${a + 90})`}
+              fill="none"
+              stroke="#FFE08A"
+              strokeWidth="0.7"
               strokeLinecap="round"
             />
-          </g>
-        );
-      })()}
-    </g>
-  ),
+          ))}
+        </g>
+        <g className="frame-serpent">
+          {/* Corps: or bombe, ventre clair, ecailles en deux rangs. */}
+          <path
+            d={arc(R, 16, 352)}
+            fill="none"
+            stroke="#5A3A0A"
+            strokeWidth="11"
+            strokeLinecap="round"
+          />
+          <path
+            d={arc(R, 16, 352)}
+            fill="none"
+            stroke="url(#frame-ouro)"
+            strokeWidth="9.4"
+            strokeLinecap="round"
+          />
+          <path
+            d={arc(R - 2.6, 18, 350)}
+            fill="none"
+            stroke="#FFF1BF"
+            strokeWidth="2"
+            opacity="0.55"
+          />
+          {[R + 1.6, R - 1.4].map((r, row) =>
+            Array.from({ length: 40 }, (_, i) => {
+              const deg = 20 + i * 8.2 + row * 4.1;
+              if (deg > 348) return null;
+              const [x, y] = polar(deg, r);
+              return (
+                <path
+                  key={`${row}-${i}`}
+                  d={`M${x - 2} ${y} Q${x} ${y + 2.4} ${x + 2} ${y}`}
+                  fill="none"
+                  stroke="#7A5517"
+                  strokeWidth="0.55"
+                  opacity="0.75"
+                  transform={`rotate(${deg} ${x} ${y})`}
+                />
+              );
+            }),
+          )}
+          {Array.from({ length: 9 }, (_, i) => {
+            const [x, y] = polar(40 + i * 36, R + 4.2);
+            return <Gem key={i} x={x} y={y} r={1.8} color="#1FA36F" />;
+          })}
+          {/* Queue effilee qui entre dans la gueule. */}
+          {(() => {
+            const [tx, ty] = polar(352, R);
+            const [ex, ey] = polar(4, R);
+            return (
+              <path
+                d={`M${tx} ${ty - 4} Q${(tx + ex) / 2} ${ey - 2} ${ex} ${ey} Q${(tx + ex) / 2} ${ey + 2} ${tx} ${ty + 4} Z`}
+                fill="url(#frame-ouro)"
+                stroke="#5A3A0A"
+                strokeWidth="0.5"
+              />
+            );
+          })()}
+          {/* Tete: machoires, cornes, oeil d'emeraude. */}
+          {(() => {
+            const [hx, hy] = polar(10, R);
+            return (
+              <g transform={`translate(${hx} ${hy}) rotate(10) scale(1.35)`}>
+                <path
+                  d="M-6 -5.4 C2 -8 9 -5 10.6 -1 L4 0.4 L10.6 2 C9 5.6 2 8 -6 5.4 C-8.4 2 -8.4 -2 -6 -5.4 Z"
+                  fill="url(#frame-ouro)"
+                  stroke="#5A3A0A"
+                  strokeWidth="0.6"
+                />
+                <path
+                  d="M-4 -5.2 L-9 -10 L-2 -6.4 Z M0 -6.4 L-2 -11.6 L3 -6.4 Z"
+                  fill="#E3B95A"
+                  stroke="#5A3A0A"
+                  strokeWidth="0.4"
+                />
+                <ellipse cx="2" cy="-2.6" rx="1.8" ry="1.3" fill="#1FA36F" />
+                <ellipse cx="2" cy="-2.6" rx="0.4" ry="1.1" fill="#0A1A12" />
+                <circle cx="2.6" cy="-3.1" r="0.35" fill="#FFFFFF" />
+                <path
+                  d="M-3 2.6 Q1 4 6 2.6"
+                  fill="none"
+                  stroke="#5A3A0A"
+                  strokeWidth="0.5"
+                />
+              </g>
+            );
+          })()}
+        </g>
+        <Shine id="frame-ouro-shine" inner={49} outer={60} />
+      </g>
+    );
+  },
 
   'cadre-royal': () => (
     <g className="frame-glow-royal">

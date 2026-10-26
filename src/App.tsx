@@ -20,6 +20,7 @@ import { WheelModal } from './components/WheelModal';
 import { NewGameModal } from './components/NewGameModal';
 import { ConfirmLeaveModal } from './components/ConfirmLeaveModal';
 import { SuitSprite } from './components/Suits';
+import { TableDecor } from './components/TableDecor';
 import { MissionsModal } from './components/MissionsModal';
 import { AuthModal } from './components/AuthModal';
 import { ProfileModal } from './components/ProfileModal';
@@ -140,6 +141,7 @@ export default function App() {
       data-covered={modal !== 'none' || overlay !== 'none' ? 'true' : undefined}
     >
       <SuitSprite />
+      <TableDecor table={table} />
       {route === 'home' ? <Home /> : <GameScreen />}
 
       {phase === 'won' && <VictoryLayer key={dealId} />}

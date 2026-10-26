@@ -346,6 +346,23 @@ le taux du niveau) :
 | Nouveau niveau | 10 + 5 × le niveau |
 | Bureau de change | 1 contre 50 000 jetons de la banque |
 
+Ces objets se méritent, ils sont donc travaillés comme des pièces de
+collection, de plus en plus riches avec le niveau :
+- **Avatars** : des illustrations complètes, avec décor, volumes,
+  lumière et animations. L’Ombre entourée de cartes flottantes ; le
+  Phénix aux ailes de plumes-flammes devant un soleil couchant ;
+  l’Oracle au troisième œil, avec une galaxie dans sa boule de cristal,
+  un cercle de runes et des cartes de tarot ; le Sphinx devant le
+  disque de Ra, avec nemes rayé, cobra royal et collier de gemmes.
+- **Tapis** : une vraie scène sous le plateau, qui s’adapte à la forme
+  de l’écran. Médaillon soleil Art déco du Salon noir, galaxie de la
+  Nébuleuse, méduses, rais de lumière et algues de l’Abysse, draperies
+  et candélabres de la Salle du trône. Les aperçus de la boutique les
+  montrent.
+- **Cadres et cartes** : sphère armillaire de l’Orbite, serpent
+  d’écailles serti d’émeraudes de l’Ouroboros, abysses peuplés de
+  Grands fonds, onde de choc et filigranes du Big Bang.
+
 **Le Salon Légendaire** s’ouvre depuis sa tuile dans le menu de l’accueil
 ou la pastille de jetons noirs (la jauge de rang, elle, mène toujours à
 l’écran des rangs). Il rassemble tout, en trois onglets :
@@ -576,6 +593,8 @@ src/
     ProfileCard.tsx Carte de profil et ligne d'ami
     Rank.tsx        Emblèmes et étiquettes des rangs VIP
     CardDecor.tsx   Ornements des cartes de profil
+    LegendAvatars.tsx  Avatars légendaires, illustrés en entier
+    TableDecor.tsx  Scènes des tapis légendaires, sous le plateau
     AchievementsModal.tsx  Écran des hauts faits
     RanksModal.tsx         Écran des rangs VIP
     LegendModal.tsx        Salon Légendaire (boutique, voie, jetons noirs)

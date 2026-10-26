@@ -4,7 +4,7 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 
-type CornerKind = 'deco' | 'marble' | 'gilded' | 'legend';
+type CornerKind = 'deco' | 'marble' | 'gilded' | 'legend' | 'abyss';
 
 /** Coin ornemental (dessine en haut a gauche, retourne pour les autres). */
 function CornerArt({ kind }: { kind: CornerKind }) {
@@ -24,6 +24,28 @@ function CornerArt({ kind }: { kind: CornerKind }) {
           <path d="M4 34 V8 Q4 4 8 4 H34" />
           <path d="M9 9 L13 13" />
           <path d="M11 6 L14 9 L11 12 L8 9 Z" fill="#C99532" stroke="none" />
+        </g>
+      );
+    case 'abyss':
+      // Coquillage et vagues d'argent bleute.
+      return (
+        <g fill="none" stroke="#9DE8F4" strokeWidth="1.1" strokeLinecap="round">
+          <path d="M3 38 C3 18 18 3 38 3" />
+          <path
+            d="M9 30 C12 24 16 22 20 24 C16 26 14 28 15 32"
+            strokeOpacity="0.8"
+          />
+          <path
+            d="M30 9 C24 12 22 16 24 20 C26 16 28 14 32 15"
+            strokeOpacity="0.8"
+          />
+          <path
+            d="M7 7 C12 4 17 6 18 11 C14 10 11 11 9 15 C6 13 5 10 7 7 Z"
+            fill="#9DE8F4"
+            fillOpacity="0.5"
+          />
+          <path d="M9 9 L14 14 M12 7 L15 12 M7 12 L12 15" strokeOpacity="0.6" />
+          <circle cx="22" cy="22" r="1.6" fill="#E9FCFF" stroke="none" />
         </g>
       );
     case 'gilded':
@@ -274,6 +296,200 @@ function Shards() {
   );
 }
 
+/** Grands fonds: rais de lumiere, meduses, banc de poissons, algues. */
+function AbyssScene() {
+  return (
+    <svg
+      className="pcard__scene"
+      viewBox="0 0 100 148"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="pc-ab-ray" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#B6F4FF" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#B6F4FF" stopOpacity="0" />
+        </linearGradient>
+        <radialGradient id="pc-ab-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#9DFFEE" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#9DFFEE" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <g className="pcard-sway-rays">
+        {[
+          [16, 10, 10],
+          [40, 8, -4],
+          [66, 12, 6],
+          [88, 7, -10],
+        ].map(([x, w, r], i) => (
+          <path
+            key={i}
+            d={`M${x - w / 2} -4 L${x + w / 2} -4 L${x + w * 1.6} 120 L${x - w * 1.6} 120 Z`}
+            fill="url(#pc-ab-ray)"
+            transform={`rotate(${r} ${x} -4)`}
+          />
+        ))}
+      </g>
+      <g
+        className="pcard-caustic"
+        fill="none"
+        stroke="#C8F8FF"
+        strokeOpacity="0.3"
+        strokeWidth="0.4"
+      >
+        {[4, 8, 12].map((y) => (
+          <path
+            key={y}
+            d={`M-10 ${y} C15 ${y - 2} 30 ${y + 2} 50 ${y} S85 ${y - 2} 110 ${y + 1}`}
+          />
+        ))}
+      </g>
+      {/* Meduses bioluminescentes. */}
+      {[
+        [14, 70, 0.16, '#9DFFEE', 0],
+        [88, 104, 0.12, '#C9A0FF', 1],
+        [80, 40, 0.09, '#7FE3FF', 2],
+      ].map(([x, y, s, hue, i]) => (
+        <g
+          key={i as number}
+          className="pcard-bob"
+          style={{ '--i': i } as CSSProperties}
+        >
+          <g transform={`translate(${x} ${y}) scale(${s})`}>
+            <circle cx="0" cy="-6" r="70" fill="url(#pc-ab-glow)" />
+            <path
+              d="M-40 0 C-40 -42 40 -42 40 0 C30 6 20 2 10 6 C0 2 -10 6 -20 2 C-30 6 -36 4 -40 0 Z"
+              fill={hue as string}
+              fillOpacity="0.45"
+              stroke={hue as string}
+              strokeWidth="2"
+            />
+            <g
+              fill="none"
+              stroke={hue as string}
+              strokeOpacity="0.6"
+              strokeWidth="2.4"
+            >
+              {[-28, -12, 4, 20, 32].map((tx) => (
+                <path
+                  key={tx}
+                  d={`M${tx} 4 C${tx + 10} 40 ${tx - 12} 70 ${tx + 4} 120`}
+                />
+              ))}
+            </g>
+          </g>
+        </g>
+      ))}
+      {/* Banc de poissons qui traverse lentement. */}
+      <g className="pcard-school" fill="#BFF6FF" fillOpacity="0.55">
+        {[
+          [0, 0],
+          [5, -2],
+          [9, 2],
+          [4, 4],
+          [12, -1],
+          [15, 3],
+        ].map(([dx, dy], i) => (
+          <path
+            key={i}
+            d={`M${10 + dx} ${92 + dy} l3 -1.2 l1.4 1.2 l-1.4 1.2 Z M${10 + dx} ${92 + dy} l-1.4 -1 v2 Z`}
+          />
+        ))}
+      </g>
+      {/* Fond: rochers, algues et coraux, pointes lumineuses. */}
+      {[
+        [6, 0.55, 0],
+        [12, 0.4, 1],
+        [93, 0.5, 2],
+        [87, 0.35, 3],
+      ].map(([x, k, i]) => (
+        <g key={i} className="pcard-kelp" style={{ '--i': i } as CSSProperties}>
+          <path
+            d={`M${x} 148 C${x - 5 * k} ${148 - 14 * k} ${x + 5 * k} ${148 - 26 * k} ${x - 1 * k} ${148 - 40 * k} C${x + 3 * k} ${148 - 26 * k} ${x - 1 * k} ${148 - 14 * k} ${x + 3 * k} 148`}
+            fill="#03303E"
+            stroke="#2A9AAA"
+            strokeOpacity="0.7"
+            strokeWidth="0.4"
+          />
+          <circle
+            cx={x - 1 * k}
+            cy={148 - 40 * k}
+            r={0.9 * k + 0.3}
+            fill="#9DFFEE"
+          />
+        </g>
+      ))}
+      <path
+        d="M0 148 C8 140 16 143 22 137 C26 141 30 144 34 148 Z M100 148 C92 141 86 144 80 138 C76 142 72 145 68 148 Z"
+        fill="#021821"
+      />
+    </svg>
+  );
+}
+
+/** Big Bang: nebuleuses, onde de choc qui se propage, eclats, filigranes. */
+function BigBangScene() {
+  return (
+    <svg
+      className="pcard__scene"
+      viewBox="0 0 100 148"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
+      <defs>
+        <radialGradient id="pc-bb-a" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#FF9AD5" stopOpacity="0.45" />
+          <stop offset="1" stopColor="#FF9AD5" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="pc-bb-b" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#8FD3FF" stopOpacity="0.4" />
+          <stop offset="1" stopColor="#8FD3FF" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="pc-bb-c" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#C9A0FF" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#C9A0FF" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="pc-bb-core" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#FFFFFF" />
+          <stop offset="0.2" stopColor="#FFF1BF" stopOpacity="0.9" />
+          <stop offset="0.55" stopColor="#F3D27C" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#F3D27C" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="18" cy="96" rx="40" ry="26" fill="url(#pc-bb-a)" />
+      <ellipse cx="86" cy="70" rx="36" ry="28" fill="url(#pc-bb-b)" />
+      <ellipse cx="60" cy="128" rx="44" ry="22" fill="url(#pc-bb-c)" />
+      <ellipse cx="28" cy="20" rx="30" ry="18" fill="url(#pc-bb-c)" />
+      <circle cx="50" cy="44" r="40" fill="url(#pc-bb-core)" />
+      {[0, 1, 2].map((i) => (
+        <circle
+          key={i}
+          className="pcard-shock"
+          style={{ '--i': i } as CSSProperties}
+          cx="50"
+          cy="44"
+          r="20"
+          fill="none"
+          stroke="#FFF1BF"
+          strokeWidth="0.8"
+        />
+      ))}
+      <ellipse
+        className="pcard-spin-slow"
+        cx="50"
+        cy="44"
+        rx="46"
+        ry="12"
+        fill="none"
+        stroke="#FFE6B0"
+        strokeOpacity="0.35"
+        strokeWidth="0.5"
+        strokeDasharray="1 2"
+      />
+    </svg>
+  );
+}
+
 /** Decor d'une carte de profil, selon son style. */
 export function CardDecor({ style }: { style: string }) {
   let decor: ReactNode = null;
@@ -378,22 +594,25 @@ export function CardDecor({ style }: { style: string }) {
     case 'carte-abysse':
       decor = (
         <>
-          <span className="pcard__rays" />
+          <AbyssScene />
           <Dots
             className="pcard__particle pcard__particle--bubble"
             points={BUBBLES}
           />
-          <span className="pcard__inlay pcard__inlay--stitch pcard__inlay--abyss" />
+          <span className="pcard__inlay pcard__inlay--abyss" />
+          <Corners kind="abyss" />
         </>
       );
       break;
     case 'carte-big-bang':
       decor = (
         <>
+          <BigBangScene />
           <span className="pcard__burst" />
           <Shards />
           <Dots className="pcard__star" points={VOID_STARS} />
-          <span className="pcard__rainbow" />
+          <Corners kind="legend" />
+          <span className="pcard__rainbow pcard__rainbow--legend" />
         </>
       );
       break;

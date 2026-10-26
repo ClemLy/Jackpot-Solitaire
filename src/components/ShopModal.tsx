@@ -48,6 +48,7 @@ import { VictoryLayer } from './VictoryLayer';
 import { ConsumableIcon } from './icons';
 import { Portrait } from './Portrait';
 import { CardDecor } from './CardDecor';
+import { TableDecor } from './TableDecor';
 import { RankBadge, RankEmblem } from './Rank';
 import { ChevronRight, Lock as LockIcon } from 'lucide-react';
 import {
@@ -145,6 +146,7 @@ export function Preview({
   if (item.category === 'table') {
     return (
       <div className="preview preview--table felt" data-table-preview={item.id}>
+        <TableDecor table={item.id} preview />
         <div className="preview__card preview__card--a">
           <CardView card={BACK_CARD} style={{ top: 0, left: 0 }} />
         </div>
