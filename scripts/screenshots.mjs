@@ -353,6 +353,27 @@ async function main() {
     await driveStore(page, () => window.__jackpot.game.getState().openModal('legend'));
     await sleep(900);
     await page.screenshot({ path: resolve(shotsDir, 'legendaire.png') });
+    // L'Atelier (niveau L), une composition en cours.
+    await driveStore(
+      page,
+      (s) => window.__jackpot.meta.setState(s),
+      {
+        wallet: { balance: 1_840_000, lifetimeEarned: 200_000_000, spent: 0 },
+        legend: { ...LEGEND_META.legend, level: 50, base: 200_000_000 - 1 },
+        inventory: {
+          ...LEGEND_META.inventory,
+          owned: [...LEGEND_META.inventory.owned, 'emerald', 'constellation', 'eclipse', 'triple7', 'phenix', 'oracle', 'sphinx'],
+        },
+      },
+    );
+    await page.getByRole('tab', { name: /Atelier/ }).click();
+    for (const [part, name] of [['Fond', 'Bordeaux'], ['Motif', 'Constellation'], ['Médaillon', 'Éclipse'], ['Liseré', 'Onyx']]) {
+      await page.getByRole('radiogroup', { name: part }).getByRole('radio', { name, exact: true }).click();
+    }
+    await sleep(600);
+    await page.locator('.sheet__body').evaluate((el) => el.scrollTo(0, 0));
+    await page.screenshot({ path: resolve(shotsDir, 'atelier.png') });
+    await driveStore(page, (s) => window.__jackpot.meta.setState(s), LEGEND_META);
     await driveStore(page, () => window.__jackpot.game.getState().closeModal());
     await driveStore(page, () =>
       window.__jackpot.meta.getState().notify({

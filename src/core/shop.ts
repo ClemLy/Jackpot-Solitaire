@@ -19,6 +19,13 @@ import {
 } from '../state/catalog';
 import { unpaidAchievements } from '../state/achievements';
 import {
+  ATELIER_LEVEL,
+  atelierSlot,
+  validAtelier,
+  type AtelierConfig,
+  type AtelierSlot,
+} from '../state/atelier';
+import {
   BLACK_WHEEL,
   EXCHANGE_PACKS,
   EXCHANGE_RATE,
@@ -262,4 +269,36 @@ export function claimAchievements(
     text: `+${formatNumber(amount)} jetons pour ${ids.length} hauts faits.`,
   });
   return tx.done({ amount, count: ids.length });
+}
+
+/**
+ * Atelier (niveau L): enregistre une composition et equipe l'objet sur
+ * mesure correspondant. Chaque piece doit venir de la collection du joueur.
+ */
+export function saveAtelier(
+  state: PlayerState,
+  slot: AtelierSlot,
+  config: AtelierConfig,
+  ctx: Ctx,
+): Outcome<{ slot: AtelierSlot; config: AtelierConfig }> {
+  const tx = new Tx(state, ctx);
+  const level = tx.s.legend.level;
+  if (level < ATELIER_LEVEL) {
+    throw new CoreError('locked', 'L’Atelier s’ouvre au niveau Légendaire L.');
+  }
+  const { owned } = tx.s.inventory;
+  const lifetime = tx.s.wallet.lifetimeEarned;
+  const clean = validAtelier(slot, config, (item) =>
+    ownsCosmetic(item, owned, lifetime, level),
+  );
+  if (!clean) {
+    throw new CoreError(
+      'locked',
+      'Chaque pièce doit venir d’un objet de ta collection.',
+    );
+  }
+  const def = atelierSlot(slot);
+  tx.s.legend.atelier = { ...tx.s.legend.atelier, [slot]: clean };
+  tx.s.equipped[SLOT_OF[def.category]] = def.itemId;
+  return tx.done({ slot, config: clean });
 }

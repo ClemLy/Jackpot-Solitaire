@@ -10,6 +10,7 @@ import {
   installGlobalErrorHandlers,
 } from './utils/errors';
 import { isAppPath } from './utils/routes';
+import { installUpdater } from './state/updater';
 import '@fontsource-variable/fraunces/full.css';
 import '@fontsource-variable/fraunces/full-italic.css';
 import '@fontsource-variable/manrope';
@@ -51,6 +52,9 @@ if (import.meta.env.DEV) {
     };
   });
 }
+
+// Une nouvelle version publiee s'installe d'elle-meme, a l'accueil.
+installUpdater();
 
 const rootEl = document.getElementById('root');
 if (!rootEl) {

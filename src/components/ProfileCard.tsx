@@ -1,16 +1,12 @@
 import type { CSSProperties } from 'react';
 import type { MiniCard, PublicCard } from '../core';
-import {
-  VIP_TIERS,
-  findCosmetic,
-  nextVipTier,
-  vipProgress,
-} from '../state/catalog';
+import { VIP_TIERS, nextVipTier, vipProgress } from '../state/catalog';
 import { formatDuration, formatNumber, percent } from '../utils/format';
 import { Portrait } from './Portrait';
 import { RankBadge } from './Rank';
 import { CardDecor } from './CardDecor';
 import { legendLabel } from '../state/legend';
+import { decodeAtelier, resolveTitle } from '../state/atelier';
 
 function memberSince(iso: string | null): string | null {
   if (!iso) return null;
@@ -34,7 +30,7 @@ export function ProfileCard({
   const next = nextVipTier(card.lifetimeEarned);
   const level = card.legend ?? 0;
   const rankId = level > 0 ? 'legend' : tier.id;
-  const title = findCosmetic(card.title);
+  const title = resolveTitle(card.title);
   const since = memberSince(card.memberSince);
   const stats = [
     { label: 'Victoires', value: formatNumber(card.stats.gamesWon) },
@@ -56,14 +52,19 @@ export function ProfileCard({
     },
   ];
 
+  // Carte sur mesure: le fond d'une carte, les ornements d'une autre.
+  const custom = decodeAtelier(card.profileCard);
+  const cardBg = custom ? custom.config.bg : card.profileCard;
+  const cardDecor = custom ? custom.config.decor : card.profileCard;
   return (
     <article
       className={`pcard${className ? ` ${className}` : ''}`}
-      data-style={card.profileCard}
+      data-style={cardBg}
+      data-atelier={custom ? 'true' : undefined}
       aria-label={`Carte de profil de ${card.pseudo}`}
     >
       <div className="pcard__shine" aria-hidden="true" />
-      <CardDecor style={card.profileCard} />
+      <CardDecor style={cardDecor} />
       <header className="pcard__top">
         <span className="pcard__tier rank-pill" data-tier={rankId}>
           <RankBadge tier={rankId} level={level} size={18} />
@@ -80,7 +81,7 @@ export function ProfileCard({
 
       <h3 className="pcard__name">{card.pseudo}</h3>
       {title && (
-        <span className="plaque pcard__title" data-title={title.id}>
+        <span className="plaque pcard__title" data-title={title.style}>
           {title.label}
         </span>
       )}
@@ -142,7 +143,7 @@ export function PlayerRow({
 }) {
   const tier = VIP_TIERS.find((t) => t.id === card.tier) ?? VIP_TIERS[0];
   const level = card.legend ?? 0;
-  const title = findCosmetic(card.title);
+  const title = resolveTitle(card.title);
   const body = (
     <>
       <Portrait avatar={card.avatar} frame={card.frame} size={46} />

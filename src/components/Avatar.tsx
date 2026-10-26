@@ -1,8 +1,10 @@
 // Avatars des joueurs: des personnages en illustration plate, dans l'esprit
 // des figures du paquet. Chaque portrait tient dans un disque de 100 x 100.
 
-import type { CSSProperties, ReactNode } from 'react';
-import { LegendAvatarArt } from './LegendAvatars';
+import { useId, type CSSProperties, type ReactNode } from 'react';
+import { LegendAvatarLayer, type AvatarLayer } from './LegendAvatars';
+import { useOwnAtelier } from './atelierView';
+import { decodeAtelier } from '../state/atelier';
 import { LEGEND_AVATAR_IDS } from './legendAvatarIds';
 
 const INK = '#2A1D19';
@@ -1390,41 +1392,50 @@ const EXTRAS: Record<
 
 export const AVATAR_IDS = Object.keys(AVATARS).concat(LEGEND_AVATAR_IDS);
 
-/** Portrait seul, dans un disque. */
-export function AvatarArt({ id }: { id: string }) {
+/** Une couche d'un avatar: decor (fond et scene), personnage ou effets. */
+function AvatarPart({ id, layer }: { id: string; layer: AvatarLayer }) {
   if (LEGEND_AVATAR_IDS.includes(id)) {
-    return (
-      <g>
-        <defs>
-          <clipPath id={`avatar-legend-${id}-clip`}>
-            <circle cx="50" cy="50" r="50" />
-          </clipPath>
-        </defs>
-        <g clipPath={`url(#avatar-legend-${id}-clip)`}>
-          <LegendAvatarArt id={id} />
-        </g>
-      </g>
-    );
+    return <LegendAvatarLayer id={id} layer={layer} />;
   }
   const def = AVATARS[id] ?? AVATARS.croupier;
   const extra = AVATARS[id] ? EXTRAS[id] : undefined;
+  if (layer === 'figure') return <>{def.draw()}</>;
+  if (layer === 'fx') return <>{extra?.fx?.()}</>;
   const gid = `avatar-bg-${id}`;
   return (
-    <g>
+    <>
       <defs>
         <radialGradient id={gid} cx="50%" cy="35%" r="70%">
           <stop offset="0" stopColor={def.bg[0]} />
           <stop offset="1" stopColor={def.bg[1]} />
         </radialGradient>
-        <clipPath id={`${gid}-clip`}>
+      </defs>
+      <rect width="100" height="100" fill={`url(#${gid})`} />
+      {extra?.scene?.()}
+    </>
+  );
+}
+
+/**
+ * Portrait seul, dans un disque. Un avatar sur mesure (Atelier) assemble le
+ * decor, le personnage et les effets de trois avatars differents.
+ */
+export function AvatarArt({ id }: { id: string }) {
+  const own = useOwnAtelier();
+  const clip = `avatar-clip-${useId().replace(/:/g, '')}`;
+  const custom = decodeAtelier(id, own);
+  const parts = custom ? custom.config : { scene: id, figure: id, fx: id };
+  return (
+    <g>
+      <defs>
+        <clipPath id={clip}>
           <circle cx="50" cy="50" r="50" />
         </clipPath>
       </defs>
-      <g clipPath={`url(#${gid}-clip)`}>
-        <rect width="100" height="100" fill={`url(#${gid})`} />
-        {extra?.scene?.()}
-        {def.draw()}
-        {extra?.fx?.()}
+      <g clipPath={`url(#${clip})`}>
+        <AvatarPart id={parts.scene} layer="scene" />
+        <AvatarPart id={parts.figure} layer="figure" />
+        <AvatarPart id={parts.fx} layer="fx" />
       </g>
     </g>
   );

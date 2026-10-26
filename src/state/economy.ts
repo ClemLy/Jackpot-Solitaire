@@ -19,6 +19,7 @@ import {
   type PlayerState,
 } from '../core';
 import type { ConsumableId } from './catalog';
+import type { AtelierConfig, AtelierSlot } from './atelier';
 import type { MissionScope } from './missions';
 import { localCtx, useMetaStore } from './meta';
 import { AccountError, api, useAccountStore } from './account';
@@ -125,6 +126,12 @@ export const economy = {
     perform<{ gift: ConsumableId[]; black: number }>({ type: 'claimGift' }),
   claimAchievements: () =>
     perform<{ amount: number; count: number }>({ type: 'claimAchievements' }),
+  atelier: (slot: AtelierSlot, config: AtelierConfig) =>
+    perform<{ slot: AtelierSlot; config: AtelierConfig }>({
+      type: 'atelier',
+      slot,
+      config,
+    }),
   exchange: (amount: number) =>
     perform<{ amount: number; cost: number }>({ type: 'exchange', amount }),
 };

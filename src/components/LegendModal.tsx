@@ -8,6 +8,7 @@ import {
   Gift,
   Infinity as InfinityIcon,
   Lock,
+  Palette,
   Play,
   ShoppingBag,
   Sparkles,
@@ -17,6 +18,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { Modal } from './Modal';
+import { AtelierPanel } from './AtelierPanel';
+import { ATELIER_LEVEL, isAtelierId } from '../state/atelier';
 import { Preview } from './ShopModal';
 import { RankBadge, RankEmblem } from './Rank';
 import { BlackBalance, BlackChip, Chip } from './ui';
@@ -59,7 +62,7 @@ import {
 } from '../state/legend';
 import { formatMultiplier, formatNumber } from '../utils/format';
 
-type Tab = 'shop' | 'path' | 'black';
+type Tab = 'shop' | 'path' | 'black' | 'atelier';
 
 /** La boutique se range par paliers de dix niveaux. */
 const SHOP_GROUPS: [number, number][] = [
@@ -75,6 +78,7 @@ const PERK_ICON: Record<LegendPerkId, ReactNode> = {
   gift: <Gift size={15} />,
   table: <DoorOpen size={15} />,
   wheel: <Sparkles size={15} />,
+  atelier: <Palette size={15} />,
 };
 
 const CATEGORY_LABEL: Record<Cosmetic['category'], string> = {
@@ -91,7 +95,10 @@ const CATEGORY_LABEL: Record<Cosmetic['category'], string> = {
 /** Les niveaux montres sur la voie: au moins jusqu'au XXX, et un peu au-dela. */
 function pathLevels(level: number): number[] {
   const last = Math.max(30, level + 4);
-  return Array.from({ length: last }, (_, i) => i + 1);
+  const levels = Array.from({ length: last }, (_, i) => i + 1);
+  // L'Atelier, au niveau L, reste visible a l'horizon de la voie.
+  if (last < ATELIER_LEVEL) levels.push(ATELIER_LEVEL);
+  return levels;
 }
 
 // ---------------------------------------------------------------------------
@@ -503,11 +510,15 @@ function LegendPath() {
         {pathLevels(level).map((n) => {
           const state = stateOf(n);
           const perks = LEGEND_PERKS.filter((p) => p.level === n);
-          const items = LEGEND_COSMETICS.filter((c) => (c.minLevel ?? 1) === n);
+          const items = LEGEND_COSMETICS.filter(
+            (c) => (c.minLevel ?? 1) === n && !isAtelierId(c.id),
+          );
+          const gap = n === ATELIER_LEVEL && level + 4 < ATELIER_LEVEL - 1;
           return (
             <li
               key={n}
-              className="lg-step"
+              className={`lg-step${n === ATELIER_LEVEL ? ' lg-step--summit' : ''}`}
+              data-gap={gap ? 'true' : undefined}
               data-state={state}
               aria-current={state === 'current' ? 'step' : undefined}
             >
@@ -818,11 +829,20 @@ export function LegendModal({ onClose }: { onClose: () => void }) {
           >
             <BlackChip size={16} /> Jetons noirs
           </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'atelier'}
+            onClick={() => setTab('atelier')}
+          >
+            <Palette size={15} /> Atelier
+            {level < ATELIER_LEVEL && <Lock size={12} aria-hidden="true" />}
+          </button>
         </div>
         <div role="tabpanel">
           {tab === 'shop' && <LegendShop />}
           {tab === 'path' && <LegendPath />}
           {tab === 'black' && <BlackChips />}
+          {tab === 'atelier' && <AtelierPanel />}
         </div>
       </div>
     </Modal>

@@ -21,6 +21,8 @@ import { NewGameModal } from './components/NewGameModal';
 import { ConfirmLeaveModal } from './components/ConfirmLeaveModal';
 import { SuitSprite } from './components/Suits';
 import { TableDecor } from './components/TableDecor';
+import { useAtelierStyle, useOwnAtelier } from './components/atelierView';
+import { atelierConfig } from './state/atelier';
 import { MissionsModal } from './components/MissionsModal';
 import { AuthModal } from './components/AuthModal';
 import { ProfileModal } from './components/ProfileModal';
@@ -82,6 +84,13 @@ export default function App() {
   const cardBack = useMetaStore((s) => s.equipped.cardBack);
   const cardFace = useMetaStore((s) => s.equipped.cardFace);
   const reducedMotion = useMetaStore((s) => s.settings.reducedMotion);
+  // Objets sur mesure (Atelier): leurs variables composees sur le plateau.
+  const atelier = useOwnAtelier();
+  const backStyle = useAtelierStyle('back', cardBack);
+  const faceStyle = useAtelierStyle('face', cardFace);
+  const tableStyle = useAtelierStyle('table', table);
+  const sceneTable =
+    table === 'atelier-table' ? atelierConfig(atelier, 'table').scene : table;
 
   // Deblocage de l'audio a la premiere interaction (contrainte des navigateurs mobiles).
   useEffect(() => {
@@ -139,9 +148,14 @@ export default function App() {
       data-motion={reducedMotion ? 'reduced' : 'full'}
       data-route={route}
       data-covered={modal !== 'none' || overlay !== 'none' ? 'true' : undefined}
+      style={
+        backStyle || faceStyle || tableStyle
+          ? { ...backStyle, ...faceStyle, ...tableStyle }
+          : undefined
+      }
     >
       <SuitSprite />
-      <TableDecor table={table} />
+      <TableDecor table={sceneTable} />
       {route === 'home' ? <Home /> : <GameScreen />}
 
       {phase === 'won' && <VictoryLayer key={dealId} />}

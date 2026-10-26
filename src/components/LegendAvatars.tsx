@@ -73,26 +73,31 @@ function Gem({
 // des cartes qui flottent, un jeton noir sur la poitrine.
 // ---------------------------------------------------------------------------
 
-function Ombre() {
+function OmbreDefs() {
+  return (
+    <defs>
+      <radialGradient id="lav-omb-bg" cx="50%" cy="40%" r="70%">
+        <stop offset="0" stopColor="#5A3596" />
+        <stop offset="0.45" stopColor="#1E1036" />
+        <stop offset="1" stopColor="#050308" />
+      </radialGradient>
+      <linearGradient id="lav-omb-cloak" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#3A2660" />
+        <stop offset="0.5" stopColor="#170F26" />
+        <stop offset="1" stopColor="#07050C" />
+      </linearGradient>
+      <linearGradient id="lav-omb-gold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#FFF1BF" />
+        <stop offset="0.5" stopColor="#E3B95A" />
+        <stop offset="1" stopColor="#7A5517" />
+      </linearGradient>
+    </defs>
+  );
+}
+
+function OmbreScene() {
   return (
     <>
-      <defs>
-        <radialGradient id="lav-omb-bg" cx="50%" cy="40%" r="70%">
-          <stop offset="0" stopColor="#5A3596" />
-          <stop offset="0.45" stopColor="#1E1036" />
-          <stop offset="1" stopColor="#050308" />
-        </radialGradient>
-        <linearGradient id="lav-omb-cloak" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3A2660" />
-          <stop offset="0.5" stopColor="#170F26" />
-          <stop offset="1" stopColor="#07050C" />
-        </linearGradient>
-        <linearGradient id="lav-omb-gold" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFF1BF" />
-          <stop offset="0.5" stopColor="#E3B95A" />
-          <stop offset="1" stopColor="#7A5517" />
-        </linearGradient>
-      </defs>
       <rect width="100" height="100" fill="url(#lav-omb-bg)" />
       <ellipse cx="50" cy="96" rx="60" ry="16" fill="#7B4FC8" opacity="0.18" />
       {[
@@ -127,6 +132,13 @@ function Ombre() {
         ]}
         fill="#C9A0FF"
       />
+    </>
+  );
+}
+
+function OmbreFigure() {
+  return (
+    <>
       <path
         d="M6 104 C10 80 27 69 50 69 C73 69 90 80 94 104 Z"
         fill="url(#lav-omb-cloak)"
@@ -309,76 +321,81 @@ function PhoenixWing({ side }: { side: 1 | -1 }) {
   );
 }
 
-function Phenix() {
+function PhenixDefs() {
+  return (
+    <defs>
+      <radialGradient id="lav-phx-sky" cx="50%" cy="40%" r="72%">
+        <stop offset="0" stopColor="#FFE9A8" />
+        <stop offset="0.22" stopColor="#FF9A3A" />
+        <stop offset="0.5" stopColor="#C8382A" />
+        <stop offset="0.8" stopColor="#4E0A1A" />
+        <stop offset="1" stopColor="#1A030A" />
+      </radialGradient>
+      <radialGradient id="lav-phx-sun" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stopColor="#FFFBEA" />
+        <stop offset="0.45" stopColor="#FFE08A" stopOpacity="0.85" />
+        <stop offset="1" stopColor="#FFB347" stopOpacity="0" />
+      </radialGradient>
+      <radialGradient
+        id="lav-phx-wing"
+        cx="50"
+        cy="56"
+        r="56"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0" stopColor="#FFE08A" />
+        <stop offset="0.35" stopColor="#FF8A2A" />
+        <stop offset="0.65" stopColor="#D2302F" />
+        <stop offset="1" stopColor="#5E0A1E" />
+      </radialGradient>
+      <radialGradient
+        id="lav-phx-wing2"
+        cx="50"
+        cy="56"
+        r="36"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0" stopColor="#FFF6D0" />
+        <stop offset="0.5" stopColor="#FFB347" />
+        <stop offset="1" stopColor="#F0502A" />
+      </radialGradient>
+      <linearGradient id="lav-phx-cover" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stopColor="#C97A20" />
+        <stop offset="0.5" stopColor="#F3C45A" />
+        <stop offset="1" stopColor="#FFF1BF" />
+      </linearGradient>
+      <linearGradient id="lav-phx-body" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#FFC46B" />
+        <stop offset="0.5" stopColor="#F2702A" />
+        <stop offset="1" stopColor="#A82020" />
+      </linearGradient>
+      <radialGradient id="lav-phx-head" cx="40%" cy="35%" r="70%">
+        <stop offset="0" stopColor="#FFC46B" />
+        <stop offset="0.6" stopColor="#E8492A" />
+        <stop offset="1" stopColor="#9A1C1C" />
+      </radialGradient>
+      <linearGradient id="lav-phx-flame" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stopColor="#E8492A" />
+        <stop offset="0.5" stopColor="#FFB347" />
+        <stop offset="1" stopColor="#FFF3C4" />
+      </linearGradient>
+      <linearGradient id="lav-phx-tail" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#FFF3C4" />
+        <stop offset="0.4" stopColor="#FFB347" />
+        <stop offset="1" stopColor="#C42A3D" />
+      </linearGradient>
+      <linearGradient id="lav-phx-gold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#FFF1BF" />
+        <stop offset="0.5" stopColor="#E3B95A" />
+        <stop offset="1" stopColor="#8F6418" />
+      </linearGradient>
+    </defs>
+  );
+}
+
+function PhenixScene() {
   return (
     <>
-      <defs>
-        <radialGradient id="lav-phx-sky" cx="50%" cy="40%" r="72%">
-          <stop offset="0" stopColor="#FFE9A8" />
-          <stop offset="0.22" stopColor="#FF9A3A" />
-          <stop offset="0.5" stopColor="#C8382A" />
-          <stop offset="0.8" stopColor="#4E0A1A" />
-          <stop offset="1" stopColor="#1A030A" />
-        </radialGradient>
-        <radialGradient id="lav-phx-sun" cx="50%" cy="50%" r="50%">
-          <stop offset="0" stopColor="#FFFBEA" />
-          <stop offset="0.45" stopColor="#FFE08A" stopOpacity="0.85" />
-          <stop offset="1" stopColor="#FFB347" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient
-          id="lav-phx-wing"
-          cx="50"
-          cy="56"
-          r="56"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0" stopColor="#FFE08A" />
-          <stop offset="0.35" stopColor="#FF8A2A" />
-          <stop offset="0.65" stopColor="#D2302F" />
-          <stop offset="1" stopColor="#5E0A1E" />
-        </radialGradient>
-        <radialGradient
-          id="lav-phx-wing2"
-          cx="50"
-          cy="56"
-          r="36"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0" stopColor="#FFF6D0" />
-          <stop offset="0.5" stopColor="#FFB347" />
-          <stop offset="1" stopColor="#F0502A" />
-        </radialGradient>
-        <linearGradient id="lav-phx-cover" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor="#C97A20" />
-          <stop offset="0.5" stopColor="#F3C45A" />
-          <stop offset="1" stopColor="#FFF1BF" />
-        </linearGradient>
-        <linearGradient id="lav-phx-body" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFC46B" />
-          <stop offset="0.5" stopColor="#F2702A" />
-          <stop offset="1" stopColor="#A82020" />
-        </linearGradient>
-        <radialGradient id="lav-phx-head" cx="40%" cy="35%" r="70%">
-          <stop offset="0" stopColor="#FFC46B" />
-          <stop offset="0.6" stopColor="#E8492A" />
-          <stop offset="1" stopColor="#9A1C1C" />
-        </radialGradient>
-        <linearGradient id="lav-phx-flame" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor="#E8492A" />
-          <stop offset="0.5" stopColor="#FFB347" />
-          <stop offset="1" stopColor="#FFF3C4" />
-        </linearGradient>
-        <linearGradient id="lav-phx-tail" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#FFF3C4" />
-          <stop offset="0.4" stopColor="#FFB347" />
-          <stop offset="1" stopColor="#C42A3D" />
-        </linearGradient>
-        <linearGradient id="lav-phx-gold" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFF1BF" />
-          <stop offset="0.5" stopColor="#E3B95A" />
-          <stop offset="1" stopColor="#8F6418" />
-        </linearGradient>
-      </defs>
       <rect width="100" height="100" fill="url(#lav-phx-sky)" />
       <g className="av-spin" opacity="0.2">
         {Array.from({ length: 18 }, (_, i) => (
@@ -400,6 +417,13 @@ function Phenix() {
         strokeWidth="0.6"
         opacity="0.6"
       />
+    </>
+  );
+}
+
+function PhenixFigure() {
+  return (
+    <>
       {/* Traine: trois plumes-flammes qui retombent et s'enroulent. */}
       {[
         [48, 78, 112, 34, 4.2, 70],
@@ -546,49 +570,54 @@ const RUNES = [
   'M-1.6 -2 L1.6 -2 L-1.6 2 L1.6 2',
 ];
 
-function Oracle() {
+function OracleDefs() {
+  return (
+    <defs>
+      <radialGradient id="lav-orc-sky" cx="50%" cy="32%" r="75%">
+        <stop offset="0" stopColor="#4058B8" />
+        <stop offset="0.45" stopColor="#18236A" />
+        <stop offset="1" stopColor="#05081E" />
+      </radialGradient>
+      <linearGradient id="lav-orc-robe" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#3D63C4" />
+        <stop offset="1" stopColor="#142559" />
+      </linearGradient>
+      <linearGradient id="lav-orc-hood" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#4C73D6" />
+        <stop offset="0.6" stopColor="#25408F" />
+        <stop offset="1" stopColor="#121F4E" />
+      </linearGradient>
+      <linearGradient id="lav-orc-gold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#FFF1BF" />
+        <stop offset="0.5" stopColor="#E3B95A" />
+        <stop offset="1" stopColor="#8F6418" />
+      </linearGradient>
+      <linearGradient id="lav-orc-hair" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#F4F7FF" />
+        <stop offset="1" stopColor="#9AA7C7" />
+      </linearGradient>
+      <radialGradient id="lav-orc-skin" cx="45%" cy="40%" r="65%">
+        <stop offset="0" stopColor="#F6D3AE" />
+        <stop offset="1" stopColor="#D49A74" />
+      </radialGradient>
+      <radialGradient id="lav-orc-ball" cx="40%" cy="35%" r="70%">
+        <stop offset="0" stopColor="#D6FBFF" />
+        <stop offset="0.3" stopColor="#62C6F0" />
+        <stop offset="0.7" stopColor="#3A3FB0" />
+        <stop offset="1" stopColor="#1C1250" />
+      </radialGradient>
+      <radialGradient id="lav-orc-gem" cx="40%" cy="35%" r="65%">
+        <stop offset="0" stopColor="#FFFFFF" />
+        <stop offset="0.45" stopColor="#7FE3FF" />
+        <stop offset="1" stopColor="#1F7AB8" />
+      </radialGradient>
+    </defs>
+  );
+}
+
+function OracleScene() {
   return (
     <>
-      <defs>
-        <radialGradient id="lav-orc-sky" cx="50%" cy="32%" r="75%">
-          <stop offset="0" stopColor="#4058B8" />
-          <stop offset="0.45" stopColor="#18236A" />
-          <stop offset="1" stopColor="#05081E" />
-        </radialGradient>
-        <linearGradient id="lav-orc-robe" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#3D63C4" />
-          <stop offset="1" stopColor="#142559" />
-        </linearGradient>
-        <linearGradient id="lav-orc-hood" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#4C73D6" />
-          <stop offset="0.6" stopColor="#25408F" />
-          <stop offset="1" stopColor="#121F4E" />
-        </linearGradient>
-        <linearGradient id="lav-orc-gold" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFF1BF" />
-          <stop offset="0.5" stopColor="#E3B95A" />
-          <stop offset="1" stopColor="#8F6418" />
-        </linearGradient>
-        <linearGradient id="lav-orc-hair" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#F4F7FF" />
-          <stop offset="1" stopColor="#9AA7C7" />
-        </linearGradient>
-        <radialGradient id="lav-orc-skin" cx="45%" cy="40%" r="65%">
-          <stop offset="0" stopColor="#F6D3AE" />
-          <stop offset="1" stopColor="#D49A74" />
-        </radialGradient>
-        <radialGradient id="lav-orc-ball" cx="40%" cy="35%" r="70%">
-          <stop offset="0" stopColor="#D6FBFF" />
-          <stop offset="0.3" stopColor="#62C6F0" />
-          <stop offset="0.7" stopColor="#3A3FB0" />
-          <stop offset="1" stopColor="#1C1250" />
-        </radialGradient>
-        <radialGradient id="lav-orc-gem" cx="40%" cy="35%" r="65%">
-          <stop offset="0" stopColor="#FFFFFF" />
-          <stop offset="0.45" stopColor="#7FE3FF" />
-          <stop offset="1" stopColor="#1F7AB8" />
-        </radialGradient>
-      </defs>
       <rect width="100" height="100" fill="url(#lav-orc-sky)" />
       {[
         [8, 22],
@@ -704,6 +733,13 @@ function Oracle() {
           </g>
         </g>
       ))}
+    </>
+  );
+}
+
+function OracleFigure() {
+  return (
+    <>
       {/* Robe brodee. */}
       <path
         d="M8 104 C12 82 28 71 50 71 C72 71 88 82 92 104 Z"
@@ -931,44 +967,49 @@ function OracleFx() {
 const NEMES =
   'M23 31 C25 16 37 9 50 9 C63 9 75 16 77 31 L83 84 L66 79 L64 41 L36 41 L34 79 L17 84 Z';
 
-function Sphinx() {
+function SphinxDefs() {
+  return (
+    <defs>
+      <linearGradient id="lav-sph-sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#120C2E" />
+        <stop offset="0.35" stopColor="#3A1E5A" />
+        <stop offset="0.62" stopColor="#B3526A" />
+        <stop offset="0.8" stopColor="#F2A65A" />
+        <stop offset="1" stopColor="#F7D08A" />
+      </linearGradient>
+      <radialGradient id="lav-sph-sun" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stopColor="#FFF8DA" />
+        <stop offset="0.55" stopColor="#FFD86A" />
+        <stop offset="0.85" stopColor="#F3A93A" stopOpacity="0.6" />
+        <stop offset="1" stopColor="#F3A93A" stopOpacity="0" />
+      </radialGradient>
+      <linearGradient id="lav-sph-gold" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#7A5517" />
+        <stop offset="0.3" stopColor="#F3D27C" />
+        <stop offset="0.5" stopColor="#FFF1BF" />
+        <stop offset="0.7" stopColor="#E3B95A" />
+        <stop offset="1" stopColor="#6B4410" />
+      </linearGradient>
+      <linearGradient id="lav-sph-goldv" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#FFF1BF" />
+        <stop offset="0.5" stopColor="#E3B95A" />
+        <stop offset="1" stopColor="#8F6418" />
+      </linearGradient>
+      <linearGradient id="lav-sph-skin" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#E0A868" />
+        <stop offset="0.55" stopColor="#C88A50" />
+        <stop offset="1" stopColor="#8E5A2E" />
+      </linearGradient>
+      <clipPath id="lav-sph-nemes">
+        <path d={NEMES} />
+      </clipPath>
+    </defs>
+  );
+}
+
+function SphinxScene() {
   return (
     <>
-      <defs>
-        <linearGradient id="lav-sph-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#120C2E" />
-          <stop offset="0.35" stopColor="#3A1E5A" />
-          <stop offset="0.62" stopColor="#B3526A" />
-          <stop offset="0.8" stopColor="#F2A65A" />
-          <stop offset="1" stopColor="#F7D08A" />
-        </linearGradient>
-        <radialGradient id="lav-sph-sun" cx="50%" cy="50%" r="50%">
-          <stop offset="0" stopColor="#FFF8DA" />
-          <stop offset="0.55" stopColor="#FFD86A" />
-          <stop offset="0.85" stopColor="#F3A93A" stopOpacity="0.6" />
-          <stop offset="1" stopColor="#F3A93A" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="lav-sph-gold" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#7A5517" />
-          <stop offset="0.3" stopColor="#F3D27C" />
-          <stop offset="0.5" stopColor="#FFF1BF" />
-          <stop offset="0.7" stopColor="#E3B95A" />
-          <stop offset="1" stopColor="#6B4410" />
-        </linearGradient>
-        <linearGradient id="lav-sph-goldv" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#FFF1BF" />
-          <stop offset="0.5" stopColor="#E3B95A" />
-          <stop offset="1" stopColor="#8F6418" />
-        </linearGradient>
-        <linearGradient id="lav-sph-skin" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#E0A868" />
-          <stop offset="0.55" stopColor="#C88A50" />
-          <stop offset="1" stopColor="#8E5A2E" />
-        </linearGradient>
-        <clipPath id="lav-sph-nemes">
-          <path d={NEMES} />
-        </clipPath>
-      </defs>
       <rect width="100" height="100" fill="url(#lav-sph-sky)" />
       {[
         [10, 8],
@@ -1015,6 +1056,13 @@ function Sphinx() {
         d="M-4 96 C20 88 40 92 54 90 C70 88 86 90 104 94 V104 H-4 Z"
         fill="#C98A45"
       />
+    </>
+  );
+}
+
+function SphinxFigure() {
+  return (
+    <>
       {/* Epaules et collier ousekh. */}
       <path
         d="M10 104 C13 82 28 72 50 72 C72 72 87 82 90 104 Z"
@@ -1175,34 +1223,68 @@ function SphinxFx() {
   );
 }
 
-const ART: Record<string, () => ReactNode> = {
-  ombre: () => (
-    <>
-      <Ombre />
-      <OmbreFx />
-    </>
-  ),
-  phenix: () => (
-    <>
-      <Phenix />
-      <PhenixFx />
-    </>
-  ),
-  oracle: () => (
-    <>
-      <Oracle />
-      <OracleFx />
-    </>
-  ),
-  sphinx: () => (
-    <>
-      <Sphinx />
-      <SphinxFx />
-    </>
-  ),
+/** Couches d'un avatar: decor, personnage, effets (et leurs degrades). */
+export type AvatarLayer = 'scene' | 'figure' | 'fx';
+
+const LAYERS: Record<
+  string,
+  { defs: () => ReactNode } & Record<AvatarLayer, () => ReactNode>
+> = {
+  ombre: {
+    defs: OmbreDefs,
+    scene: OmbreScene,
+    figure: OmbreFigure,
+    fx: OmbreFx,
+  },
+  phenix: {
+    defs: PhenixDefs,
+    scene: PhenixScene,
+    figure: PhenixFigure,
+    fx: PhenixFx,
+  },
+  oracle: {
+    defs: OracleDefs,
+    scene: OracleScene,
+    figure: OracleFigure,
+    fx: OracleFx,
+  },
+  sphinx: {
+    defs: SphinxDefs,
+    scene: SphinxScene,
+    figure: SphinxFigure,
+    fx: SphinxFx,
+  },
 };
 
-/** Portrait d'un avatar de la Boutique Legendaire (decor compris). */
+/**
+ * Une couche d'un avatar de la Boutique Legendaire. Les degrades sont
+ * redeclares avec chaque couche: une couche peut etre posee seule, sur le
+ * decor d'un autre avatar (Atelier).
+ */
+export function LegendAvatarLayer({
+  id,
+  layer,
+}: {
+  id: string;
+  layer: AvatarLayer;
+}) {
+  const art = LAYERS[id];
+  if (!art) return null;
+  return (
+    <>
+      {art.defs()}
+      {art[layer]()}
+    </>
+  );
+}
+
+/** Portrait complet d'un avatar de la Boutique Legendaire. */
 export function LegendAvatarArt({ id }: { id: string }) {
-  return <>{ART[id]?.()}</>;
+  return (
+    <>
+      <LegendAvatarLayer id={id} layer="scene" />
+      <LegendAvatarLayer id={id} layer="figure" />
+      <LegendAvatarLayer id={id} layer="fx" />
+    </>
+  );
 }

@@ -346,7 +346,9 @@ describe('rang Legendaire: sauvegardes', () => {
 
 describe('Boutique Legendaire: catalogue', () => {
   it('va jusqu au niveau XXX, en rayons complets de quatre', () => {
-    const levels = LEGEND_COSMETICS.map((c) => c.minLevel ?? 1);
+    const levels = LEGEND_COSMETICS.filter(
+      (c) => !c.id.startsWith('atelier-'),
+    ).map((c) => c.minLevel ?? 1);
     expect(Math.max(...levels)).toBe(30);
     // Rayons I-X, XI-XX, XXI-XXX: des rangees pleines a 2 et 4 colonnes.
     for (const [from, to] of [
@@ -359,5 +361,104 @@ describe('Boutique Legendaire: catalogue', () => {
     }
     const ids = new Set(COSMETICS.map((c) => c.id));
     expect(ids.size).toBe(COSMETICS.length);
+  });
+});
+
+describe('Atelier (niveau L)', () => {
+  const backConfig = {
+    bg: 'retro',
+    pattern: 'modern',
+    medal: 'onyx',
+    border: 'minimal',
+  };
+
+  it('reste ferme avant le niveau L', () => {
+    const s = legendary(49);
+    s.inventory.owned.push('onyx');
+    expect(() =>
+      dispatch(s, { type: 'atelier', slot: 'back', config: backConfig }, ctx()),
+    ).toThrow(/niveau Légendaire L/);
+  });
+
+  it('compose avec des pieces possedees et equipe le resultat', () => {
+    const s = legendary(50);
+    s.inventory.owned.push('onyx');
+    const out = dispatch(
+      s,
+      { type: 'atelier', slot: 'back', config: backConfig },
+      ctx(),
+    );
+    expect(out.state.legend.atelier.back).toEqual(backConfig);
+    expect(out.state.equipped.cardBack).toBe('atelier-back');
+    // Une piece qu'on ne possede pas est refusee.
+    expect(() =>
+      dispatch(
+        out.state,
+        {
+          type: 'atelier',
+          slot: 'back',
+          config: { ...backConfig, medal: 'triple7' },
+        },
+        ctx(),
+      ),
+    ).toThrow(/collection/);
+    // Une piece d'une autre categorie aussi.
+    expect(() =>
+      dispatch(
+        out.state,
+        {
+          type: 'atelier',
+          slot: 'back',
+          config: { ...backConfig, medal: 'felt' },
+        },
+        ctx(),
+      ),
+    ).toThrow(CoreError);
+  });
+
+  it('montre la composition aux amis sur la carte publique', () => {
+    const s = legendary(50);
+    s.inventory.owned.push('phenix', 'oracle');
+    const out = dispatch(
+      s,
+      {
+        type: 'atelier',
+        slot: 'avatar',
+        config: { scene: 'phenix', figure: 'oracle', fx: 'croupier' },
+      },
+      ctx(),
+    );
+    expect(publicCard('Ace', out.state).avatar).toBe(
+      'atelier-avatar|phenix|oracle|croupier',
+    );
+  });
+
+  it('valide une demande venue du reseau et une sauvegarde trafiquee', () => {
+    expect(
+      parseAction({
+        type: 'atelier',
+        slot: 'title',
+        config: { plate: 'roi', text: 'rookie' },
+      }),
+    ).toEqual({
+      type: 'atelier',
+      slot: 'title',
+      config: { plate: 'roi', text: 'rookie' },
+    });
+    expect(() =>
+      parseAction({ type: 'atelier', slot: 'title', config: { plate: 'roi' } }),
+    ).toThrow();
+    const raw = structuredClone(legendary(50)) as unknown as Record<
+      string,
+      unknown
+    >;
+    (raw.legend as Record<string, unknown>).atelier = {
+      title: { plate: 'roi', text: 'rookie' },
+      back: backConfig,
+    };
+    const clean = sanitizePlayer(raw, initialPlayer(ctx()));
+    // Le titre "roi" n'est pas possede: la composition est ecartee.
+    expect(clean.legend.atelier.title).toBeUndefined();
+    expect(clean.legend.atelier.back).toBeUndefined();
   });
 });

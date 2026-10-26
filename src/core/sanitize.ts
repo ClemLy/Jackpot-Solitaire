@@ -12,6 +12,12 @@ import {
 } from '../state/catalog';
 import { ACHIEVEMENTS } from '../state/achievements';
 import { normalizeLegend, type LegendState } from '../state/legend';
+import {
+  ATELIER_LEVEL,
+  ATELIER_SLOTS,
+  validAtelier,
+  type AtelierState,
+} from '../state/atelier';
 import { MISSIONS } from '../state/missions';
 import type {
   ConsumableId,
@@ -243,6 +249,7 @@ export function sanitizePlayer(
     p.legend,
     fallback.legend,
     wallet.lifetimeEarned,
+    owned,
   );
 
   // Objets equipes: seulement ce qui est possede, et dans le bon emplacement.
@@ -321,9 +328,10 @@ function sanitizeLegend(
   value: unknown,
   fallback: LegendState,
   lifetimeEarned: number,
+  owned: readonly string[],
 ): LegendState {
   const v = isRecord(value) ? value : {};
-  return normalizeLegend(
+  const legend = normalizeLegend(
     {
       tableWins: count(v.tableWins, fallback.tableWins),
       level: count(v.level, fallback.level),
@@ -335,9 +343,23 @@ function sanitizeLegend(
       black: count(v.black, fallback.black),
       blackEarned: count(v.blackEarned, fallback.blackEarned),
       blackSpent: count(v.blackSpent, fallback.blackSpent),
+      atelier: {},
     },
     lifetimeEarned,
   );
+  // Compositions de l'Atelier: seulement des pieces possedees, et seulement
+  // au niveau L (le niveau a pu etre ramene plus bas ci-dessus).
+  const atelier: AtelierState = {};
+  const raw = isRecord(v.atelier) ? v.atelier : {};
+  if (legend.level >= ATELIER_LEVEL) {
+    for (const { slot } of ATELIER_SLOTS) {
+      const config = validAtelier(slot, raw[slot], (item) =>
+        ownsCosmetic(item, owned, lifetimeEarned, legend.level),
+      );
+      if (config) atelier[slot] = config;
+    }
+  }
+  return { ...legend, atelier };
 }
 
 /** Plafonds appliques a une sauvegarde d'invite importee dans un compte. */

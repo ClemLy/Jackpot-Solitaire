@@ -3,7 +3,7 @@ import { Check, Lock, LogOut, ShieldAlert, Sparkles } from 'lucide-react';
 import { Modal } from './Modal';
 import { ProfileCard } from './ProfileCard';
 import { Portrait } from './Portrait';
-import { CardDecor } from './CardDecor';
+import { CardSwatch } from './ShopModal';
 import { useMetaStore, pickPlayer } from '../state/meta';
 import {
   AccountError,
@@ -102,14 +102,13 @@ function Choice({ item, slot }: { item: Cosmetic; slot: EquipSlot }) {
           <Portrait avatar={equipped.avatar} frame={item.id} size="100%" />
         )}
         {slot === 'profileCard' && (
-          <span className="pcard-swatch" data-style={item.id}>
-            <CardDecor style={item.id} />
-            <Portrait
-              avatar={equipped.avatar}
-              frame={equipped.frame}
-              size="52%"
-            />
-          </span>
+          <CardSwatch
+            id={item.id}
+            avatar={equipped.avatar}
+            frame={equipped.frame}
+            size="52%"
+            lines={false}
+          />
         )}
         {on && (
           <span className="choice__check" aria-hidden="true">

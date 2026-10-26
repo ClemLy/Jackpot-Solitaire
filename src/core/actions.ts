@@ -30,8 +30,10 @@ import {
   claimWeeklyGift,
   equip,
   exchangeBlack,
+  saveAtelier,
   spinWheel,
 } from './shop';
+import { ATELIER_SLOTS, type AtelierSlot } from '../state/atelier';
 import { isRecord } from './sanitize';
 import {
   CoreError,
@@ -55,7 +57,8 @@ export type Action =
   | { type: 'claimMission'; scope: 'daily' | 'weekly'; id: string }
   | { type: 'claimGift' }
   | { type: 'claimAchievements' }
-  | { type: 'exchange'; amount: number };
+  | { type: 'exchange'; amount: number }
+  | { type: 'atelier'; slot: AtelierSlot; config: Record<string, string> };
 
 const MODES: GameMode[] = [
   'classic',
@@ -251,6 +254,21 @@ export function parseAction(raw: unknown): Action {
       return { type: 'claimAchievements' };
     case 'exchange':
       return { type: 'exchange', amount: int(raw.amount, 1, 1000) };
+    case 'atelier': {
+      const slot = oneOf(
+        raw.slot,
+        ATELIER_SLOTS.map((d) => d.slot),
+      );
+      const def = ATELIER_SLOTS.find((d) => d.slot === slot)!;
+      if (!isRecord(raw.config)) bad();
+      const config: Record<string, string> = {};
+      for (const part of def.parts) {
+        const id = raw.config[part.key];
+        if (typeof id !== 'string' || !ID.test(id)) bad();
+        config[part.key] = id;
+      }
+      return { type: 'atelier', slot, config };
+    }
     default:
       bad();
   }
@@ -285,5 +303,7 @@ export function dispatch(
       return claimAchievements(state, ctx);
     case 'exchange':
       return exchangeBlack(state, action.amount, ctx);
+    case 'atelier':
+      return saveAtelier(state, action.slot, action.config, ctx);
   }
 }

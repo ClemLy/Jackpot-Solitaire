@@ -81,7 +81,9 @@ export default defineConfig(({ mode }) => ({
     react(),
     cspPlugin(loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Mise a jour appliquee par src/state/updater.ts, au bon moment.
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'robots.txt'],
       manifest: {
         name: 'Jackpot Solitaire',

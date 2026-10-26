@@ -591,6 +591,11 @@ function LegendRules() {
             mark: '◆',
             text: 'Chaque nouveau niveau verse sa prime en jetons noirs. Plus loin sur la voie: le coffret noir de la semaine (II), la Table Noire (III) et la roue noire (V).',
           },
+          {
+            tone: 'gold',
+            mark: '◆',
+            text: 'Au niveau L, l’Atelier: tu composes tes propres dos, rectos, tapis, célébrations, titres, avatars, cadres et cartes de profil avec les pièces des objets que tu possèdes. Tes amis voient tes créations sur ta carte.',
+          },
         ]}
       />
     </>

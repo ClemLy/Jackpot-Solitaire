@@ -6,7 +6,6 @@ import {
   findDifficulty,
   findSideBet,
   findStakeTable,
-  findCosmetic,
 } from '../state/catalog';
 import { useMetaStore } from '../state/meta';
 import { playSound } from '../audio/sfx';
@@ -17,6 +16,7 @@ import {
 } from '../utils/format';
 import { Stage } from './Modal';
 import { BlackChip, Chip } from './ui';
+import { useTitleView } from './atelierView';
 import { InsuranceToggle } from './Insurance';
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -79,6 +79,7 @@ export function WinOverlay() {
   const win = useGameStore((s) => s.win);
   const mode = useGameStore((s) => s.mode);
   const titleId = useMetaStore((s) => s.equipped.title);
+  const titleView = useTitleView(titleId);
   const combo = useGameStore((s) => s.combo);
   const stakeTable = useGameStore((s) => s.stakeTable);
   const difficulty = useGameStore((s) => s.difficulty);
@@ -155,7 +156,7 @@ export function WinOverlay() {
     };
   }, [stage, steps, skipped]);
 
-  const playerTitle = findCosmetic(titleId)?.label ?? 'Jackpot Solitaire';
+  const playerTitle = titleView?.label || 'Jackpot Solitaire';
   if (!win) return null;
 
   const reached = (key: string) =>

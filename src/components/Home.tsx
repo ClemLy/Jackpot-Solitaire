@@ -19,6 +19,7 @@ import {
   type RankId,
 } from '../state/legend';
 import { Portrait } from './Portrait';
+import { useTitleView } from './atelierView';
 import { RankBadge, RankEmblem } from './Rank';
 import { useGameStore, type GameMode } from '../state/game';
 import { pendingRewards, useMetaStore, useRank } from '../state/meta';
@@ -27,7 +28,6 @@ import {
   CHRONO_LIMIT_MS,
   COLLECTIBLES,
   VEGAS_STAKE,
-  findCosmetic,
   meetsTier,
   nextVipTier,
   vipProgress,
@@ -176,7 +176,7 @@ export function Home() {
   const avatar = useMetaStore((s) => s.equipped.avatar);
   const frame = useMetaStore((s) => s.equipped.frame);
   const account = useAccountStore();
-  const title = findCosmetic(titleId);
+  const title = useTitleView(titleId);
   const legend = useMetaStore((s) => s.legend);
   const owned = useMetaStore((s) => s.inventory.owned);
   const achievementsDone = useMetaStore(
@@ -349,7 +349,7 @@ export function Home() {
             {title && (
               <button
                 className="plaque plaque--hero"
-                data-title={title.id}
+                data-title={title.style}
                 onClick={() => openModal('shop')}
                 title="Changer de titre en boutique"
               >

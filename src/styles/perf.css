@@ -24,6 +24,9 @@
 .choice:not(:hover, :focus-visible) .choice__art *,
 .choice:not(:hover, :focus-visible) .choice__art *::before,
 .choice:not(:hover, :focus-visible) .choice__art *::after,
+.atl-opt *,
+.atl-opt *::before,
+.atl-opt *::after,
 .lg-silhouettes *,
 .lg-silhouettes *::before,
 .lg-silhouettes *::after {

@@ -1,7 +1,9 @@
 // Portrait d'un joueur: son avatar dans son cadre. Le cadre deborde un peu du
 // disque (lauriers, couronne, flammes), d'ou la boite de 120 x 120.
 
-import type { CSSProperties, ReactNode } from 'react';
+import { useId, type CSSProperties, type ReactNode } from 'react';
+import { useOwnAtelier } from './atelierView';
+import { decodeAtelier } from '../state/atelier';
 import { AvatarArt } from './Avatar';
 
 const GOLD = '#E2B24F';
@@ -1510,7 +1512,15 @@ export function Portrait({
   /** Texte alternatif (sinon le portrait est decoratif). */
   label?: string;
 }) {
-  const drawFrame = FRAMES[frame] ?? FRAMES['cadre-simple'];
+  const own = useOwnAtelier();
+  const clip = `frame-crest-${useId().replace(/:/g, '')}`;
+  // Cadre sur mesure (Atelier): l'anneau d'un cadre, et la parure d'un autre
+  // (tout ce qui deborde du cercle).
+  const custom = decodeAtelier(frame, own);
+  const ring = custom ? custom.config.ring : frame;
+  const crest = custom ? custom.config.crest : frame;
+  const drawFrame = FRAMES[ring] ?? FRAMES['cadre-simple'];
+  const drawCrest = crest !== ring ? FRAMES[crest] : undefined;
   return (
     <svg
       className={`portrait${className ? ` ${className}` : ''}`}
@@ -1520,12 +1530,20 @@ export function Portrait({
       role={label ? 'img' : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
-      data-frame={frame}
+      data-frame={ring}
     >
       <g transform="translate(10 10)">
         <AvatarArt id={avatar} />
       </g>
       {drawFrame()}
+      {drawCrest && (
+        <>
+          <clipPath id={clip}>
+            <path d={annulus(60.5, 120)} clipRule="evenodd" />
+          </clipPath>
+          <g clipPath={`url(#${clip})`}>{drawCrest()}</g>
+        </>
+      )}
     </svg>
   );
 }

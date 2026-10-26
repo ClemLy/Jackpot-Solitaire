@@ -55,6 +55,8 @@ Au-delà du Diamant, le rang Légendaire :
 | --- | --- |
 | ![Salon Légendaire](screenshots/legendaire.png) | ![Cérémonie d'accession](screenshots/legendaire-accession.png) |
 
+![L'Atelier, au niveau L](screenshots/atelier.png)
+
 Les comptes, le profil et les amis :
 
 | Connexion | Mon profil |
@@ -363,6 +365,28 @@ collection, de plus en plus riches avec le niveau :
   d’écailles serti d’émeraudes de l’Ouroboros, abysses peuplés de
   Grands fonds, onde de choc et filigranes du Big Bang.
 
+**L’Atelier, au niveau L** : la récompense ultime. Au lieu de choisir un
+objet, on le compose avec les pièces de sa collection, et le résultat
+s’équipe comme n’importe quel objet :
+
+| Objet sur mesure | Pièces à combiner |
+| --- | --- |
+| Dos de cartes | fond, motif, médaillon, liseré |
+| Recto des cartes | papier, encres, figures, reflet |
+| Tapis | couleur, motif, décor |
+| Célébration | deux effets de victoire joués ensemble |
+| Titre | plaque, devise |
+| Avatar | décor, personnage, effets |
+| Cadre | anneau, parure (ce qui déborde du cercle) |
+| Carte de profil | fond, ornements |
+
+Par exemple : le fond Bordeaux, les étoiles de Constellation et le soleil
+noir d’Éclipse ; ou l’Oracle devant le soleil du Phénix, avec les yeux de
+l’Ombre. Chaque pièce doit venir d’un objet possédé : la collection garde
+tout son sens. Le résultat s’affiche en direct, et les amis le voient sur
+la carte de profil. Avant le niveau L, l’onglet Atelier présente la
+récompense avec des exemples de compositions.
+
 **Le Salon Légendaire** s’ouvre depuis sa tuile dans le menu de l’accueil
 ou la pastille de jetons noirs (la jauge de rang, elle, mène toujours à
 l’écran des rangs). Il rassemble tout, en trois onglets :
@@ -583,6 +607,7 @@ src/
                  au serveur (compte)
     achievements.ts  Hauts faits: paliers par famille et exploits
     legend.ts    Rang Légendaire: accès, niveaux, jetons noirs, change
+    atelier.ts   Atelier (niveau L): pièces, validation, objets composés
   audio/
     sfx.ts       Sons synthétisés à la volée (Web Audio API)
     haptics.ts   Vibrations (Vibration API)
@@ -599,6 +624,7 @@ src/
     RanksModal.tsx         Écran des rangs VIP
     LegendModal.tsx        Salon Légendaire (boutique, voie, jetons noirs)
     LegendCeremony.tsx     Cérémonie d'accession au rang Légendaire
+    AtelierPanel.tsx       L'Atelier: composer, prévisualiser, enregistrer
   styles/      Tokens et tapis, cartes, plateau, interface, comptes, rangs,
                rang Légendaire, fluidité (perf.css)
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
@@ -665,7 +691,8 @@ Quatre étages :
   donnes garanties et tutoriel ont chacun leur parcours complet. Le rang
   Légendaire a le sien : les deux conditions d’accès, la courbe des
   niveaux, les primes, les jetons noirs, la boutique, le change, la Table
-  Noire et les sauvegardes trafiquées.
+  Noire, l’Atelier (pièces possédées seulement, carte publique) et les
+  sauvegardes trafiquées.
 - **Cœur partagé et serveur** : chaque gain est recalculé en rejouant le
   journal de coups ; un journal truqué (coup impossible, pari posé après
   le premier coup, victoire inventée, chrono dépassé) est refusé. Les

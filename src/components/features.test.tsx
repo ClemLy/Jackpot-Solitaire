@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import App from '../App';
 import { MissionsModal } from './MissionsModal';
 import { useGameStore } from '../state/game';
@@ -146,6 +146,45 @@ describe('rang Legendaire', () => {
     );
     expect(useMetaStore.getState().legend.black).toBe(55);
     expect(useMetaStore.getState().wallet.balance).toBe(before - 250_000);
+  });
+
+  it('compose un titre sur mesure dans l Atelier au niveau L', async () => {
+    useMetaStore.setState((s) => ({
+      wallet: { balance: 0, lifetimeEarned: 900_000_000, spent: 0 },
+      inventory: { ...s.inventory, owned: ['flambeur', 'baron'] },
+      legend: {
+        ...s.legend,
+        tableWins: 1,
+        level: 50,
+        base: 900_000_000 - 1,
+        ascendedAt: 1,
+      },
+    }));
+    useGameStore.setState({ modal: 'legend' });
+    render(<App />);
+    fireEvent.click(screen.getByRole('tab', { name: /Atelier/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /Titre/ }));
+    fireEvent.click(
+      within(screen.getByRole('radiogroup', { name: 'Plaque' })).getByRole(
+        'radio',
+        { name: 'Baron du tapis' },
+      ),
+    );
+    fireEvent.click(
+      within(screen.getByRole('radiogroup', { name: 'Devise' })).getByRole(
+        'radio',
+        { name: 'Flambeur' },
+      ),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Enregistrer et équiper' }),
+    );
+    const meta = useMetaStore.getState();
+    expect(meta.legend.atelier.title).toEqual({
+      plate: 'baron',
+      text: 'flambeur',
+    });
+    expect(meta.equipped.title).toBe('atelier-title');
   });
 
   it('celebre l accession en plein ecran', async () => {

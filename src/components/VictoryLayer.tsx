@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useMetaStore } from '../state/meta';
+import { useOwnAtelier } from './atelierView';
+import { decodeAtelier, type AtelierConfig } from '../state/atelier';
 import {
   rankLabel,
   SUITS,
@@ -1052,18 +1054,58 @@ const SCENES: Record<
   'trou-noir': blackHoleScene,
 };
 
+/**
+ * Effet de victoire (celui equipe, ou `fx` pour un apercu). Une celebration
+ * sur mesure (Atelier) joue deux effets en meme temps, chacun sur son calque.
+ */
 export function VictoryLayer({
   fx,
   preview = false,
   onDone,
+  draft,
 }: {
   fx?: string;
   preview?: boolean;
   onDone?: () => void;
+  /** Composition en cours d'edition (Atelier). */
+  draft?: AtelierConfig;
+}) {
+  const chosen = useMetaStore((s) => s.equipped.victoryFx);
+  const own = useOwnAtelier();
+  const effect = fx ?? chosen;
+  const custom = decodeAtelier(effect, own);
+  const pending = useRef(0);
+  if (!custom)
+    return <FxCanvas fx={effect} preview={preview} onDone={onDone} />;
+  const { first, second } = draft ?? custom.config;
+  if (first === second) {
+    return <FxCanvas fx={first} preview={preview} onDone={onDone} />;
+  }
+  pending.current = 2;
+  // L'apercu se termine quand les deux effets sont finis.
+  const done = () => {
+    pending.current -= 1;
+    if (pending.current <= 0) onDone?.();
+  };
+  return (
+    <>
+      <FxCanvas fx={first} preview={preview} onDone={done} />
+      <FxCanvas fx={second} preview={preview} onDone={done} />
+    </>
+  );
+}
+
+function FxCanvas({
+  fx,
+  preview,
+  onDone,
+}: {
+  fx: string;
+  preview: boolean;
+  onDone?: () => void;
 }) {
   const reduced = useMetaStore((s) => s.settings.reducedMotion);
-  const chosen = useMetaStore((s) => s.equipped.victoryFx);
-  const effect = fx ?? chosen;
+  const effect = fx;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;

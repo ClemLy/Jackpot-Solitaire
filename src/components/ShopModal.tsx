@@ -49,6 +49,13 @@ import { ConsumableIcon } from './icons';
 import { Portrait } from './Portrait';
 import { CardDecor } from './CardDecor';
 import { TableDecor } from './TableDecor';
+import { atelierVars, useOwnAtelier } from './atelierView';
+import {
+  decodeAtelier,
+  encodeAtelier,
+  resolveTitle,
+  type AtelierConfig,
+} from '../state/atelier';
 import { RankBadge, RankEmblem } from './Rank';
 import { ChevronRight, Lock as LockIcon } from 'lucide-react';
 import {
@@ -122,18 +129,44 @@ const FX_ICON: Record<string, ReactNode> = {
   'trou-noir': <Orbit size={30} />,
 };
 
+/** Plaque d'un titre (sur mesure compris). */
+function TitlePreview({ label, style }: { label: string; style: string }) {
+  return (
+    <div className="preview preview--title">
+      <span className="plaque" data-title={style}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Apercu d'un objet. Un objet sur mesure (Atelier) se dessine avec sa
+ * composition: celle du joueur, ou le brouillon en cours (`draft`).
+ */
 export function Preview({
   item,
   avatar,
   frame,
+  draft,
 }: {
   item: Cosmetic;
   avatar: string;
   frame: string;
+  draft?: AtelierConfig;
 }) {
+  const own = useOwnAtelier();
+  const custom = decodeAtelier(item.id, own);
+  const config = custom ? (draft ?? custom.config) : null;
+  const slot = custom?.slot;
+
   if (item.category === 'back') {
     return (
-      <div className="preview preview--back" data-back-preview={item.id}>
+      <div
+        className="preview preview--back"
+        data-back-preview={item.id}
+        style={config ? atelierVars('back', config) : undefined}
+      >
         <div className="preview__card preview__card--a">
           <CardView card={BACK_CARD} style={{ top: 0, left: 0 }} />
         </div>
@@ -145,8 +178,12 @@ export function Preview({
   }
   if (item.category === 'table') {
     return (
-      <div className="preview preview--table felt" data-table-preview={item.id}>
-        <TableDecor table={item.id} preview />
+      <div
+        className="preview preview--table felt"
+        data-table-preview={item.id}
+        style={config ? atelierVars('table', config) : undefined}
+      >
+        <TableDecor table={config ? config.scene : item.id} preview />
         <div className="preview__card preview__card--a">
           <CardView card={BACK_CARD} style={{ top: 0, left: 0 }} />
         </div>
@@ -158,7 +195,11 @@ export function Preview({
   }
   if (item.category === 'face') {
     return (
-      <div className="preview preview--face" data-face-preview={item.id}>
+      <div
+        className="preview preview--face"
+        data-face-preview={item.id}
+        style={config ? atelierVars('face', config) : undefined}
+      >
         <div className="preview__card preview__card--a">
           <CardView card={FACE_KING} style={{ top: 0, left: 0 }} />
         </div>
@@ -168,44 +209,75 @@ export function Preview({
       </div>
     );
   }
+  const shown = config && slot ? encodeAtelier(slot, config) : item.id;
   if (item.category === 'avatar') {
     return (
       <div className="preview preview--portrait">
-        <Portrait avatar={item.id} frame="cadre-simple" size="62%" />
+        <Portrait avatar={shown} frame="cadre-simple" size="62%" />
       </div>
     );
   }
   if (item.category === 'frame') {
     return (
       <div className="preview preview--portrait">
-        <Portrait avatar={avatar} frame={item.id} size="62%" />
+        <Portrait avatar={avatar} frame={shown} size="62%" />
       </div>
     );
   }
   if (item.category === 'card') {
     return (
       <div className="preview preview--pcard">
-        <div className="pcard-swatch" data-style={item.id}>
-          <CardDecor style={item.id} />
-          <Portrait avatar={avatar} frame={frame} size="46%" />
-          <span className="pcard-swatch__line" />
-          <span className="pcard-swatch__line pcard-swatch__line--short" />
-        </div>
+        <CardSwatch id={shown} avatar={avatar} frame={frame} />
       </div>
     );
   }
   if (item.category === 'title') {
+    const view = resolveTitle(shown, own);
+    return <TitlePreview label={view?.label ?? ''} style={view?.style ?? ''} />;
+  }
+  if (config) {
     return (
-      <div className="preview preview--title">
-        <span className="plaque" data-title={item.id}>
-          {item.label}
-        </span>
+      <div className="preview preview--fx preview--duo">
+        <span className="preview__medal">{FX_ICON[config.first]}</span>
+        <span className="preview__medal">{FX_ICON[config.second]}</span>
       </div>
     );
   }
   return (
     <div className="preview preview--fx" data-fx={item.id}>
       <span className="preview__medal">{FX_ICON[item.id]}</span>
+    </div>
+  );
+}
+
+/** Vignette d'une carte de profil (sur mesure comprise). */
+export function CardSwatch({
+  id,
+  avatar,
+  frame,
+  size = '46%',
+  lines = true,
+}: {
+  id: string;
+  avatar: string;
+  frame: string;
+  size?: string;
+  lines?: boolean;
+}) {
+  const own = useOwnAtelier();
+  const custom = decodeAtelier(id, own);
+  const bg = custom ? custom.config.bg : id;
+  const decor = custom ? custom.config.decor : id;
+  return (
+    <div className="pcard-swatch" data-style={bg}>
+      <CardDecor style={decor} />
+      <Portrait avatar={avatar} frame={frame} size={size} />
+      {lines && (
+        <>
+          <span className="pcard-swatch__line" />
+          <span className="pcard-swatch__line pcard-swatch__line--short" />
+        </>
+      )}
     </div>
   );
 }

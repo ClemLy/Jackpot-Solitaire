@@ -9,6 +9,7 @@ import {
 } from '../state/catalog';
 import { ACHIEVEMENTS } from '../state/achievements';
 import { legendProgress } from '../state/legend';
+import { atelierConfig, decodeAtelier, encodeAtelier } from '../state/atelier';
 import type { PlayerState } from './types';
 
 export interface PublicCard {
@@ -55,12 +56,19 @@ export function publicCard(
   memberSince: string | null = null,
 ): PublicCard {
   const owned = new Set(s.inventory.owned);
+  // Un objet sur mesure part avec sa composition: les amis la voient.
+  const share = (id: string) => {
+    const custom = decodeAtelier(id, s.legend.atelier);
+    return custom
+      ? encodeAtelier(custom.slot, atelierConfig(s.legend.atelier, custom.slot))
+      : id;
+  };
   return {
     pseudo,
-    avatar: s.equipped.avatar,
-    frame: s.equipped.frame,
-    profileCard: s.equipped.profileCard,
-    title: s.equipped.title,
+    avatar: share(s.equipped.avatar),
+    frame: share(s.equipped.frame),
+    profileCard: share(s.equipped.profileCard),
+    title: share(s.equipped.title),
     tier: vipTierFor(s.wallet.lifetimeEarned).id,
     legend: s.legend.level,
     legendProgress:

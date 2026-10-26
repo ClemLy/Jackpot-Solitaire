@@ -11,6 +11,7 @@ import {
   type VipTierId,
 } from './catalog';
 import { formatNumber } from '../utils/format';
+import type { AtelierState } from './atelier';
 
 /** Jetons gagnes depuis le debut pour pretendre au rang Legendaire. */
 export const LEGEND_THRESHOLD = 1_000_000;
@@ -39,6 +40,8 @@ export interface LegendState {
   black: number;
   blackEarned: number;
   blackSpent: number;
+  /** Compositions de l'Atelier (niveau L), par emplacement. */
+  atelier: AtelierState;
 }
 
 export function emptyLegend(): LegendState {
@@ -50,6 +53,7 @@ export function emptyLegend(): LegendState {
     black: 0,
     blackEarned: 0,
     blackSpent: 0,
+    atelier: {},
   };
 }
 
@@ -167,7 +171,7 @@ export function weeklyBlack(level: number): number {
 // ---------------------------------------------------------------------------
 
 export type LegendPerkId =
-  'black' | 'shop' | 'exchange' | 'gift' | 'table' | 'wheel';
+  'black' | 'shop' | 'exchange' | 'gift' | 'table' | 'wheel' | 'atelier';
 
 export interface LegendPerk {
   id: LegendPerkId;
@@ -212,6 +216,13 @@ export const LEGEND_PERKS: readonly LegendPerk[] = [
     level: 5,
     label: 'Roue noire',
     detail: 'Chaque tour de roue rapporte aussi des jetons noirs.',
+  },
+  {
+    id: 'atelier',
+    level: 50,
+    label: 'L’Atelier',
+    detail:
+      'Compose tes propres dos, rectos, tapis, célébrations, titres, avatars, cadres et cartes avec les pièces de ta collection.',
   },
 ];
 
