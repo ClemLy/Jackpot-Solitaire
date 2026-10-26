@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   ChevronRight,
+  Crown,
   GraduationCap,
   Settings,
   ShoppingBag,
@@ -10,18 +11,25 @@ import {
   Trophy,
   UserRound,
   Users,
+  Lock,
 } from 'lucide-react';
 import { accountsEnabled, useAccountStore } from '../state/account';
-import type { VipTierId } from '../state/catalog';
+import {
+  LEGEND_THRESHOLD,
+  legendLabel,
+  legendProgress,
+  type RankId,
+} from '../state/legend';
 import { Portrait } from './Portrait';
 import { RankBadge, RankEmblem } from './Rank';
 import { useGameStore, type GameMode } from '../state/game';
-import { pendingRewards, useMetaStore } from '../state/meta';
+import { pendingRewards, useMetaStore, useRank } from '../state/meta';
 import { unpaidAchievements } from '../state/achievements';
 import {
   CHRONO_LIMIT_MS,
   VEGAS_STAKE,
   findCosmetic,
+  meetsTier,
   nextVipTier,
   vipProgress,
   vipTierFor,
@@ -30,7 +38,7 @@ import { formatDuration, formatNumber, percent } from '../utils/format';
 import { dailySeed, todayISO } from '../utils/seed';
 import type { Card } from '../engine';
 import { CardView } from './CardView';
-import { Balance, Chip, RollingNumber } from './ui';
+import { Balance, BlackBalance, Chip, RollingNumber } from './ui';
 import { ModeDeck, type ModeCardData } from './ModeDeck';
 
 type ModeCard = Omit<ModeCardData, 'meta'>;
@@ -170,9 +178,13 @@ export function Home() {
   const frame = useMetaStore((s) => s.equipped.frame);
   const account = useAccountStore();
   const title = findCosmetic(titleId);
+  const legend = useMetaStore((s) => s.legend);
+  const rank = useRank();
 
   const tier = vipTierFor(lifetime);
   const next = nextVipTier(lifetime);
+  const legendary = legend.level >= 1;
+  const lp = legendProgress(lifetime, legend);
   const dailyDone = daily.completedDates.includes(todayISO());
   const today = new Date();
 
@@ -223,8 +235,9 @@ export function Home() {
         <ProfilePlate
           avatar={avatar}
           frame={frame}
-          tierId={tier.id}
-          tierLabel={tier.label}
+          rankId={rank.id}
+          level={rank.level}
+          rankLabel={rank.label}
         />
         <div className="topbar__right">
           <button
@@ -242,23 +255,48 @@ export function Home() {
               <span className="missions-pill__badge">{pending}</span>
             )}
           </button>
-          <button
-            className="vip-pill rank-pill"
-            data-tier={tier.id}
-            onClick={() => openModal('ranks')}
-            aria-label={`Rang VIP ${tier.label}`}
-            title={
-              next
-                ? `Encore ${formatNumber(next.threshold - lifetime)} jetons gagnés pour le rang ${next.label}`
-                : 'Rang maximum atteint'
-            }
-          >
-            <RankBadge tier={tier.id} size={20} />
-            <span
-              className="vip-pill__bar"
-              style={{ '--p': vipProgress(lifetime) } as CSSProperties}
-            />
-          </button>
+          {legendary ? (
+            <button
+              className="vip-pill rank-pill"
+              data-tier="legend"
+              onClick={() => openModal('legend')}
+              aria-label={`Rang ${rank.label}, Salon Légendaire`}
+              title={`Encore ${formatNumber(lp.step - lp.into)} jetons gagnés pour ${legendLabel(legend.level + 1)}`}
+            >
+              <RankBadge tier="legend" level={legend.level} size={20} />
+              <span
+                className="vip-pill__bar"
+                style={{ '--p': lp.progress } as CSSProperties}
+              />
+            </button>
+          ) : (
+            <button
+              className="vip-pill rank-pill"
+              data-tier={tier.id}
+              onClick={() => openModal('ranks')}
+              aria-label={`Rang VIP ${tier.label}`}
+              title={
+                next
+                  ? `Encore ${formatNumber(next.threshold - lifetime)} jetons gagnés pour le rang ${next.label}`
+                  : 'Un rang existe au-delà du Diamant'
+              }
+            >
+              <RankBadge tier={tier.id} size={20} />
+              <span
+                className="vip-pill__bar"
+                style={{ '--p': vipProgress(lifetime) } as CSSProperties}
+              />
+            </button>
+          )}
+          {legendary && (
+            <button
+              className="wallet-pill black-pill black-pill--top"
+              onClick={() => openModal('legend')}
+              aria-label={`${formatNumber(legend.black)} jetons noirs, Salon Légendaire`}
+            >
+              <BlackBalance />
+            </button>
+          )}
           <button
             className="wallet-pill"
             onClick={() => openModal('shop')}
@@ -341,48 +379,18 @@ export function Home() {
                 <RollingNumber value={progressive} />
               </span>
             </button>
-            <button
-              className="rank-track"
-              data-tier={tier.id}
-              onClick={() => openModal('ranks')}
-              aria-label={
-                next
-                  ? `Rang ${tier.label}: encore ${formatNumber(next.threshold - lifetime)} jetons à gagner pour le rang ${next.label}. Voir les rangs.`
-                  : `Rang ${tier.label}, le plus haut. Voir les rangs.`
-              }
-            >
-              <RankEmblem
-                tier={tier.id}
-                size={34}
-                compact
-                className="rank-track__emblem"
-              />
-              <span className="rank-track__line">
-                <RankBadge tier={tier.id} emblem={false} />
-                {next && (
-                  <>
-                    <span className="rank-track__arrow" aria-hidden="true">
-                      →
-                    </span>
-                    <RankBadge tier={next.id} emblem={false} />
-                    <span className="rank-track__left">
-                      encore{' '}
-                      <strong>{formatNumber(next.threshold - lifetime)}</strong>
-                    </span>
-                  </>
-                )}
-                {!next && (
-                  <span className="rank-track__left">Rang maximum</span>
-                )}
-              </span>
-              <span
-                className="rank-track__meter"
-                style={{ '--p': vipProgress(lifetime) } as CSSProperties}
-                aria-hidden="true"
+            {legendary && (
+              // Sur telephone, la barre du haut n'a pas la place: le solde de
+              // jetons noirs se range a cote du jackpot progressif.
+              <button
+                className="wallet-pill black-pill black-pill--hero"
+                onClick={() => openModal('legend')}
+                aria-label={`${formatNumber(legend.black)} jetons noirs, Salon Légendaire`}
               >
-                <span />
-              </span>
-            </button>
+                <BlackBalance />
+              </button>
+            )}
+            <RankTrack />
             {records.length > 0 && (
               <p className="hero__records">
                 Ton meilleur: {records.join(', ')}.
@@ -433,6 +441,14 @@ export function Home() {
           <button className="link-btn" onClick={() => openModal('missions')}>
             <Target size={18} /> Missions
           </button>
+          <button
+            className="link-btn link-btn--legend"
+            data-unlocked={legendary}
+            onClick={() => openModal('legend')}
+          >
+            <Crown size={18} /> Salon légendaire
+            {!legendary && <Lock size={13} aria-hidden="true" />}
+          </button>
           <button className="link-btn" onClick={() => openModal('shop')}>
             <ShoppingBag size={18} /> Boutique
           </button>
@@ -476,13 +492,15 @@ function WheelGlyph() {
 function ProfilePlate({
   avatar,
   frame,
-  tierId,
-  tierLabel,
+  rankId,
+  level,
+  rankLabel,
 }: {
   avatar: string;
   frame: string;
-  tierId: VipTierId;
-  tierLabel: string;
+  rankId: RankId;
+  level: number;
+  rankLabel: string;
 }) {
   const account = useAccountStore();
   const openModal = useGameStore((s) => s.openModal);
@@ -493,21 +511,23 @@ function ProfilePlate({
     <button
       className="profile-plate"
       data-state={guest ? 'guest' : 'online'}
-      data-tier={tierId}
+      data-tier={rankId}
+      data-legend={rankId === 'legend' ? 'true' : undefined}
       onClick={() => openModal(guest ? 'account' : 'profile')}
       aria-label={
         online
-          ? `Mon profil: ${account.pseudo}, rang ${tierLabel}`
+          ? `Mon profil: ${account.pseudo}, rang ${rankLabel}`
           : guest
             ? 'Se connecter ou créer un compte'
-            : `Mon profil, rang ${tierLabel}`
+            : `Mon profil, rang ${rankLabel}`
       }
     >
       <span className="profile-plate__portrait">
         <Portrait avatar={avatar} frame={frame} size="100%" />
         {guest && (
           <RankEmblem
-            tier={tierId}
+            tier={rankId}
+            level={level}
             size={20}
             compact
             className="profile-plate__medal"
@@ -530,11 +550,24 @@ function ProfilePlate({
             Se connecter
           </span>
         ) : (
-          <RankBadge
-            tier={tierId}
-            size={15}
-            className="profile-plate__sub profile-plate__tier"
-          />
+          <>
+            <RankBadge
+              tier={rankId}
+              level={level}
+              size={15}
+              className="profile-plate__sub profile-plate__tier"
+            />
+            {rankId === 'legend' && (
+              // Sur telephone, la plaque est etroite: "Lég. IV".
+              <RankBadge
+                tier="legend"
+                level={level}
+                size={15}
+                short
+                className="profile-plate__sub profile-plate__tier profile-plate__tier--short"
+              />
+            )}
+          </>
         )}
       </span>
       <ChevronRight
@@ -542,6 +575,148 @@ function ProfilePlate({
         size={16}
         aria-hidden="true"
       />
+    </button>
+  );
+}
+
+/**
+ * Raccourci de progression de l'accueil. Il suit le rang VIP, puis montre le
+ * chemin vers le rang Legendaire une fois Diamant, puis le niveau suivant.
+ */
+function RankTrack() {
+  const openModal = useGameStore((s) => s.openModal);
+  const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
+  const legend = useMetaStore((s) => s.legend);
+  const tier = vipTierFor(lifetime);
+  const next = nextVipTier(lifetime);
+
+  if (legend.level >= 1) {
+    const lp = legendProgress(lifetime, legend);
+    const left = lp.step - lp.into;
+    return (
+      <button
+        className="rank-track"
+        data-tier="legend"
+        onClick={() => openModal('legend')}
+        aria-label={`${legendLabel(legend.level)}: encore ${formatNumber(left)} jetons à gagner pour ${legendLabel(legend.level + 1)}. Ouvrir le Salon légendaire.`}
+      >
+        <RankEmblem
+          tier="legend"
+          level={legend.level}
+          size={34}
+          compact
+          className="rank-track__emblem"
+        />
+        <span className="rank-track__line">
+          <RankBadge tier="legend" level={legend.level} emblem={false} />
+          <span className="rank-track__next">
+            <span className="rank-track__arrow" aria-hidden="true">
+              →
+            </span>
+            <RankBadge tier="legend" level={legend.level + 1} emblem={false} />
+          </span>
+          <span className="rank-track__left">
+            encore <strong>{formatNumber(left)}</strong>
+          </span>
+        </span>
+        <span
+          className="rank-track__meter"
+          style={{ '--p': lp.progress } as CSSProperties}
+          aria-hidden="true"
+        >
+          <span />
+        </span>
+      </button>
+    );
+  }
+
+  // Diamant: le prochain pas, c'est le rang Legendaire et ses deux epreuves.
+  if (!next && meetsTier(lifetime, 'diamond')) {
+    const chipsLeft = Math.max(0, LEGEND_THRESHOLD - lifetime);
+    const span = LEGEND_THRESHOLD - tier.threshold;
+    const progress = Math.min(1, (lifetime - tier.threshold) / span);
+    const needTable = legend.tableWins === 0;
+    return (
+      <button
+        className="rank-track rank-track--sealed"
+        data-tier={tier.id}
+        onClick={() => openModal('legend')}
+        aria-label={`Rang ${tier.label}. Prochain: le rang Légendaire. ${chipsLeft > 0 ? `Encore ${formatNumber(chipsLeft)} jetons à gagner` : 'Million atteint'}${needTable ? ', et une victoire à la Table Légende' : ''}.`}
+      >
+        <RankEmblem
+          tier={tier.id}
+          size={34}
+          compact
+          className="rank-track__emblem"
+        />
+        <span className="rank-track__line">
+          <RankBadge tier={tier.id} emblem={false} />
+          <span className="rank-track__arrow" aria-hidden="true">
+            →
+          </span>
+          <span className="rank rank-track__secret" data-tier="legend">
+            <Lock size={11} aria-hidden="true" />
+            <span className="rank__label">Légendaire</span>
+          </span>
+          <span className="rank-track__left">
+            {chipsLeft > 0 ? (
+              <>
+                encore <strong>{formatNumber(chipsLeft)}</strong>
+              </>
+            ) : needTable ? (
+              <strong>Vaincre la Table Légende</strong>
+            ) : null}
+          </span>
+        </span>
+        <span
+          className="rank-track__meter"
+          style={{ '--p': progress } as CSSProperties}
+          aria-hidden="true"
+        >
+          <span />
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      className="rank-track"
+      data-tier={tier.id}
+      onClick={() => openModal('ranks')}
+      aria-label={
+        next
+          ? `Rang ${tier.label}: encore ${formatNumber(next.threshold - lifetime)} jetons à gagner pour le rang ${next.label}. Voir les rangs.`
+          : `Rang ${tier.label}. Voir les rangs.`
+      }
+    >
+      <RankEmblem
+        tier={tier.id}
+        size={34}
+        compact
+        className="rank-track__emblem"
+      />
+      <span className="rank-track__line">
+        <RankBadge tier={tier.id} emblem={false} />
+        {next && (
+          <>
+            <span className="rank-track__arrow" aria-hidden="true">
+              →
+            </span>
+            <RankBadge tier={next.id} emblem={false} />
+            <span className="rank-track__left">
+              encore <strong>{formatNumber(next.threshold - lifetime)}</strong>
+            </span>
+          </>
+        )}
+      </span>
+      <span
+        className="rank-track__meter"
+        style={{ '--p': vipProgress(lifetime) } as CSSProperties}
+        aria-hidden="true"
+      >
+        <span />
+      </span>
     </button>
   );
 }

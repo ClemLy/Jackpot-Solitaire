@@ -7,9 +7,10 @@ import {
   PROGRESSIVE_RULE,
   STAKE_TABLES,
   VIP_TIERS,
-  meetsTier,
+  tableOpen,
   type DifficultyId,
 } from '../state/catalog';
+import { legendLabel } from '../state/legend';
 import { playSound } from '../audio/sfx';
 import { formatMultiplier, formatNumber } from '../utils/format';
 import { Balance, Chip, DifficultyPicker, RollingNumber } from './ui';
@@ -21,6 +22,7 @@ const STACK_TONES = [
   ['black', 'violet', 'gold', 'gold'],
   ['violet', 'violet', 'black', 'gold', 'gold'],
   ['black', 'black', 'red', 'gold', 'gold', 'gold'],
+  ['black', 'black', 'black', 'violet', 'gold', 'gold', 'gold'],
 ] as const;
 
 /** Choix de la table a mise avant une serie Jackpot. */
@@ -29,6 +31,7 @@ export function TablesModal({ onClose }: { onClose: () => void }) {
   const current = useGameStore((s) => s.stakeTable);
   const balance = useMetaStore((s) => s.wallet.balance);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
+  const level = useMetaStore((s) => s.legend.level);
   const progressive = useMetaStore((s) => s.progressive.pot);
   const defaultDifficulty = useMetaStore((s) => s.settings.difficulty);
   const [difficulty, setDifficulty] = useState<DifficultyId>(defaultDifficulty);
@@ -53,9 +56,13 @@ export function TablesModal({ onClose }: { onClose: () => void }) {
       </div>
       <div className="stake-grid">
         {STAKE_TABLES.map((t, i) => {
-          const locked = !meetsTier(lifetime, t.minTier);
+          // La Table Noire n'apparait qu'aux Legendaires: elle est secrete.
+          if (t.minLevel && level < 1) return null;
+          const locked = !tableOpen(t, lifetime, level);
           const poor = !locked && t.stake > balance;
-          const tierLabel = VIP_TIERS.find((v) => v.id === t.minTier)?.label;
+          const tierLabel = t.minLevel
+            ? legendLabel(t.minLevel)
+            : `Rang ${VIP_TIERS.find((v) => v.id === t.minTier)?.label}`;
           return (
             <button
               key={t.id}
@@ -87,7 +94,7 @@ export function TablesModal({ onClose }: { onClose: () => void }) {
               <span className="stake__foot">
                 {locked ? (
                   <>
-                    <Lock size={14} /> Rang {tierLabel} requis
+                    <Lock size={14} /> {tierLabel} requis
                   </>
                 ) : t.stake === 0 ? (
                   'Sans mise'

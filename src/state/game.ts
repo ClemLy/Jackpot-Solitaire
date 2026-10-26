@@ -89,6 +89,7 @@ export type Modal =
   | 'friends'
   | 'achievements'
   | 'ranks'
+  | 'legend'
   | 'confirmLeave';
 export type Overlay = 'none' | 'win' | 'vault' | 'lost';
 

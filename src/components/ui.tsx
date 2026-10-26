@@ -90,6 +90,84 @@ export function Chip({
   );
 }
 
+/**
+ * Jeton noir, la monnaie du rang Legendaire: laque noire, tranche d'or,
+ * coeur violet et couronne. Volontairement different du jeton noir de la
+ * banque (etoile doree), pour qu'on ne les confonde jamais.
+ */
+export function BlackChip({
+  size = 18,
+  className,
+  style,
+}: {
+  size?: number | string;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <svg
+      className={`black-chip${className ? ` ${className}` : ''}`}
+      style={style}
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="20" cy="20" r="19.5" fill="#0B0910" />
+      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+        <rect
+          key={i}
+          x="17.6"
+          y="0.9"
+          width="4.8"
+          height="5"
+          rx="1"
+          fill="#E3B95A"
+          transform={`rotate(${i * 45} 20 20)`}
+        />
+      ))}
+      <circle cx="20" cy="20" r="13.2" fill="#24143C" />
+      <circle
+        cx="20"
+        cy="20"
+        r="11"
+        fill="none"
+        stroke="#E3B95A"
+        strokeWidth="1"
+        strokeDasharray="2 1.7"
+        opacity="0.9"
+      />
+      <path
+        d="M13.6 24.6 L12.6 15.8 L16.6 19 L20 13 L23.4 19 L27.4 15.8 L26.4 24.6 Z"
+        fill="#F3D27C"
+      />
+      <path d="M13.6 25.6 H26.4 V27.4 H13.6 Z" fill="#F3D27C" />
+      <circle cx="20" cy="21.4" r="1.5" fill="#C9A0FF" />
+      <circle
+        cx="20"
+        cy="20"
+        r="19.5"
+        fill="none"
+        stroke="#F3D27C"
+        strokeOpacity="0.55"
+        strokeWidth="0.8"
+      />
+    </svg>
+  );
+}
+
+/** Solde de jetons noirs, qui roule comme celui de la banque. */
+export function BlackBalance({ className }: { className?: string }) {
+  const black = useMetaStore((s) => s.legend.black);
+  return (
+    <span className={`balance balance--black ${className ?? ''}`}>
+      <BlackChip size="1.25em" />
+      <RollingNumber value={black} className="balance__value" />
+    </span>
+  );
+}
+
 function reducedMotion(): boolean {
   return (
     useMetaStore.getState().settings.reducedMotion ||

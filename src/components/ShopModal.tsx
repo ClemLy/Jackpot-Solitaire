@@ -10,6 +10,7 @@ import {
   Wine,
   Sun,
   Award,
+  Moon,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { useMetaStore } from '../state/meta';
@@ -41,12 +42,19 @@ import { playSound } from '../audio/sfx';
 import { formatMultiplier, formatNumber } from '../utils/format';
 import type { Card } from '../engine';
 import { CardView } from './CardView';
-import { Balance, Chip } from './ui';
+import { Balance, BlackChip, Chip } from './ui';
 import { VictoryLayer } from './VictoryLayer';
 import { ConsumableIcon } from './icons';
 import { Portrait } from './Portrait';
 import { CardDecor } from './CardDecor';
 import { RankBadge, RankEmblem } from './Rank';
+import { ChevronRight, Lock as LockIcon } from 'lucide-react';
+import {
+  LEGEND_THRESHOLD,
+  blackRate,
+  legendLabel,
+  legendProgress,
+} from '../state/legend';
 import { economy, reportFailure } from '../state/economy';
 
 type Tab = CosmeticCategory | 'bonus';
@@ -107,9 +115,11 @@ const FX_ICON: Record<string, ReactNode> = {
   champagne: <Wine size={30} />,
   goldbars: <Award size={30} />,
   supernova: <Sun size={30} />,
+  'pluie-noire': <BlackChip size={34} />,
+  'eclipse-totale': <Moon size={30} />,
 };
 
-function Preview({
+export function Preview({
   item,
   avatar,
   frame,
@@ -237,6 +247,8 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
   const lifetime = wallet.lifetimeEarned;
   const tier = vipTierFor(lifetime);
   const next = nextVipTier(lifetime);
+  const legend = useMetaStore((s) => s.legend);
+  const legendary = legend.level >= 1;
 
   const celebrate = (id: string) => {
     playSound('purchase');
@@ -289,68 +301,135 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
       size="xl"
       aside={<Balance className="balance--lg" />}
     >
-      <div className="vip-banner" data-tier={tier.id}>
-        <span className="vip-banner__badge">
-          <RankEmblem tier={tier.id} size="100%" />
-        </span>
-        <div className="vip-banner__body">
-          <div className="vip-banner__line">
-            <strong>
-              Rang{' '}
-              <RankBadge
-                tier={tier.id}
-                emblem={false}
-                className="vip-banner__rank"
-              />
-            </strong>
-            {tier.discount > 0 ? (
+      {legendary ? (
+        <div className="vip-banner" data-tier="legend">
+          <span className="vip-banner__badge">
+            <RankEmblem tier="legend" level={legend.level} size="100%" />
+          </span>
+          <div className="vip-banner__body">
+            <div className="vip-banner__line">
+              <strong>
+                Rang{' '}
+                <RankBadge
+                  tier="legend"
+                  level={legend.level}
+                  emblem={false}
+                  className="vip-banner__rank"
+                />
+              </strong>
               <span className="vip-banner__perk">
-                −{Math.round(tier.discount * 100)} % en boutique · roue du jour
-                ×{formatMultiplier(tier.wheelBoost)}
+                −{Math.round(tier.discount * 100)} % en boutique · jetons noirs
+                ×{formatMultiplier(blackRate(legend.level))}
               </span>
-            ) : (
-              <span className="vip-banner__perk">
-                Gagne des jetons pour monter en grade
-              </span>
-            )}
+            </div>
+            <div
+              className="meter"
+              style={
+                {
+                  '--p': legendProgress(lifetime, legend).progress,
+                } as CSSProperties
+              }
+            >
+              <span />
+            </div>
+            <div className="vip-banner__next">
+              Chaque jeton gagné te rapproche de {legendLabel(legend.level + 1)}
+              .
+            </div>
+            <button
+              className="vip-banner__more"
+              onClick={() => openModal('legend')}
+            >
+              Ouvrir le Salon légendaire →
+            </button>
           </div>
-          <div
-            className="meter"
-            style={{ '--p': vipProgress(lifetime) } as CSSProperties}
-          >
-            <span />
-          </div>
-          <div className="vip-banner__next">
-            {next ? (
-              <>
-                <strong>
-                  {formatNumber(lifetime)} / {formatNumber(next.threshold)}
-                </strong>{' '}
-                · encore {formatNumber(next.threshold - lifetime)} pour{' '}
-                {next.label}: −{Math.round(next.discount * 100)} %, roue ×
-                {formatMultiplier(next.wheelBoost)} et {nextUnlocks} objets
-                exclusifs.
-              </>
-            ) : (
-              'Rang maximum atteint. Tout est à portée, il ne reste qu’à tout s’offrir.'
-            )}
-          </div>
-          <button
-            className="vip-banner__more"
-            onClick={() => openModal('ranks')}
-          >
-            Voir tous les rangs et leurs avantages →
-          </button>
         </div>
-        <ol className="vip-ladder" aria-label="Rangs VIP">
-          {VIP_TIERS.map((t) => (
-            <li key={t.id} data-tier={t.id} data-on={meetsTier(lifetime, t.id)}>
-              <RankEmblem tier={t.id} size={14} compact />
-              {t.label}
+      ) : (
+        <div className="vip-banner" data-tier={tier.id}>
+          <span className="vip-banner__badge">
+            <RankEmblem tier={tier.id} size="100%" />
+          </span>
+          <div className="vip-banner__body">
+            <div className="vip-banner__line">
+              <strong>
+                Rang{' '}
+                <RankBadge
+                  tier={tier.id}
+                  emblem={false}
+                  className="vip-banner__rank"
+                />
+              </strong>
+              {tier.discount > 0 ? (
+                <span className="vip-banner__perk">
+                  −{Math.round(tier.discount * 100)} % en boutique · roue du
+                  jour ×{formatMultiplier(tier.wheelBoost)}
+                </span>
+              ) : (
+                <span className="vip-banner__perk">
+                  Gagne des jetons pour monter en grade
+                </span>
+              )}
+            </div>
+            <div
+              className="meter"
+              style={
+                {
+                  '--p': next
+                    ? vipProgress(lifetime)
+                    : Math.min(1, lifetime / LEGEND_THRESHOLD),
+                } as CSSProperties
+              }
+            >
+              <span />
+            </div>
+            <div className="vip-banner__next">
+              {next ? (
+                <>
+                  <strong>
+                    {formatNumber(lifetime)} / {formatNumber(next.threshold)}
+                  </strong>{' '}
+                  · encore {formatNumber(next.threshold - lifetime)} pour{' '}
+                  {next.label}: −{Math.round(next.discount * 100)} %, roue ×
+                  {formatMultiplier(next.wheelBoost)} et {nextUnlocks} objets
+                  exclusifs.
+                </>
+              ) : (
+                <>
+                  <strong>
+                    {formatNumber(lifetime)} / {formatNumber(LEGEND_THRESHOLD)}
+                  </strong>{' '}
+                  · au-delà du Diamant, le rang Légendaire ouvre une boutique
+                  payée en jetons noirs.
+                </>
+              )}
+            </div>
+            <button
+              className="vip-banner__more"
+              onClick={() => openModal(next ? 'ranks' : 'legend')}
+            >
+              {next
+                ? 'Voir tous les rangs et leurs avantages →'
+                : 'Découvrir le rang Légendaire →'}
+            </button>
+          </div>
+          <ol className="vip-ladder" aria-label="Rangs VIP">
+            {VIP_TIERS.map((t) => (
+              <li
+                key={t.id}
+                data-tier={t.id}
+                data-on={meetsTier(lifetime, t.id)}
+              >
+                <RankEmblem tier={t.id} size={14} compact />
+                {t.label}
+              </li>
+            ))}
+            <li data-tier="legend" data-on="false">
+              <RankEmblem tier="legend" size={14} compact />
+              Légendaire
             </li>
-          ))}
-        </ol>
-      </div>
+          </ol>
+        </div>
+      )}
 
       <div className="collection">
         <span>
@@ -366,6 +445,27 @@ export function ShopModal({ onClose }: { onClose: () => void }) {
           <span />
         </span>
       </div>
+
+      <button
+        className="lg-entry"
+        data-unlocked={legendary}
+        onClick={() => openModal('legend')}
+      >
+        <BlackChip size={34} className="lg-entry__chip" />
+        <span className="lg-entry__text">
+          <strong>Boutique Légendaire</strong>
+          <span>
+            {legendary
+              ? `Des objets introuvables ailleurs, en jetons noirs. Solde: ${formatNumber(legend.black)}.`
+              : 'Réservée au rang Légendaire. Ce qui s’y vend ne se trouve nulle part ailleurs.'}
+          </span>
+        </span>
+        {legendary ? (
+          <ChevronRight size={18} aria-hidden="true" />
+        ) : (
+          <LockIcon size={16} aria-hidden="true" />
+        )}
+      </button>
 
       <div className="tabs" role="tablist">
         {TABS.map((t) => (

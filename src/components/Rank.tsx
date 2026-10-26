@@ -1,16 +1,18 @@
-import { useId, type CSSProperties } from 'react';
-import { VIP_TIERS, type VipTierId } from '../state/catalog';
+import { useId, type CSSProperties, type ReactNode } from 'react';
+import { VIP_TIERS } from '../state/catalog';
+import { legendAura, legendLabel, roman, type RankId } from '../state/legend';
 
 /**
  * Teintes de chaque rang: clair, moyen, sombre. L'emblème et l'étiquette en
  * tirent leurs dégradés.
  */
-const METAL: Record<VipTierId, [string, string, string]> = {
+const METAL: Record<RankId, [string, string, string]> = {
   bronze: ['#F2B587', '#C97A45', '#7A3F1D'],
   silver: ['#FFFFFF', '#C3CCD6', '#6E7885'],
   gold: ['#FFF1BF', '#E3B95A', '#8F6418'],
   platinum: ['#F4FEFF', '#A9DDE3', '#4F8590'],
   diamond: ['#FFFFFF', '#B4CDFF', '#5468C9'],
+  legend: ['#FFF1BF', '#E3B95A', '#7A5517'],
 };
 
 const CROWN = 'M14 31 L12 19 L19 24 L24 15 L29 24 L36 19 L34 31 Z';
@@ -120,11 +122,14 @@ function Crown({
  */
 export function RankEmblem({
   tier,
+  level = 1,
   size = 24,
   compact = false,
   className,
 }: {
-  tier: VipTierId;
+  tier: RankId;
+  /** Niveau Legendaire: l'embleme s'orne avec lui. */
+  level?: number;
   size?: number | string;
   compact?: boolean;
   className?: string;
@@ -364,12 +369,24 @@ export function RankEmblem({
       );
       break;
     }
+    case 'legend':
+      body = (
+        <LegendBody
+          uid={uid}
+          level={level}
+          compact={compact}
+          metal={metal}
+          sweep={sweep}
+        />
+      );
+      break;
   }
 
   return (
     <svg
       className={`rank-emblem${className ? ` ${className}` : ''}`}
       data-tier={tier}
+      data-aura={tier === 'legend' ? legendAura(level) : undefined}
       viewBox="0 0 48 48"
       width={size}
       height={size}
@@ -381,25 +398,202 @@ export function RankEmblem({
   );
 }
 
+/**
+ * Rang Legendaire: un jeton noir cercle d'or, couronne a gemme violette.
+ * Le niveau ajoute des ornements: flammes violettes (V), couronne de pointes
+ * et etincelles en orbite (X), halo prismatique (XXV). Le chiffre romain
+ * du niveau s'inscrit sur un ruban des que l'embleme est assez grand.
+ */
+function LegendBody({
+  uid,
+  level,
+  compact,
+  metal,
+  sweep,
+}: {
+  uid: string;
+  level: number;
+  compact: boolean;
+  metal: string;
+  sweep: ReactNode;
+}) {
+  const aura = legendAura(level);
+  const violet = `rk-violet-${uid}`;
+  const prism = `rk-lprism-${uid}`;
+  const numeral = roman(level);
+  return (
+    <>
+      <defs>
+        <radialGradient id={violet} cx="0.5" cy="0.4" r="0.6">
+          <stop offset="0" stopColor="#4A2A7A" />
+          <stop offset="0.7" stopColor="#1A0F2A" />
+          <stop offset="1" stopColor="#09060F" />
+        </radialGradient>
+        <linearGradient id={prism} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#F3D27C" />
+          <stop offset="0.35" stopColor="#FF9AD5" />
+          <stop offset="0.65" stopColor="#B07CFF" />
+          <stop offset="1" stopColor="#8FD3FF" />
+        </linearGradient>
+      </defs>
+      {aura >= 4 && !compact && (
+        <circle
+          className="rank-emblem__halo"
+          cx="24"
+          cy="24"
+          r="23"
+          fill="none"
+          stroke={`url(#${prism})`}
+          strokeWidth="1.6"
+        />
+      )}
+      {aura >= 2 && !compact && (
+        <g className="rank-emblem__rays">
+          {ring(8, 0, 22.5).map(([, , a]) => (
+            <path
+              key={a}
+              d="M24 24 C21.5 15 22.8 8 24 1.2 C25.2 8 26.5 15 24 24 Z"
+              fill="#B07CFF"
+              opacity="0.7"
+              transform={`rotate(${a} 24 24)`}
+            />
+          ))}
+        </g>
+      )}
+      {aura >= 3 &&
+        !compact &&
+        ring(16, 21.2).map(([x, y, a]) => (
+          <path
+            key={a}
+            d={`M${x} ${y - 2.2} L${x + 1.1} ${y} L${x} ${y + 1} L${x - 1.1} ${y} Z`}
+            fill={`url(#${metal})`}
+            transform={`rotate(${a} ${x} ${y})`}
+          />
+        ))}
+      {/* Le jeton noir: tranche d'or a huit encoches. Il se fait plus petit
+          quand les ornements du niveau ont besoin de place autour. */}
+      <g
+        transform={
+          aura >= 2 && !compact
+            ? 'translate(24 24) scale(0.8) translate(-24 -24)'
+            : undefined
+        }
+      >
+        <circle cx="24" cy="24" r="19.5" fill="#0B0910" />
+        {ring(8, 17.6).map(([x, y, a]) => (
+          <rect
+            key={a}
+            x={x - 2.4}
+            y={y - 1.6}
+            width="4.8"
+            height="3.2"
+            rx="0.8"
+            fill={`url(#${metal})`}
+            transform={`rotate(${a} ${x} ${y})`}
+          />
+        ))}
+        <circle
+          cx="24"
+          cy="24"
+          r="19.5"
+          fill="none"
+          stroke={`url(#${metal})`}
+          strokeWidth="1.1"
+        />
+        <circle cx="24" cy="24" r="14" fill={`url(#${violet})`} />
+        <circle
+          cx="24"
+          cy="24"
+          r="12.2"
+          fill="none"
+          stroke="#E3B95A"
+          strokeOpacity="0.75"
+          strokeWidth="0.7"
+          strokeDasharray="1.6 1.4"
+        />
+        <g transform="translate(24 22.5) scale(0.5) translate(-24 -25)">
+          <Crown
+            fill={`url(#${metal})`}
+            stroke="#FFF1BF"
+            gems={{ tips: '#B07CFF', center: '#FF9AD5' }}
+          />
+        </g>
+        {!compact && (
+          <g>
+            <path
+              d="M13 35.2 H35 L33.4 38.4 L35 41.6 H13 L14.6 38.4 Z"
+              fill="#0B0910"
+              stroke={`url(#${metal})`}
+              strokeWidth="0.8"
+            />
+            <text
+              x="24"
+              y="40.2"
+              textAnchor="middle"
+              fontFamily="Georgia, serif"
+              fontWeight="700"
+              fontSize="5.4"
+              fill="#F3D27C"
+              {...(numeral.length > 5
+                ? { textLength: 19, lengthAdjust: 'spacingAndGlyphs' }
+                : {})}
+            >
+              {numeral}
+            </text>
+          </g>
+        )}
+      </g>
+      {sweep}
+      {aura >= 3 &&
+        !compact &&
+        [
+          [40, 9, 2.6],
+          [7, 13, 2],
+          [42, 30, 2.2],
+        ].map(([x, y, sz], i) => (
+          <path
+            key={i}
+            className="rank-emblem__sparkle"
+            style={{ '--i': i } as CSSProperties}
+            d={sparkle(x, y, sz)}
+            fill="#FFF1BF"
+          />
+        ))}
+    </>
+  );
+}
+
 /** Rang avec son emblème et son nom, stylé selon le rang. */
 export function RankBadge({
   tier,
+  level = 1,
   emblem = true,
   size = 16,
+  short = false,
   className,
 }: {
-  tier: VipTierId;
+  tier: RankId;
+  level?: number;
   emblem?: boolean;
   size?: number;
+  /** Libelle abrege du rang Legendaire ("Lég. IV"), pour les places etroites. */
+  short?: boolean;
   className?: string;
 }) {
-  const label = VIP_TIERS.find((t) => t.id === tier)?.label ?? tier;
+  const label =
+    tier === 'legend'
+      ? short
+        ? `Lég. ${roman(level)}`
+        : legendLabel(level)
+      : (VIP_TIERS.find((t) => t.id === tier)?.label ?? tier);
   return (
     <span
       className={`rank${className ? ` ${className}` : ''}`}
       data-tier={tier}
     >
-      {emblem && <RankEmblem tier={tier} size={size} compact={size < 28} />}
+      {emblem && (
+        <RankEmblem tier={tier} level={level} size={size} compact={size < 28} />
+      )}
       <span className="rank__label">{label}</span>
     </span>
   );

@@ -6,6 +6,7 @@ import { economy, reportFailure } from '../state/economy';
 import type { SpinResult } from '../core';
 import { WHEEL_SEGMENTS } from '../state/catalog';
 import { playSound } from '../audio/sfx';
+import { BlackChip } from './ui';
 
 const SEG = 360 / WHEEL_SEGMENTS.length;
 const R = 100;
@@ -222,6 +223,12 @@ export function WheelModal({ onClose }: { onClose: () => void }) {
             {result.boost > 1 && (
               <span className="wheel__boost">
                 Bonus VIP ×{String(result.boost).replace('.', ',')} compris
+              </span>
+            )}
+            {result.black > 0 && (
+              <span className="wheel__black">
+                <BlackChip size={18} /> +{result.black} jetons noirs · Roue
+                noire
               </span>
             )}
             <button className="btn btn--gold btn--lg" onClick={onClose}>

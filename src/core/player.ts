@@ -30,6 +30,15 @@ import {
   type MissionScope,
   type PeriodProgress,
 } from '../state/missions';
+import {
+  ASCENSION_GIFT,
+  blackFor,
+  canAscend,
+  emptyLegend,
+  legendLabel,
+  legendLevelFor,
+  levelReward,
+} from '../state/legend';
 import { formatNumber } from '../utils/format';
 import type { Ctx, Notice, PlayerState, Session } from './types';
 
@@ -100,6 +109,7 @@ export function initialPlayer(
       weekly: { key: ctx.week, progress: {}, claimed: [] },
     },
     perks: { lastGift: null, paidAchievements: [] },
+    legend: emptyLegend(),
     equipped: {
       cardBack: DEFAULT_CARD_BACK,
       cardFace: DEFAULT_CARD_FACE,
@@ -130,6 +140,8 @@ export class Tx {
   readonly notices: Notice[] = [];
   /** Hauts faits debloques pendant cette transaction. */
   private unlocked: string[] = [];
+  /** Jetons noirs gagnes pendant cette transaction. */
+  blackGained = 0;
 
   constructor(
     state: PlayerState,
@@ -157,6 +169,70 @@ export class Tx {
       });
       if (tierIndex(after.id) >= tierIndex('gold')) this.grant(['regular']);
     }
+    this.updateLegend();
+  }
+
+  /**
+   * Rang Legendaire: accession des que les deux conditions sont reunies,
+   * puis un niveau de plus a chaque palier de renom (avec sa prime).
+   */
+  updateLegend(): void {
+    const legend = this.s.legend;
+    const lifetime = this.s.wallet.lifetimeEarned;
+    if (legend.level === 0) {
+      if (!canAscend(lifetime, legend.tableWins)) return;
+      legend.level = 1;
+      legend.base = lifetime;
+      legend.ascendedAt = this.ctx.now;
+      this.addBlackPrize(ASCENSION_GIFT);
+      this.notify({
+        kind: 'legend',
+        title: legendLabel(1),
+        text: `Tout ce qui précède n’était que le tutoriel. ${ASCENSION_GIFT} jetons noirs pour commencer.`,
+      });
+      return;
+    }
+    const target = legendLevelFor(lifetime - legend.base);
+    if (!Number.isFinite(target) || target <= legend.level) return;
+    let prize = 0;
+    while (legend.level < target) {
+      legend.level += 1;
+      prize += levelReward(legend.level);
+    }
+    this.addBlackPrize(prize);
+    this.notify({
+      kind: 'level',
+      title: legendLabel(legend.level),
+      text: `Nouveau niveau Légendaire. +${formatNumber(prize)} jetons noirs.`,
+    });
+  }
+
+  /** Verse des jetons noirs tels quels (primes fixes, change). */
+  addBlackPrize(amount: number): void {
+    if (!(amount > 0)) return;
+    const legend = this.s.legend;
+    legend.black += amount;
+    legend.blackEarned += amount;
+    this.blackGained += amount;
+  }
+
+  /**
+   * Gain de jetons noirs: la base est multipliee par le taux du niveau.
+   * Rien tant que le joueur n'est pas Legendaire.
+   */
+  earnBlack(base: number): number {
+    const amount = blackFor(base, this.s.legend.level);
+    this.addBlackPrize(amount);
+    return amount;
+  }
+
+  /** Depense des jetons noirs; refuse (faux) si le solde ne suffit pas. */
+  spendBlack(amount: number): boolean {
+    const legend = this.s.legend;
+    if (amount < 0 || legend.black < amount) return false;
+    legend.black -= amount;
+    legend.blackSpent += amount;
+    return true;
   }
 
   /** Depense des jetons; refuse (faux) si la banque ne suffit pas. */

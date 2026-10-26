@@ -142,6 +142,93 @@ const PARTICLES: [number, number, number][] = [
   [64, 102, 0.9],
 ];
 
+const VOID_STARS: [number, number, number][] = [
+  [10, 10, 0.8],
+  [26, 22, 0.6],
+  [84, 12, 1],
+  [70, 30, 0.6],
+  [14, 48, 0.7],
+  [90, 44, 0.8],
+  [8, 80, 1],
+  [30, 92, 0.6],
+  [78, 88, 0.9],
+  [92, 70, 0.6],
+];
+
+/** Jeton noir en filigrane, au centre de la carte Onyx. */
+function Watermark() {
+  return (
+    <svg className="pcard__watermark" viewBox="0 0 40 40" aria-hidden="true">
+      <circle
+        cx="20"
+        cy="20"
+        r="18.5"
+        fill="none"
+        stroke="#E3B95A"
+        strokeWidth="1"
+      />
+      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+        <rect
+          key={i}
+          x="17.8"
+          y="1.6"
+          width="4.4"
+          height="4.6"
+          rx="1"
+          fill="#E3B95A"
+          transform={`rotate(${i * 45} 20 20)`}
+        />
+      ))}
+      <circle
+        cx="20"
+        cy="20"
+        r="11"
+        fill="none"
+        stroke="#E3B95A"
+        strokeWidth="0.8"
+        strokeDasharray="2 1.7"
+      />
+      <path
+        d="M13.6 24.6 L12.6 15.8 L16.6 19 L20 13 L23.4 19 L27.4 15.8 L26.4 24.6 Z"
+        fill="#E3B95A"
+      />
+    </svg>
+  );
+}
+
+/** Le signe de l'infini, trace par une lumiere qui le parcourt sans fin. */
+function InfinitySign() {
+  const d =
+    'M50 25 C40 6 4 6 4 25 C4 44 40 44 50 25 C60 6 96 6 96 25 C96 44 60 44 50 25 Z';
+  return (
+    <svg className="pcard__infinity" viewBox="0 0 100 50" aria-hidden="true">
+      <defs>
+        <linearGradient id="pcard-void" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#F3D27C" />
+          <stop offset="0.5" stopColor="#C9A0FF" />
+          <stop offset="1" stopColor="#F3D27C" />
+        </linearGradient>
+      </defs>
+      <path
+        d={d}
+        fill="none"
+        stroke="#C9A0FF"
+        strokeOpacity="0.35"
+        strokeWidth="1.2"
+      />
+      <path
+        className="pcard__infinity-run"
+        d={d}
+        fill="none"
+        stroke="url(#pcard-void)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        pathLength={100}
+      />
+    </svg>
+  );
+}
+
 /** Decor d'une carte de profil, selon son style. */
 export function CardDecor({ style }: { style: string }) {
   let decor: ReactNode = null;
@@ -216,6 +303,30 @@ export function CardDecor({ style }: { style: string }) {
           <Corners kind="legend" />
           <Dots className="pcard__particle" points={PARTICLES} />
           <Dots className="pcard__sparkle" points={FLAKES} />
+        </>
+      );
+      break;
+    case 'carte-onyx':
+      decor = (
+        <>
+          <span className="pcard__inlay pcard__inlay--double" />
+          <Watermark />
+          <Corners kind="gilded" />
+          <span className="pcard__sheen" />
+        </>
+      );
+      break;
+    case 'carte-infini':
+      decor = (
+        <>
+          <span className="pcard__nebula" />
+          <Dots className="pcard__star" points={VOID_STARS} />
+          <InfinitySign />
+          <span className="pcard__rainbow pcard__rainbow--void" />
+          <Dots
+            className="pcard__particle pcard__particle--violet"
+            points={PARTICLES}
+          />
         </>
       );
       break;

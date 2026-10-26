@@ -23,6 +23,12 @@ import { accountsEnabled } from '../state/account';
 import { formatMultiplier, formatNumber } from '../utils/format';
 import { VAULT_ODDS } from '../state/gambling';
 import { MEDAL_REWARD } from '../state/achievements';
+import {
+  BLACK_CASH_SLICE,
+  EXCHANGE_RATE,
+  LEGEND_THRESHOLD,
+  legendLabel,
+} from '../state/legend';
 
 /** Une chance (0 a 1) en pourcentage lisible: 0,05 donne « 5 % ». */
 function formatChance(p: number): string {
@@ -301,9 +307,11 @@ const SECTIONS: Section[] = [
                   ? `mise de ${formatNumber(t.stake)} jetons`
                   : 'sans mise'}
                 , gains multipliés par {formatMultiplier(t.multiplier)}
-                {t.minTier
-                  ? ` (rang VIP ${VIP_TIERS.find((v) => v.id === t.minTier)?.label} requis).`
-                  : '.'}
+                {t.minLevel
+                  ? ` (${legendLabel(t.minLevel)} requis).`
+                  : t.minTier
+                    ? ` (rang VIP ${VIP_TIERS.find((v) => v.id === t.minTier)?.label} requis).`
+                    : '.'}
               </>
             ),
           }))}
@@ -439,6 +447,34 @@ const SECTIONS: Section[] = [
               text: `${t.label}: dès ${formatNumber(t.threshold)} jetons gagnés${extras.length ? `, ${extras.join(', ')}` : ''}.`,
             };
           })}
+        />
+        <h3>Le rang Légendaire</h3>
+        <p>
+          Au-delà du Diamant, deux épreuves: avoir gagné{' '}
+          {formatNumber(LEGEND_THRESHOLD)} jetons depuis le début, et remporter
+          au moins une manche à la Table Légende. Une fois Légendaire, tout
+          recommence: Légendaire I, II, III… sans fin. Chaque jeton gagné compte
+          comme du renom, et chaque niveau en demande 100 000 de plus que le
+          précédent.
+        </p>
+        <RuleList
+          items={[
+            {
+              tone: 'gold',
+              mark: '◆',
+              text: `Les jetons noirs: une seconde monnaie, gagnée par les victoires (sauf en Facile), les magots encaissés (un par tranche de ${formatNumber(BLACK_CASH_SLICE)}), le défi du jour, le gros lot du coffre et le jackpot progressif. Chaque niveau augmente ces gains de 10 %.`,
+            },
+            {
+              tone: 'gold',
+              mark: '◆',
+              text: `La Boutique Légendaire vend en jetons noirs des objets introuvables ailleurs, chacun réservé à un niveau. Le bureau de change donne un jeton noir pour ${formatNumber(EXCHANGE_RATE)} jetons de la banque.`,
+            },
+            {
+              tone: 'gold',
+              mark: '◆',
+              text: 'Chaque nouveau niveau verse sa prime en jetons noirs. Plus loin sur la voie: le coffret noir de la semaine (II), la Table Noire (III) et la roue noire (V).',
+            },
+          ]}
         />
       </div>
     ),

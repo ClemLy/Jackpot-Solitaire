@@ -8,6 +8,7 @@ import {
   type VipTierId,
 } from '../state/catalog';
 import { ACHIEVEMENTS } from '../state/achievements';
+import { legendProgress } from '../state/legend';
 import type { PlayerState } from './types';
 
 export interface PublicCard {
@@ -17,6 +18,10 @@ export interface PublicCard {
   profileCard: string;
   title: string;
   tier: VipTierId;
+  /** Niveau Legendaire (0: pas Legendaire). */
+  legend: number;
+  /** Progression (0 a 1) vers le niveau Legendaire suivant. */
+  legendProgress: number;
   /** Jetons gagnes depuis le debut: la progression vers le rang suivant. */
   lifetimeEarned: number;
   stats: {
@@ -41,7 +46,7 @@ export interface PublicCard {
 /** Ce que voit quelqu'un qui n'est pas (encore) ami: le strict minimum. */
 export type MiniCard = Pick<
   PublicCard,
-  'pseudo' | 'avatar' | 'frame' | 'tier' | 'title'
+  'pseudo' | 'avatar' | 'frame' | 'tier' | 'title' | 'legend'
 >;
 
 export function publicCard(
@@ -57,6 +62,11 @@ export function publicCard(
     profileCard: s.equipped.profileCard,
     title: s.equipped.title,
     tier: vipTierFor(s.wallet.lifetimeEarned).id,
+    legend: s.legend.level,
+    legendProgress:
+      s.legend.level > 0
+        ? legendProgress(s.wallet.lifetimeEarned, s.legend).progress
+        : 0,
     lifetimeEarned: s.wallet.lifetimeEarned,
     stats: {
       gamesPlayed: s.stats.gamesPlayed,
@@ -91,6 +101,7 @@ export function miniCard(card: PublicCard): MiniCard {
     frame: card.frame,
     tier: card.tier,
     title: card.title,
+    legend: card.legend ?? 0,
   };
 }
 

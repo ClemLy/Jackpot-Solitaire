@@ -77,6 +77,34 @@ const richMeta = {
   },
 };
 
+// Joueur Legendaire IV des captures du Salon.
+const LEGEND_META = {
+  wallet: { balance: 1_840_000, lifetimeEarned: 2_020_000, spent: 0 },
+  legend: {
+    tableWins: 3,
+    level: 4,
+    base: 1_000_000,
+    ascendedAt: 1,
+    black: 340,
+    blackEarned: 500,
+    blackSpent: 160,
+  },
+  inventory: {
+    owned: ['onyx', 'pluie-noire', 'salon-noir', 'ombre', 'carte-onyx'],
+    consumables: { hint: 2, insurance: 1, redeal: 0, peek: 1, reshuffle: 0, joker: 1 },
+  },
+  equipped: {
+    cardBack: 'onyx',
+    cardFace: 'ivory',
+    table: 'salon-noir',
+    victoryFx: 'pluie-noire',
+    title: 'fin-tutoriel',
+    avatar: 'ombre',
+    frame: 'cadre-legende',
+    profileCard: 'carte-onyx',
+  },
+};
+
 // Amis de demonstration, renvoyes a la place du serveur.
 const FRIEND_CARD = {
   pseudo: 'ReineDeCoeur',
@@ -85,15 +113,24 @@ const FRIEND_CARD = {
   profileCard: 'carte-holo',
   title: 'roi',
   tier: 'diamond',
-  lifetimeEarned: 212400,
+  legend: 2,
+  legendProgress: 0.42,
+  lifetimeEarned: 1_326_000,
   stats: { gamesPlayed: 412, gamesWon: 287, bestWinStreak: 19, bestScore: 2640, bestTimeMs: 118000 },
   jackpot: { bestSecuredRun: 15240, longestStreak: 9, vaultsOpened: 14, progressiveWins: 2 },
-  achievements: { unlocked: 38, total: 54 },
+  achievements: { unlocked: 41, total: 58 },
   collection: { owned: 41, total: 57 },
   dailyDone: 96,
   memberSince: '2026-02-11T09:00:00Z',
 };
-const mini = ({ pseudo, avatar, frame, tier, title }) => ({ pseudo, avatar, frame, tier, title });
+const mini = ({ pseudo, avatar, frame, tier, title, legend }) => ({
+  pseudo,
+  avatar,
+  frame,
+  tier,
+  title,
+  legend,
+});
 const FRIENDS = {
   friends: [
     mini(FRIEND_CARD),
@@ -220,6 +257,7 @@ const JACKPOT_WIN = {
     bets: [],
     progressive: 0,
     vegas: null,
+    black: 0,
     unpaid: false,
   },
 };
@@ -308,6 +346,24 @@ async function main() {
       await driveStore(page, (m) => window.__jackpot.game.getState().openModal(m), modal);
       await page.screenshot({ path: resolve(shotsDir, `${file}.png`) });
     }
+
+    // Rang Legendaire: le Salon (niveau IV), puis la ceremonie d'accession.
+    await driveStore(page, () => window.__jackpot.game.getState().closeModal());
+    await driveStore(page, (s) => window.__jackpot.meta.setState(s), LEGEND_META);
+    await driveStore(page, () => window.__jackpot.game.getState().openModal('legend'));
+    await sleep(900);
+    await page.screenshot({ path: resolve(shotsDir, 'legendaire.png') });
+    await driveStore(page, () => window.__jackpot.game.getState().closeModal());
+    await driveStore(page, () =>
+      window.__jackpot.meta.getState().notify({
+        kind: 'legend',
+        title: 'Légendaire I',
+        text: 'Tout ce qui précède n’était que le tutoriel.',
+      }),
+    );
+    // On laisse l'entree de la ceremonie se derouler en entier.
+    await sleep(3200);
+    await page.screenshot({ path: resolve(shotsDir, 'legendaire-accession.png') });
     await desk.context.close();
 
     // ---- Telephone en portrait ----

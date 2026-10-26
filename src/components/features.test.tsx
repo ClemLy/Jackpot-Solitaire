@@ -71,10 +71,84 @@ describe('rangs', () => {
     expect(screen.getByRole('progressbar', { name: /Platine/ })).toBeTruthy();
     const ladder = screen.getByRole('list', { name: 'Tous les rangs' });
     const steps = ladder.querySelectorAll(':scope > li');
-    expect(steps).toHaveLength(5);
+    expect(steps).toHaveLength(6);
     expect(steps[2].getAttribute('aria-current')).toBe('step');
-    expect(steps[3].textContent).toMatch(/Salon Platine/);
+    expect(steps[2].textContent).toMatch(/Salon Platine/);
+    expect(steps[3].textContent).toMatch(/Table Diamant/);
     expect(steps[4].textContent).toMatch(/Table Légende/);
+    // Le rang Legendaire est annonce des le depart, avec ses deux epreuves.
+    expect(steps[5].textContent).toMatch(/Légendaire/);
+    expect(steps[5].textContent).toMatch(/1\s000\s000 jetons gagnés/);
+    expect(steps[5].textContent).toMatch(/Table Légende/);
+  });
+});
+
+describe('rang Legendaire', () => {
+  it('montre le sceau et ses epreuves avant le rang', async () => {
+    useMetaStore.setState({
+      wallet: { balance: 0, lifetimeEarned: 600_000, spent: 0 },
+    });
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Salon légendaire/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Salon Légendaire' });
+    expect(dialog.textContent).toMatch(/Vaincre la Table Légende/);
+    expect(dialog.textContent).toMatch(/Encore 400\s000 jetons/);
+    expect(screen.getByRole('button', { name: /S.asseoir/ })).toBeTruthy();
+  });
+
+  it('ouvre le Salon, sa boutique et son bureau de change', async () => {
+    useMetaStore.setState((s) => ({
+      wallet: { balance: 300_000, lifetimeEarned: 1_400_000, spent: 0 },
+      legend: {
+        ...s.legend,
+        tableWins: 1,
+        level: 2,
+        base: 1_000_000,
+        ascendedAt: 1,
+        black: 80,
+        blackEarned: 80,
+      },
+    }));
+    render(<App />);
+    // Le solde de jetons noirs: dans la barre du haut (et pres du jackpot
+    // progressif sur telephone).
+    const pills = screen.getAllByRole('button', { name: /80 jetons noirs/ });
+    expect(pills.length).toBeGreaterThan(0);
+    fireEvent.click(pills[0]);
+    expect(screen.getAllByText('Légendaire II').length).toBeGreaterThan(0);
+    // Onyx (30 jetons noirs) s'achete et s'equipe aussitot.
+    fireEvent.click(
+      screen.getByRole('button', { name: /Acheter Onyx pour 30 jetons noirs/ }),
+    );
+    expect(useMetaStore.getState().legend.black).toBe(50);
+    expect(useMetaStore.getState().equipped.cardBack).toBe('onyx');
+    // L'Ombre attend le niveau III.
+    expect(
+      screen.getByRole('button', { name: /L.Ombre, au niveau Légendaire III/ }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: /Jetons noirs/ }));
+    const before = useMetaStore.getState().wallet.balance;
+    fireEvent.click(
+      screen.getByRole('button', { name: /Échanger 250\s000 jetons contre 5/ }),
+    );
+    expect(useMetaStore.getState().legend.black).toBe(55);
+    expect(useMetaStore.getState().wallet.balance).toBe(before - 250_000);
+  });
+
+  it('celebre l accession en plein ecran', async () => {
+    useMetaStore.getState().notify({
+      kind: 'legend',
+      title: 'Légendaire I',
+      text: 'Tout ce qui précède n’était que le tutoriel.',
+    });
+    render(<App />);
+    const ceremony = screen.getByRole('dialog', { name: 'Légendaire' });
+    expect(ceremony.textContent).toMatch(/que le tutoriel/);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Entrer dans le Salon' }),
+    );
+    expect(useGameStore.getState().modal).toBe('legend');
+    expect(screen.queryByRole('dialog', { name: 'Légendaire' })).toBeNull();
   });
 });
 

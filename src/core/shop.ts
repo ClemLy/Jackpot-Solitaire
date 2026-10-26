@@ -4,11 +4,12 @@ import {
   COLLECTIBLES,
   SLOT_OF,
   WHEEL_SEGMENTS,
+  canUnlock,
   discountedPrice,
   drawWheelSegment,
   findConsumable,
   findCosmetic,
-  meetsTier,
+  isLegendItem,
   missionBonusFor,
   ownsCosmetic,
   vipTierFor,
@@ -17,6 +18,13 @@ import {
   type WheelReward,
 } from '../state/catalog';
 import { unpaidAchievements } from '../state/achievements';
+import {
+  BLACK_WHEEL,
+  EXCHANGE_PACKS,
+  EXCHANGE_RATE,
+  hasPerk,
+  weeklyBlack,
+} from '../state/legend';
 import { formatNumber } from '../utils/format';
 import {
   findMission,
@@ -43,22 +51,39 @@ export function buyCosmetic(
   if (!item) throw new CoreError('unknown', 'Objet inconnu.');
   const { owned } = tx.s.inventory;
   const lifetime = tx.s.wallet.lifetimeEarned;
-  if (ownsCosmetic(item, owned, lifetime)) {
+  const level = tx.s.legend.level;
+  const legendary = isLegendItem(item);
+  if (ownsCosmetic(item, owned, lifetime, level)) {
     throw new CoreError('owned', 'Tu possèdes déjà cet objet.');
   }
-  if (!meetsTier(lifetime, item.minTier)) {
-    throw new CoreError('locked', 'Ton rang ne permet pas encore cet achat.');
+  if (!canUnlock(item, lifetime, level)) {
+    throw new CoreError(
+      'locked',
+      legendary
+        ? 'Ton niveau Légendaire ne permet pas encore cet achat.'
+        : 'Ton rang ne permet pas encore cet achat.',
+    );
   }
-  if (item.price === 0)
-    throw new CoreError('locked', 'Objet offert au rang requis.');
-  if (!tx.spend(discountedPrice(item.price, lifetime))) {
+  if (item.price === 0) {
+    throw new CoreError(
+      'locked',
+      legendary
+        ? 'Objet offert au niveau requis.'
+        : 'Objet offert au rang requis.',
+    );
+  }
+  if (legendary) {
+    if (!tx.spendBlack(item.price)) {
+      throw new CoreError('funds', 'Pas assez de jetons noirs.');
+    }
+  } else if (!tx.spend(discountedPrice(item.price, lifetime))) {
     throw new CoreError('funds', 'Pas assez de jetons.');
   }
   owned.push(id);
   // Un objet achete s'equipe aussitot.
   tx.s.equipped[SLOT_OF[item.category]] = id;
   const set = new Set(owned);
-  const unlocked = ['collector'];
+  const unlocked = legendary ? [] : ['collector'];
   if (item.grail) unlocked.push('grail');
   if (COLLECTIBLES.every((c) => set.has(c.id))) unlocked.push('completionist');
   tx.grant(unlocked);
@@ -92,7 +117,14 @@ export function equip(
   if (!item || SLOT_OF[item.category] !== slot) {
     throw new CoreError('unknown', 'Objet inconnu.');
   }
-  if (!ownsCosmetic(item, tx.s.inventory.owned, tx.s.wallet.lifetimeEarned)) {
+  if (
+    !ownsCosmetic(
+      item,
+      tx.s.inventory.owned,
+      tx.s.wallet.lifetimeEarned,
+      tx.s.legend.level,
+    )
+  ) {
     throw new CoreError('locked', 'Tu ne possèdes pas cet objet.');
   }
   tx.s.equipped[slot] = id;
@@ -105,6 +137,8 @@ export interface SpinResult {
   reward: WheelReward;
   /** Multiplicateur VIP applique aux jetons (1 si aucun). */
   boost: number;
+  /** Jetons noirs gagnes en plus (Roue noire, rang Legendaire). */
+  black: number;
 }
 
 export function canSpin(state: PlayerState, ctx: Pick<Ctx, 'today'>): boolean {
@@ -128,7 +162,15 @@ export function spinWheel(state: PlayerState, ctx: Ctx): Outcome<SpinResult> {
   tx.recordMission({ kind: 'wheel' });
   if (reward.kind === 'chips') tx.credit(reward.amount);
   else tx.addConsumable(reward.item);
-  return tx.done({ index, reward, boost: reward.kind === 'chips' ? boost : 1 });
+  const black = hasPerk(tx.s.legend.level, 'wheel')
+    ? tx.earnBlack(BLACK_WHEEL)
+    : 0;
+  return tx.done({
+    index,
+    reward,
+    boost: reward.kind === 'chips' ? boost : 1,
+    black,
+  });
 }
 
 export function claimMission(
@@ -166,15 +208,40 @@ export function canClaimWeeklyGift(
 export function claimWeeklyGift(
   state: PlayerState,
   ctx: Ctx,
-): Outcome<{ gift: ConsumableId[] }> {
+): Outcome<{ gift: ConsumableId[]; black: number }> {
   const tx = new Tx(state, ctx);
   if (!canClaimWeeklyGift(tx.s, ctx)) {
     throw new CoreError('state', 'Le coffret de la semaine est déjà ouvert.');
   }
   const gift = weeklyGiftFor(tx.s.wallet.lifetimeEarned);
   for (const id of gift) tx.addConsumable(id);
+  // Coffret noir: des jetons noirs en plus, a partir du niveau II.
+  const black = weeklyBlack(tx.s.legend.level);
+  if (black > 0) tx.addBlackPrize(black);
   tx.s.perks.lastGift = ctx.week;
-  return tx.done({ gift });
+  return tx.done({ gift, black });
+}
+
+/** Bureau de change: des jetons de la banque contre des jetons noirs. */
+export function exchangeBlack(
+  state: PlayerState,
+  amount: number,
+  ctx: Ctx,
+): Outcome<{ amount: number; cost: number }> {
+  const tx = new Tx(state, ctx);
+  if (!hasPerk(tx.s.legend.level, 'exchange')) {
+    throw new CoreError(
+      'locked',
+      'Le bureau de change est réservé aux Légendaires.',
+    );
+  }
+  if (!(EXCHANGE_PACKS as readonly number[]).includes(amount)) {
+    throw new CoreError('invalid', 'Lot inconnu.');
+  }
+  const cost = amount * EXCHANGE_RATE;
+  if (!tx.spend(cost)) throw new CoreError('funds', 'Pas assez de jetons.');
+  tx.addBlackPrize(amount);
+  return tx.done({ amount, cost });
 }
 
 /** Verse en une fois les recompenses des hauts faits obtenus auparavant. */

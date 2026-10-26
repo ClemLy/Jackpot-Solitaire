@@ -19,37 +19,57 @@ import { economy, reportFailure } from '../state/economy';
 import {
   AVATARS,
   FRAMES,
+  LEGEND_COSMETICS,
   PROFILE_CARDS,
   VIP_TIERS,
   discountedPrice,
+  isLegendItem,
   ownsCosmetic,
   type Cosmetic,
 } from '../state/catalog';
+import { roman } from '../state/legend';
 import { publicCard, type EquipSlot } from '../core';
 import { playSound } from '../audio/sfx';
 import { formatNumber } from '../utils/format';
-import { Chip } from './ui';
+import { BlackChip, Chip } from './ui';
 
 type Tab = 'avatar' | 'frame' | 'profileCard';
 
-const TABS: { id: Tab; label: string; items: readonly Cosmetic[] }[] = [
-  { id: 'avatar', label: 'Avatar', items: AVATARS },
-  { id: 'frame', label: 'Cadre', items: FRAMES },
-  { id: 'profileCard', label: 'Carte', items: PROFILE_CARDS },
+const legendOf = (category: Cosmetic['category']) =>
+  LEGEND_COSMETICS.filter((c) => c.category === category);
+
+// Les objets legendaires suivent ceux de la boutique, montres aux seuls
+// Legendaires (ils restent un secret pour les autres).
+const TABS: {
+  id: Tab;
+  label: string;
+  items: readonly Cosmetic[];
+  legend: readonly Cosmetic[];
+}[] = [
+  { id: 'avatar', label: 'Avatar', items: AVATARS, legend: legendOf('avatar') },
+  { id: 'frame', label: 'Cadre', items: FRAMES, legend: legendOf('frame') },
+  {
+    id: 'profileCard',
+    label: 'Carte',
+    items: PROFILE_CARDS,
+    legend: legendOf('card'),
+  },
 ];
 
 function Choice({ item, slot }: { item: Cosmetic; slot: EquipSlot }) {
   const equipped = useMetaStore((s) => s.equipped);
   const owned = useMetaStore((s) => s.inventory.owned);
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
+  const level = useMetaStore((s) => s.legend.level);
   const openModal = useGameStore((s) => s.openModal);
-  const has = ownsCosmetic(item, owned, lifetime);
+  const has = ownsCosmetic(item, owned, lifetime, level);
   const on = equipped[slot] === item.id;
   const tier = VIP_TIERS.find((t) => t.id === item.minTier);
+  const legendary = isLegendItem(item);
 
   const choose = async () => {
     if (!has) {
-      openModal('shop');
+      openModal(legendary ? 'legend' : 'shop');
       return;
     }
     try {
@@ -101,7 +121,15 @@ function Choice({ item, slot }: { item: Cosmetic; slot: EquipSlot }) {
       {!has && (
         <span className="choice__lock">
           <Lock size={11} />
-          {item.price > 0 ? (
+          {legendary ? (
+            level >= (item.minLevel ?? 1) ? (
+              <>
+                <BlackChip size={11} /> {formatNumber(item.price)}
+              </>
+            ) : (
+              `Niveau ${roman(item.minLevel ?? 1)}`
+            )
+          ) : item.price > 0 ? (
             <>
               <Chip size={11} />{' '}
               {formatNumber(discountedPrice(item.price, lifetime))}
@@ -289,6 +317,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
   const online = status === 'online';
   const card = publicCard(pseudo ?? 'Invité', pickPlayer(store), createdAt);
   const current = TABS.find((t) => t.id === tab)!;
+  const level = store.legend.level;
 
   return (
     <Modal title="Mon profil" onClose={onClose} size="xl">
@@ -310,9 +339,11 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
             ))}
           </div>
           <div className="choices" role="tabpanel">
-            {current.items.map((item) => (
-              <Choice key={item.id} item={item} slot={current.id} />
-            ))}
+            {[...current.items, ...(level >= 1 ? current.legend : [])].map(
+              (item) => (
+                <Choice key={item.id} item={item} slot={current.id} />
+              ),
+            )}
           </div>
 
           {online ? (

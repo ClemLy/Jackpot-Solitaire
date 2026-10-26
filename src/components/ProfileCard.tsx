@@ -10,6 +10,7 @@ import { formatDuration, formatNumber, percent } from '../utils/format';
 import { Portrait } from './Portrait';
 import { RankBadge } from './Rank';
 import { CardDecor } from './CardDecor';
+import { legendLabel } from '../state/legend';
 
 function memberSince(iso: string | null): string | null {
   if (!iso) return null;
@@ -31,6 +32,8 @@ export function ProfileCard({
 }) {
   const tier = VIP_TIERS.find((t) => t.id === card.tier) ?? VIP_TIERS[0];
   const next = nextVipTier(card.lifetimeEarned);
+  const level = card.legend ?? 0;
+  const rankId = level > 0 ? 'legend' : tier.id;
   const title = findCosmetic(card.title);
   const since = memberSince(card.memberSince);
   const stats = [
@@ -62,8 +65,8 @@ export function ProfileCard({
       <div className="pcard__shine" aria-hidden="true" />
       <CardDecor style={card.profileCard} />
       <header className="pcard__top">
-        <span className="pcard__tier rank-pill" data-tier={tier.id}>
-          <RankBadge tier={tier.id} size={18} />
+        <span className="pcard__tier rank-pill" data-tier={rankId}>
+          <RankBadge tier={rankId} level={level} size={18} />
         </span>
         {since && <span className="pcard__since">Depuis {since}</span>}
       </header>
@@ -82,17 +85,26 @@ export function ProfileCard({
         </span>
       )}
 
-      <div className="pcard__progress" data-tier={tier.id}>
+      <div className="pcard__progress" data-tier={rankId}>
         <span
           className="meter meter--thin"
-          style={{ '--p': vipProgress(card.lifetimeEarned) } as CSSProperties}
+          style={
+            {
+              '--p':
+                level > 0
+                  ? (card.legendProgress ?? 0)
+                  : vipProgress(card.lifetimeEarned),
+            } as CSSProperties
+          }
         >
           <span />
         </span>
         <small>
-          {next
-            ? `${formatNumber(next.threshold - card.lifetimeEarned)} jetons avant ${next.label}`
-            : 'Rang maximum'}
+          {level > 0
+            ? `En route vers ${legendLabel(level + 1)}`
+            : next
+              ? `${formatNumber(next.threshold - card.lifetimeEarned)} jetons avant ${next.label}`
+              : 'En route vers le rang Légendaire'}
         </small>
       </div>
 
@@ -129,6 +141,7 @@ export function PlayerRow({
   onOpen?: () => void;
 }) {
   const tier = VIP_TIERS.find((t) => t.id === card.tier) ?? VIP_TIERS[0];
+  const level = card.legend ?? 0;
   const title = findCosmetic(card.title);
   const body = (
     <>
@@ -136,7 +149,12 @@ export function PlayerRow({
       <span className="player-row__text">
         <strong>{card.pseudo}</strong>
         <span>
-          <RankBadge tier={tier.id} size={13} className="player-row__tier" />
+          <RankBadge
+            tier={level > 0 ? 'legend' : tier.id}
+            level={level}
+            size={13}
+            className="player-row__tier"
+          />
           {title ? ` · ${title.label}` : ''}
         </span>
       </span>

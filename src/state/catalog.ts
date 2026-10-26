@@ -21,6 +21,10 @@ export interface Cosmetic {
   minTier?: VipTierId;
   /** Piece maitresse de la boutique: mise en avant comme le graal. */
   grail?: boolean;
+  /** Objet de la Boutique Legendaire: paye en jetons noirs. */
+  currency?: 'black';
+  /** Niveau Legendaire minimum (objets de la Boutique Legendaire). */
+  minLevel?: number;
 }
 
 export const CARD_BACKS: readonly Cosmetic[] = [
@@ -657,6 +661,160 @@ export const PROFILE_CARDS: readonly Cosmetic[] = [
   },
 ] as const;
 
+// ---------------------------------------------------------------------------
+// Boutique Legendaire: des objets payes en jetons noirs, chacun reserve a un
+// niveau Legendaire. Ils ne comptent pas dans la collection de la boutique.
+// ---------------------------------------------------------------------------
+
+export const LEGEND_COSMETICS: readonly Cosmetic[] = [
+  {
+    id: 'cadre-legende',
+    category: 'frame',
+    label: 'Sceau légendaire',
+    hint: 'Obsidienne, clous d’or et flamme violette. Offert à l’accession.',
+    price: 0,
+    currency: 'black',
+    minLevel: 1,
+  },
+  {
+    id: 'fin-tutoriel',
+    category: 'title',
+    label: 'Fin du tutoriel',
+    hint: 'Tout ce qui précédait n’était qu’un échauffement.',
+    price: 0,
+    currency: 'black',
+    minLevel: 1,
+  },
+  {
+    id: 'onyx',
+    category: 'back',
+    label: 'Onyx',
+    hint: 'Laque noire, filets d’or et jeton noir en médaillon.',
+    price: 30,
+    currency: 'black',
+    minLevel: 1,
+  },
+  {
+    id: 'pluie-noire',
+    category: 'fx',
+    label: 'Pluie noire',
+    hint: 'Une averse de jetons noirs cerclés d’or.',
+    price: 40,
+    currency: 'black',
+    minLevel: 1,
+  },
+  {
+    id: 'salon-noir',
+    category: 'table',
+    label: 'Salon noir',
+    hint: 'Velours noir et losanges d’or, le carré des initiés.',
+    price: 60,
+    currency: 'black',
+    minLevel: 2,
+  },
+  {
+    id: 'carte-onyx',
+    category: 'card',
+    label: 'Laque d’onyx',
+    hint: 'Laque noire, filigrane d’or et jeton noir en filigrane.',
+    price: 70,
+    currency: 'black',
+    minLevel: 2,
+  },
+  {
+    id: 'ombre',
+    category: 'avatar',
+    label: 'L’Ombre',
+    hint: 'Personne n’a vu son visage. Tout le monde a vu ses gains.',
+    price: 90,
+    currency: 'black',
+    minLevel: 3,
+  },
+  {
+    id: 'eclipse',
+    category: 'back',
+    label: 'Éclipse',
+    hint: 'Un soleil noir et sa couronne d’or qui palpite.',
+    price: 120,
+    currency: 'black',
+    minLevel: 4,
+  },
+  {
+    id: 'immortel',
+    category: 'title',
+    label: 'L’Immortel',
+    hint: 'Les séries passent, toi tu restes.',
+    price: 150,
+    currency: 'black',
+    minLevel: 5,
+  },
+  {
+    id: 'cadre-eclipse',
+    category: 'frame',
+    label: 'Couronne d’éclipse',
+    hint: 'Un soleil noir dont la couronne d’or ne s’éteint jamais.',
+    price: 180,
+    currency: 'black',
+    minLevel: 6,
+  },
+  {
+    id: 'neant',
+    category: 'face',
+    label: 'Néant',
+    hint: 'Cartes d’encre violette, enseignes d’or et reflet irisé.',
+    price: 200,
+    currency: 'black',
+    minLevel: 6,
+  },
+  {
+    id: 'phenix',
+    category: 'avatar',
+    label: 'Le Phénix',
+    hint: 'Il a tout perdu cent fois. Il renaît à chaque donne.',
+    price: 240,
+    currency: 'black',
+    minLevel: 7,
+  },
+  {
+    id: 'nebuleuse',
+    category: 'table',
+    label: 'Nébuleuse',
+    hint: 'Un tapis de poussière d’étoiles violette qui dérive lentement.',
+    price: 260,
+    currency: 'black',
+    minLevel: 8,
+  },
+  {
+    id: 'eclipse-totale',
+    category: 'fx',
+    label: 'Éclipse totale',
+    hint: 'La salle s’assombrit, un soleil noir s’embrase.',
+    price: 400,
+    currency: 'black',
+    minLevel: 10,
+  },
+  {
+    id: 'carte-infini',
+    category: 'card',
+    label: 'Infini',
+    hint: 'Un ciel violet sans fond, traversé par le signe de l’infini.',
+    price: 600,
+    currency: 'black',
+    minLevel: 12,
+    grail: true,
+  },
+  {
+    id: 'dernier-boss',
+    category: 'title',
+    label: 'Le Dernier Boss',
+    hint: 'Le croupier baisse les yeux quand tu t’assois.',
+    price: 800,
+    currency: 'black',
+    minLevel: 15,
+    grail: true,
+  },
+] as const;
+
 export const COSMETICS: readonly Cosmetic[] = [
   ...CARD_BACKS,
   ...CARD_FACES,
@@ -666,6 +824,7 @@ export const COSMETICS: readonly Cosmetic[] = [
   ...AVATARS,
   ...FRAMES,
   ...PROFILE_CARDS,
+  ...LEGEND_COSMETICS,
 ];
 
 /** Emplacement d'equipement correspondant a chaque categorie. */
@@ -726,17 +885,41 @@ export function isValidTitle(id: string): boolean {
  * Un objet est possede s'il a ete achete, ou s'il est offert (prix nul) et
  * que le rang requis est atteint.
  */
+/** Vrai pour un objet de la Boutique Legendaire (paye en jetons noirs). */
+export function isLegendItem(item: Pick<Cosmetic, 'currency'>): boolean {
+  return item.currency === 'black';
+}
+
+/**
+ * Le joueur peut-il acheter (ou recevoir) cet objet: rang VIP pour la
+ * boutique, niveau Legendaire pour la Boutique Legendaire.
+ */
+export function canUnlock(
+  item: Cosmetic,
+  lifetimeEarned: number,
+  legendLevel = 0,
+): boolean {
+  if (isLegendItem(item)) return legendLevel >= (item.minLevel ?? 1);
+  return meetsTier(lifetimeEarned, item.minTier);
+}
+
 export function ownsCosmetic(
   item: Cosmetic,
   owned: readonly string[],
   lifetimeEarned: number,
+  legendLevel = 0,
 ): boolean {
   if (owned.includes(item.id)) return true;
-  return item.price === 0 && meetsTier(lifetimeEarned, item.minTier);
+  return item.price === 0 && canUnlock(item, lifetimeEarned, legendLevel);
 }
 
 /** Objets achetables (hors objets offerts), pour le compteur de collection. */
 export const COLLECTIBLES: readonly Cosmetic[] = COSMETICS.filter(
+  (c) => c.price > 0 && !isLegendItem(c),
+);
+
+/** Objets payants de la Boutique Legendaire. */
+export const LEGEND_COLLECTIBLES: readonly Cosmetic[] = LEGEND_COSMETICS.filter(
   (c) => c.price > 0,
 );
 
@@ -936,7 +1119,7 @@ export function discountedPrice(price: number, lifetimeEarned: number): number {
 // ---------------------------------------------------------------------------
 
 export type StakeTableId =
-  'free' | 'silver' | 'gold' | 'diamond' | 'platinum' | 'legend';
+  'free' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'legend' | 'noire';
 
 export interface StakeTable {
   id: StakeTableId;
@@ -944,6 +1127,8 @@ export interface StakeTable {
   stake: number;
   multiplier: number;
   minTier?: VipTierId;
+  /** Niveau Legendaire requis (tables au-dela du Diamant). */
+  minLevel?: number;
   pitch: string;
 }
 
@@ -970,20 +1155,20 @@ export const STAKE_TABLES: readonly StakeTable[] = [
     pitch: 'Chaque victoire rapporte le double.',
   },
   {
-    id: 'diamond',
-    label: 'Table Diamant',
+    id: 'platinum',
+    label: 'Salon Platine',
     stake: 10000,
     multiplier: 3,
     minTier: 'gold',
-    pitch: 'Le carré des gros joueurs. Gains triplés.',
+    pitch: 'Porte capitonnée, mises sérieuses. Gains triplés.',
   },
   {
-    id: 'platinum',
-    label: 'Salon Platine',
+    id: 'diamond',
+    label: 'Table Diamant',
     stake: 25000,
     multiplier: 4,
     minTier: 'platinum',
-    pitch: 'Porte capitonnée, mises lourdes, gains ×4.',
+    pitch: 'Le carré des gros joueurs, mises lourdes, gains ×4.',
   },
   {
     id: 'legend',
@@ -991,9 +1176,31 @@ export const STAKE_TABLES: readonly StakeTable[] = [
     stake: 75000,
     multiplier: 6,
     minTier: 'diamond',
-    pitch: 'Une seule table, tout en haut. Gains ×6.',
+    pitch:
+      'Une seule table, tout en haut. Gains ×6. La vaincre ouvre une porte.',
+  },
+  {
+    id: 'noire',
+    label: 'Table Noire',
+    stake: 200000,
+    multiplier: 8,
+    minTier: 'diamond',
+    minLevel: 3,
+    pitch: 'Elle n’apparaît sur aucun plan du casino. Gains ×8.',
   },
 ] as const;
+
+/** La table est-elle ouverte a ce joueur (rang VIP et niveau Legendaire). */
+export function tableOpen(
+  table: StakeTable,
+  lifetimeEarned: number,
+  legendLevel = 0,
+): boolean {
+  return (
+    meetsTier(lifetimeEarned, table.minTier) &&
+    legendLevel >= (table.minLevel ?? 0)
+  );
+}
 
 export function findStakeTable(id: StakeTableId): StakeTable {
   return STAKE_TABLES.find((t) => t.id === id) ?? STAKE_TABLES[0];
@@ -1246,8 +1453,12 @@ export function tierUnlocks(id: VipTierId): TierUnlocks {
     tier,
     gift: perk?.gift ?? null,
     missionBonus: perk?.missionBonus ?? 0,
-    tables: STAKE_TABLES.filter(sameTier),
-    gifts: COSMETICS.filter((c) => c.price === 0 && c.minTier === id),
-    exclusives: COSMETICS.filter((c) => c.price > 0 && sameTier(c)),
+    tables: STAKE_TABLES.filter((t) => !t.minLevel && sameTier(t)),
+    gifts: COSMETICS.filter(
+      (c) => c.price === 0 && c.minTier === id && !isLegendItem(c),
+    ),
+    exclusives: COSMETICS.filter(
+      (c) => c.price > 0 && sameTier(c) && !isLegendItem(c),
+    ),
   };
 }

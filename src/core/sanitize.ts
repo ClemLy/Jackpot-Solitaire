@@ -11,6 +11,7 @@ import {
   ownsCosmetic,
 } from '../state/catalog';
 import { ACHIEVEMENTS } from '../state/achievements';
+import { normalizeLegend, type LegendState } from '../state/legend';
 import { MISSIONS } from '../state/missions';
 import type {
   ConsumableId,
@@ -41,9 +42,10 @@ const TABLE_IDS = new Set<StakeTableId>([
   'free',
   'silver',
   'gold',
-  'diamond',
   'platinum',
+  'diamond',
   'legend',
+  'noire',
 ]);
 const MODES = new Set([
   'classic',
@@ -237,6 +239,12 @@ export function sanitizePlayer(
       ]
     : fallback.inventory.owned;
 
+  const legend = sanitizeLegend(
+    p.legend,
+    fallback.legend,
+    wallet.lifetimeEarned,
+  );
+
   // Objets equipes: seulement ce qui est possede, et dans le bon emplacement.
   const eq = isRecord(p.equipped) ? p.equipped : {};
   const equipped = { ...fallback.equipped };
@@ -246,7 +254,7 @@ export function sanitizePlayer(
     if (
       item &&
       SLOT_OF[item.category] === slot &&
-      ownsCosmetic(item, owned, wallet.lifetimeEarned)
+      ownsCosmetic(item, owned, wallet.lifetimeEarned, legend.level)
     ) {
       equipped[slot] = item.id;
     }
@@ -302,15 +310,41 @@ export function sanitizePlayer(
             Object.prototype.hasOwnProperty.call(achievements, x),
           ),
     },
+    legend,
     equipped,
     session: session(p.session, fallback.session),
   };
+}
+
+/** Etat Legendaire valide, coherent avec les jetons gagnes. */
+function sanitizeLegend(
+  value: unknown,
+  fallback: LegendState,
+  lifetimeEarned: number,
+): LegendState {
+  const v = isRecord(value) ? value : {};
+  return normalizeLegend(
+    {
+      tableWins: count(v.tableWins, fallback.tableWins),
+      level: count(v.level, fallback.level),
+      base: count(v.base, fallback.base),
+      ascendedAt:
+        typeof v.ascendedAt === 'number' && v.ascendedAt > 0
+          ? count(v.ascendedAt, 0)
+          : fallback.ascendedAt,
+      black: count(v.black, fallback.black),
+      blackEarned: count(v.blackEarned, fallback.blackEarned),
+      blackSpent: count(v.blackSpent, fallback.blackSpent),
+    },
+    lifetimeEarned,
+  );
 }
 
 /** Plafonds appliques a une sauvegarde d'invite importee dans un compte. */
 export const IMPORT_CAPS = {
   lifetimeEarned: 2_000_000,
   progressive: 200_000,
+  black: 500,
 };
 
 /**
@@ -337,6 +371,12 @@ export function importGuest(raw: unknown, fresh: PlayerState): PlayerState {
       pot: Math.min(s.progressive.pot, IMPORT_CAPS.progressive),
       wins: s.progressive.wins,
     },
+    // Le rang Legendaire suit les jetons gagnes plafonnes; les jetons noirs
+    // d'un navigateur sont plafonnes eux aussi.
+    legend: normalizeLegend(
+      { ...s.legend, black: Math.min(s.legend.black, IMPORT_CAPS.black) },
+      lifetime,
+    ),
     // Les hauts faits d'un navigateur ne sont pas verifiables: ils sont repris
     // sans arriere de recompenses a toucher.
     perks: { ...s.perks, paidAchievements: Object.keys(s.achievements) },

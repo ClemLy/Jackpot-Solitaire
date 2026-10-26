@@ -1,7 +1,8 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Check, Gift, Target } from 'lucide-react';
 import { Modal } from './Modal';
-import { Balance, Chip } from './ui';
+import { Balance, BlackChip, Chip } from './ui';
+import { legendLabel, weeklyBlack } from '../state/legend';
 import { ConsumableIcon } from './icons';
 import { currentPeriod, useMetaStore } from '../state/meta';
 import {
@@ -108,6 +109,8 @@ function MissionList({ scope, now }: { scope: MissionScope; now: Date }) {
 
 function RankChest() {
   const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
+  const level = useMetaStore((s) => s.legend.level);
+  const black = weeklyBlack(level);
   const canClaim = useMetaStore((s) => s.canClaimWeeklyGift());
   const [opened, setOpened] = useState(false);
 
@@ -142,13 +145,21 @@ function RankChest() {
         <Gift size={22} />
       </span>
       <div className="chest__body">
-        <strong>Coffret de la semaine · rang {tier.label}</strong>
+        <strong>
+          Coffret de la semaine ·{' '}
+          {level >= 1 ? legendLabel(level) : `rang ${tier.label}`}
+        </strong>
         <span className="chest__items">
           {gift.map((id, i) => (
             <span key={`${id}-${i}`} className="chest__item">
               <ConsumableIcon id={id} size={14} /> {findConsumable(id).label}
             </span>
           ))}
+          {black > 0 && (
+            <span className="chest__item chest__item--black">
+              <BlackChip size={14} /> {black} jetons noirs
+            </span>
+          )}
         </span>
       </div>
       {canClaim ? (

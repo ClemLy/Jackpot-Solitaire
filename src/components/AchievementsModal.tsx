@@ -45,6 +45,7 @@ import {
   type Medal,
 } from '../state/achievements';
 import { formatDuration, formatNumber } from '../utils/format';
+import { legendLabel } from '../state/legend';
 
 const ICONS: Record<AchievementIcon, (size: number) => ReactNode> = {
   trophy: (s) => <Trophy size={s} />,
@@ -81,6 +82,7 @@ const RANKS = ['Bronze', 'Argent', 'Or', 'Platine', 'Diamant'];
 function formatValue(family: AchievementFamily, value: number): string {
   if (family.format === 'time') return formatDuration(value);
   if (family.format === 'rank') return RANKS[value] ?? '—';
+  if (family.format === 'legend') return value > 0 ? legendLabel(value) : '—';
   return formatNumber(value);
 }
 
@@ -131,7 +133,11 @@ function FamilyRow({
       caption =
         family.format === 'rank'
           ? `Rang ${formatValue(family, v)} · objectif ${formatValue(family, next.goal)}`
-          : `${formatNumber(v)} / ${formatNumber(next.goal)}`;
+          : family.format === 'legend'
+            ? v > 0
+              ? `${formatValue(family, v)} · objectif ${formatValue(family, next.goal)}`
+              : 'Le rang au-delà du Diamant'
+            : `${formatNumber(v)} / ${formatNumber(next.goal)}`;
     }
   } else {
     caption = 'Tous les paliers atteints';

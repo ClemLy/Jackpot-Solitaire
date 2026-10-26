@@ -34,6 +34,7 @@ import {
   type PlayerState,
 } from '../core';
 import { createSafeStorage, type StorageProblem } from './persistence';
+import { displayRank, type DisplayRank } from './legend';
 import { setSoundEnabled, setSoundVolume } from '../audio/sfx';
 import { setHapticsEnabled } from '../audio/haptics';
 import { formatNumber } from '../utils/format';
@@ -147,6 +148,7 @@ const PLAYER_KEYS = [
   'progressive',
   'missions',
   'perks',
+  'legend',
   'equipped',
   'session',
 ] as const satisfies readonly (keyof PlayerState)[];
@@ -464,4 +466,11 @@ export function migrateMeta(persisted: unknown, version: number): unknown {
 export function describeReward(reward: WheelReward): string {
   if (reward.kind === 'chips') return `${formatNumber(reward.amount)} jetons`;
   return findConsumable(reward.item).label;
+}
+
+/** Rang affiche du joueur: rang VIP, ou Legendaire avec son niveau. */
+export function useRank(): DisplayRank {
+  const lifetime = useMetaStore((s) => s.wallet.lifetimeEarned);
+  const level = useMetaStore((s) => s.legend.level);
+  return displayRank(lifetime, level);
 }

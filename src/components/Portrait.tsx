@@ -870,6 +870,196 @@ const FRAMES: Record<string, () => ReactNode> = {
   ),
 
   // Ecrin imperial: la piece maitresse, chargee de tout.
+  // Boutique Legendaire. Sceau: anneau d'obsidienne, clous d'or, gemmes
+  // violettes, flamme violette au sommet et jeton noir en medaillon.
+  'cadre-legende': () => (
+    <g className="frame-glow-legend">
+      <defs>
+        <linearGradient id="frame-legend-obsidian" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#3A2260" />
+          <stop offset="0.45" stopColor="#120C1C" />
+          <stop offset="1" stopColor="#050307" />
+        </linearGradient>
+        <linearGradient id="frame-legend-gold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFF1BF" />
+          <stop offset="0.5" stopColor="#E3B95A" />
+          <stop offset="1" stopColor="#8F6418" />
+        </linearGradient>
+      </defs>
+      <circle
+        cx="60"
+        cy="60"
+        r="54.5"
+        fill="none"
+        stroke="url(#frame-legend-obsidian)"
+        strokeWidth="9"
+      />
+      <circle
+        cx="60"
+        cy="60"
+        r="59.2"
+        fill="none"
+        stroke="url(#frame-legend-gold)"
+        strokeWidth="1.4"
+      />
+      <circle
+        cx="60"
+        cy="60"
+        r="50.2"
+        fill="none"
+        stroke="url(#frame-legend-gold)"
+        strokeWidth="1"
+      />
+      {Array.from({ length: 8 }, (_, i) => {
+        const deg = i * 45 + 22.5;
+        const [x, y] = polar(deg, 54.6);
+        return (
+          <rect
+            key={i}
+            x={x - 3.6}
+            y={y - 2.4}
+            width="7.2"
+            height="4.8"
+            rx="1.2"
+            fill="url(#frame-legend-gold)"
+            transform={`rotate(${deg} ${x} ${y})`}
+          />
+        );
+      })}
+      {Array.from({ length: 8 }, (_, i) => {
+        if (i === 0 || i === 4) return null;
+        const [x, y] = polar(i * 45, 54.6);
+        return <Gem key={i} x={x} y={y} r={2.6} color="#8A4FE0" />;
+      })}
+      <g className="frame-flame-legend">
+        <path
+          d="M60 -10 C54 0 52 6 54 11 C55.5 7.5 58 6 60 4 C62 6 64.5 7.5 66 11 C68 6 66 0 60 -10 Z"
+          fill="#B07CFF"
+        />
+        <path
+          d="M60 -3 C57 3 56.5 6.5 57.5 10 C58.5 8 59.4 7.4 60 6.4 C60.6 7.4 61.5 8 62.5 10 C63.5 6.5 63 3 60 -3 Z"
+          fill="#F1DCFF"
+        />
+      </g>
+      <circle
+        cx="60"
+        cy="114"
+        r="8.6"
+        fill="#0B0910"
+        stroke="url(#frame-legend-gold)"
+        strokeWidth="1.6"
+      />
+      {Array.from({ length: 8 }, (_, i) => (
+        <rect
+          key={i}
+          x="58.9"
+          y="106"
+          width="2.2"
+          height="2.6"
+          rx="0.5"
+          fill="#E3B95A"
+          transform={`rotate(${i * 45} 60 114)`}
+        />
+      ))}
+      <circle cx="60" cy="114" r="4.6" fill="#3A2260" />
+      <path
+        d="M56.6 116 L56 111.6 L58.2 113.2 L60 110.2 L61.8 113.2 L64 111.6 L63.4 116 Z"
+        fill="#F3D27C"
+      />
+      <Shine id="frame-legend-shine" inner={50} outer={59} />
+    </g>
+  ),
+
+  // Couronne d'eclipse: un disque noir, sa couronne d'or qui palpite, et
+  // l'eclat du "diamant" qui s'allume au bord du disque.
+  'cadre-eclipse': () => (
+    <g>
+      <defs>
+        <radialGradient
+          id="frame-eclipse-corona"
+          cx="60"
+          cy="60"
+          r="74"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0.66" stopColor="#FFF1BF" stopOpacity="0.95" />
+          <stop offset="0.74" stopColor="#F3D27C" stopOpacity="0.6" />
+          <stop offset="0.86" stopColor="#B07CFF" stopOpacity="0.25" />
+          <stop offset="1" stopColor="#B07CFF" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <path
+        className="frame-corona"
+        d={annulus(50, 74)}
+        fill="url(#frame-eclipse-corona)"
+        fillRule="evenodd"
+      />
+      <Rays
+        count={36}
+        inner={58}
+        outer={72}
+        fill="#FFF1BF"
+        width={1.2}
+        opacity={0.55}
+      />
+      <g className="frame-wisps">
+        {Array.from({ length: 10 }, (_, i) => {
+          const deg = i * 36 + 8;
+          const [ax, ay] = polar(deg - 5, 57);
+          const [bx, by] = polar(deg + 3, 74);
+          const [cx, cy] = polar(deg + 6, 57);
+          return (
+            <path
+              key={i}
+              d={`M${ax} ${ay} Q${bx} ${by} ${cx} ${cy} Z`}
+              fill="#C9A0FF"
+              opacity="0.45"
+            />
+          );
+        })}
+      </g>
+      <circle
+        cx="60"
+        cy="60"
+        r="54"
+        fill="none"
+        stroke="#050307"
+        strokeWidth="8"
+      />
+      <circle
+        cx="60"
+        cy="60"
+        r="58.2"
+        fill="none"
+        stroke="#FFF1BF"
+        strokeWidth="1.2"
+        opacity="0.9"
+      />
+      <circle
+        cx="60"
+        cy="60"
+        r="50.4"
+        fill="none"
+        stroke="#7A5517"
+        strokeWidth="0.8"
+      />
+      {(() => {
+        const [x, y] = polar(42, 58.4);
+        return (
+          <g>
+            <circle cx={x} cy={y} r="5" fill="#FFFFFF" opacity="0.35" />
+            <path
+              className="frame-sparkle"
+              style={{ '--i': 0 } as CSSProperties}
+              d={sparkle(x, y, 7)}
+              fill="#FFFFFF"
+            />
+          </g>
+        );
+      })()}
+    </g>
+  ),
+
   'cadre-royal': () => (
     <g className="frame-glow-royal">
       <Rays

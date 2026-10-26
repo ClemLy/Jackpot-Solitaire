@@ -29,6 +29,7 @@ import {
   claimMission,
   claimWeeklyGift,
   equip,
+  exchangeBlack,
   spinWheel,
 } from './shop';
 import { isRecord } from './sanitize';
@@ -53,7 +54,8 @@ export type Action =
   | { type: 'spin' }
   | { type: 'claimMission'; scope: 'daily' | 'weekly'; id: string }
   | { type: 'claimGift' }
-  | { type: 'claimAchievements' };
+  | { type: 'claimAchievements' }
+  | { type: 'exchange'; amount: number };
 
 const MODES: GameMode[] = [
   'classic',
@@ -67,9 +69,10 @@ const TABLES: StakeTableId[] = [
   'free',
   'silver',
   'gold',
-  'diamond',
   'platinum',
+  'diamond',
   'legend',
+  'noire',
 ];
 const SLOTS: EquipSlot[] = [
   'cardBack',
@@ -246,6 +249,8 @@ export function parseAction(raw: unknown): Action {
       return { type: 'claimGift' };
     case 'claimAchievements':
       return { type: 'claimAchievements' };
+    case 'exchange':
+      return { type: 'exchange', amount: int(raw.amount, 1, 1000) };
     default:
       bad();
   }
@@ -278,5 +283,7 @@ export function dispatch(
       return claimWeeklyGift(state, ctx);
     case 'claimAchievements':
       return claimAchievements(state, ctx);
+    case 'exchange':
+      return exchangeBlack(state, action.amount, ctx);
   }
 }

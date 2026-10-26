@@ -104,7 +104,11 @@ export const economy = {
   finish: (roundId: string, log: LogEntry[], reason: EndReason) =>
     perform<FinishResult>({ type: 'finish', roundId, log, reason }),
   decide: (decision: Decision) =>
-    perform<{ pot: number; vault?: { multiplier: number; trapped: boolean } }>({
+    perform<{
+      pot: number;
+      vault?: { multiplier: number; trapped: boolean };
+      black?: number;
+    }>({
       type: 'decide',
       decision,
     }),
@@ -117,7 +121,10 @@ export const economy = {
   spin: () => perform<SpinResult>({ type: 'spin' }),
   claimMission: (scope: MissionScope, id: string) =>
     perform<{ amount: number }>({ type: 'claimMission', scope, id }),
-  claimGift: () => perform<{ gift: ConsumableId[] }>({ type: 'claimGift' }),
+  claimGift: () =>
+    perform<{ gift: ConsumableId[]; black: number }>({ type: 'claimGift' }),
   claimAchievements: () =>
     perform<{ amount: number; count: number }>({ type: 'claimAchievements' }),
+  exchange: (amount: number) =>
+    perform<{ amount: number; cost: number }>({ type: 'exchange', amount }),
 };

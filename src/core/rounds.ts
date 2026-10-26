@@ -26,9 +26,9 @@ import {
   findDifficulty,
   findSideBet,
   findStakeTable,
-  meetsTier,
   progressiveContribution,
   sideBetStake,
+  tableOpen,
   tipForWin,
   vegasCardValue,
   vegasRecycles,
@@ -37,6 +37,15 @@ import {
   type StakeTableId,
 } from '../state/catalog';
 import { winExploits } from '../state/achievements';
+import {
+  BLACK_CASH_SLICE,
+  BLACK_DAILY,
+  BLACK_PER_TABLE,
+  BLACK_PER_WIN,
+  BLACK_PROGRESSIVE,
+  BLACK_VAULT_JACKPOT,
+  LEGEND_TABLE,
+} from '../state/legend';
 import {
   comboMultiplier,
   drawVaultOutcome,
@@ -195,11 +204,11 @@ export function startRound(
 
     if (mode === 'gambling') {
       // On s'assoit a une table: la mise quitte la banque pour le magot. Une
-      // table hors de portee (solde ou rang) ramene a la table libre.
+      // table hors de portee (solde, rang ou niveau) ramene a la table libre.
       let table = findStakeTable(req.table ?? 'free');
       if (
         table.stake > tx.s.wallet.balance ||
-        !meetsTier(tx.s.wallet.lifetimeEarned, table.minTier) ||
+        !tableOpen(table, tx.s.wallet.lifetimeEarned, tx.s.legend.level) ||
         !tx.spend(table.stake)
       ) {
         table = findStakeTable('free');
@@ -630,6 +639,11 @@ function win(tx: Tx, round: Round, r: Replay, timeMs: number): WinSummary {
     session.pot = Math.max(0, session.pot + gain);
     session.combo += 1;
     if (table.id === 'diamond') tx.grant(['high-stakes']);
+    // Vaincre la Table Legende: la seconde condition du rang Legendaire.
+    if (table.id === LEGEND_TABLE) {
+      s.legend.tableWins += 1;
+      tx.updateLegend();
+    }
   }
 
   // Paris annexes: payes directement a la banque si la condition tient.
@@ -676,6 +690,17 @@ function win(tx: Tx, round: Round, r: Replay, timeMs: number): WinSummary {
   tx.credit(tip + dailyBonus);
 
   const vegas = settleVegas(tx, round, r.board);
+
+  // Jetons noirs (rang Legendaire): selon la difficulte, la table et les
+  // exploits de la manche.
+  const black = unpaid
+    ? 0
+    : tx.earnBlack(
+        BLACK_PER_WIN[round.difficulty] +
+          (gambling ? (BLACK_PER_TABLE[table.id] ?? 0) : 0) +
+          (firstDailyWin ? BLACK_DAILY : 0) +
+          (progressive > 0 ? BLACK_PROGRESSIVE : 0),
+      );
 
   if (!unpaid) {
     tx.grant(
@@ -735,6 +760,7 @@ function win(tx: Tx, round: Round, r: Replay, timeMs: number): WinSummary {
     bets,
     progressive,
     vegas,
+    black,
     unpaid,
   };
 }
@@ -801,7 +827,12 @@ export function decide(
   state: PlayerState,
   decision: Decision,
   ctx: Ctx,
-): Outcome<{ pot: number; vault?: { multiplier: number; trapped: boolean } }> {
+): Outcome<{
+  pot: number;
+  vault?: { multiplier: number; trapped: boolean };
+  /** Jetons noirs gagnes en encaissant (rang Legendaire). */
+  black?: number;
+}> {
   const tx = new Tx(state, ctx);
   const session = tx.s.session;
 
@@ -811,13 +842,14 @@ export function decide(
     }
     const amount = session.pot;
     tx.secureBank(amount, session.combo);
+    const black = tx.earnBlack(Math.floor(amount / BLACK_CASH_SLICE));
     session.pot = 0;
     session.combo = 0;
     session.insured = false;
     session.awaiting = 'none';
     session.vaultEligible = false;
     session.vaultResult = null;
-    return tx.done({ pot: amount });
+    return tx.done({ pot: amount, black });
   }
 
   if (decision === 'vault') {
@@ -834,6 +866,7 @@ export function decide(
     tx.s.gambling.vaultsOpened += 1;
     tx.recordMission({ kind: 'vault' });
     tx.grant(['treasure-hunter']);
+    if (vault.multiplier >= 10) tx.earnBlack(BLACK_VAULT_JACKPOT);
     return tx.done({ pot: session.pot, vault });
   }
 

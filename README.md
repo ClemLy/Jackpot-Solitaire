@@ -18,6 +18,7 @@ jeu sur la manche suivante ?
 - [Les modes de jeu](#les-modes-de-jeu)
 - [Score et mode Jackpot](#score-et-mode-jackpot)
 - [La banque, la boutique et les rangs VIP](#la-banque-la-boutique-et-les-rangs-vip)
+- [Le rang Légendaire](#le-rang-légendaire)
 - [Les hauts faits](#les-hauts-faits)
 - [Comptes, profil et amis](#comptes-profil-et-amis)
 - [Sur téléphone](#sur-téléphone)
@@ -47,6 +48,12 @@ jeu sur la manche suivante ?
 | ![Roue du jour](screenshots/roue.png) | ![Statistiques](screenshots/stats.png) |
 
 ![Hauts faits](screenshots/hauts-faits.png)
+
+Au-delà du Diamant, le rang Légendaire :
+
+| Salon Légendaire | Accession au rang |
+| --- | --- |
+| ![Salon Légendaire](screenshots/legendaire.png) | ![Cérémonie d'accession](screenshots/legendaire-accession.png) |
 
 Les comptes, le profil et les amis :
 
@@ -127,7 +134,7 @@ Pour le confort :
   `?seed=...`.
 
 La progression reste sur l’appareil (ou sur le compte) : statistiques,
-séries, meilleur temps, cinquante-quatre hauts faits, calendrier des défis
+séries, meilleur temps, cinquante-huit hauts faits, calendrier des défis
 du mois.
 
 ## Les modes de jeu
@@ -199,9 +206,12 @@ dans le magot : on la récupère en encaissant, on la perd avec la série.
 | Libre | aucune | ×1 |
 | Argent | 500 | ×1,5 |
 | Or | 2 500 | ×2 |
-| Diamant (rang VIP Or) | 10 000 | ×3 |
-| Salon Platine (rang VIP Platine) | 25 000 | ×4 |
+| Salon Platine (rang VIP Or) | 10 000 | ×3 |
+| Diamant (rang VIP Platine) | 25 000 | ×4 |
 | Légende (rang VIP Diamant) | 75 000 | ×6 |
+| Noire (Légendaire III) | 200 000 | ×8 |
+
+La Table Noire n’apparaît qu’aux joueurs Légendaires.
 
 ## La banque, la boutique et les rangs VIP
 
@@ -282,17 +292,82 @@ coffret, les tables, le cadre offert et les objets réservés.
 | --- | --- | --- | --- | --- |
 | Bronze | 0 | aucune | ×1 | La boutique de base |
 | Argent | 15 000 | 5 % | ×1,25 | Holographique, marbre, parchemin, Flambeur |
-| Or | 60 000 | 10 % | ×1,5 | Table Diamant, salon doré, blason, champagne |
-| Platine | 180 000 | 15 % | ×2 | Salon Platine, noir & or, obsidienne, Las Vegas |
+| Or | 60 000 | 10 % | ×1,5 | Salon Platine, salon doré, blason, champagne |
+| Platine | 180 000 | 15 % | ×2 | Table Diamant, noir & or, obsidienne, Las Vegas |
 | Diamant | 400 000 | 20 % | ×3 | Table Légende et toutes les pièces maîtresses |
+
+L’échelle de l’écran des rangs se termine par une sixième marche, le rang
+Légendaire, visible dès le départ avec ses deux épreuves.
 
 Un compteur de collection suit les objets possédés ; les hauts faits de
 collection récompensent le premier achat, 10 et 30 objets, le premier
 Graal et la collection complète.
 
+## Le rang Légendaire
+
+Le Diamant n’est pas le sommet. Deux épreuves ouvrent le rang Légendaire :
+
+1. avoir gagné **1 000 000 de jetons** depuis le début ;
+2. avoir remporté **au moins une manche à la Table Légende** (rang Diamant,
+   mise de 75 000).
+
+Le rang n’est pas caché : il figure en dernière marche de l’écran des
+rangs, sur la jauge de l’accueil une fois Diamant (« Diamant → Légendaire »),
+dans la boutique et dans le menu (« Salon légendaire », avec un cadenas). Le
+Salon montre alors le sceau, l’avancement des deux épreuves et, en
+silhouettes floutées, ce qui attend derrière la porte.
+
+L’accession déclenche une cérémonie plein écran (« Tout ce qui précède
+n’était que le tutoriel. ») et offre 25 jetons noirs. Puis tout
+recommence : **Légendaire I, II, III… sans fin**. Chaque jeton gagné compte
+comme du renom ; chaque niveau en demande 100 000 de plus que le précédent
+(200 000 pour le II, 300 000 de plus pour le III…), verse une prime en
+jetons noirs et augmente de 10 % tous les gains de jetons noirs.
+L’emblème (un jeton noir cerclé d’or, couronne à gemme violette, niveau en
+chiffres romains) s’orne avec le niveau : flammes violettes au V, couronne
+de pointes d’or et étincelles au X, halo prismatique au XXV.
+
+**Les jetons noirs**, la seconde monnaie (montants de base, multipliés par
+le taux du niveau) :
+
+| Source | Jetons noirs |
+| --- | --- |
+| Victoire en Normal, Difficile, Expert (rien en Facile) | 1, 2, 4 |
+| Manche gagnée à la Table Légende, à la Table Noire | +2, +5 |
+| Magot encaissé | 1 par tranche de 50 000 |
+| Première victoire du défi du jour | 5 |
+| Gros lot ×10 au coffre-fort | 10 |
+| Jackpot progressif | 40 |
+| Roue du jour (à partir du niveau V) | 3 par tour |
+| Coffret de la semaine (à partir du niveau II) | 15, puis +5 par niveau |
+| Nouveau niveau | 10 + 5 × le niveau |
+| Bureau de change | 1 contre 50 000 jetons de la banque |
+
+**Le Salon Légendaire** rassemble tout, en trois onglets :
+
+- **Boutique** : seize objets payés en jetons noirs, chacun réservé à un
+  niveau. Sceau légendaire (cadre) et « Fin du tutoriel » (titre) sont
+  offerts à l’accession ; puis le dos Onyx et la Pluie noire (effet de
+  victoire) au I, le tapis Salon noir et la carte Laque d’onyx au II,
+  l’Ombre (avatar) au III, le dos Éclipse au IV, « L’Immortel » au V, la
+  Couronne d’éclipse (cadre) et le recto Néant au VI, le Phénix au VII, le
+  tapis Nébuleuse au VIII, l’Éclipse totale (effet) au X, la carte Infini
+  au XII et « Le Dernier Boss » au XV.
+- **Voie légendaire** : chaque niveau, sa prime et ce qu’il débloque (le
+  coffret noir au II, la Table Noire au III, la roue noire au V), jusqu’au
+  « et ainsi de suite, sans fin ».
+- **Jetons noirs** : toutes les sources, chiffrées à son propre niveau, et
+  le bureau de change (lots de 1, 5 et 20).
+
+Le niveau Légendaire s’affiche partout où le rang s’affiche : accueil,
+plaque et carte de profil, liste d’amis, boutique. Le solde de jetons noirs
+a sa pastille sur l’accueil, et le bordereau de victoire indique les jetons
+noirs gagnés sur la manche. Comme le reste de l’économie, tout est calculé
+par le cœur partagé : avec un compte, c’est le serveur qui fait foi.
+
 ## Les hauts faits
 
-Cinquante-quatre hauts faits, rangés en cinq catégories et réunis sur un
+Cinquante-huit hauts faits, rangés en cinq catégories et réunis sur un
 écran dédié (« Hauts faits » sur l’accueil, ou depuis les statistiques) :
 un anneau de progression, le compte des médailles, puis une ligne par
 famille avec sa jauge vers le prochain palier.
@@ -306,7 +381,8 @@ une fois depuis l’écran des hauts faits.
   médaille de bronze à celle de diamant : victoires (1, 25, 100, 500),
   parties jouées, séries, vitesse (moins de 3 min, 2 min, 90 s, 1 min),
   meilleur score, magot encaissé, quitte ou double, coffre-fort, jackpot
-  progressif, défis du jour, rang VIP et collection. Une progression déjà
+  progressif, défis du jour, rang VIP, rang Légendaire (I, V, X, XXV) et
+  collection. Une progression déjà
   acquise est reconnue d’un coup, en un seul message.
 - **Les exploits** se gagnent sur une partie : sans indice, en Expert, au
   Chrono, avec un bénéfice à Vegas, en pioche par 3 sans faute, la partie
@@ -475,6 +551,7 @@ src/
     economy.ts   Envoie chaque action d'argent au cœur local (invité) ou
                  au serveur (compte)
     achievements.ts  Hauts faits: paliers par famille et exploits
+    legend.ts    Rang Légendaire: accès, niveaux, jetons noirs, change
   audio/
     sfx.ts       Sons synthétisés à la volée (Web Audio API)
     haptics.ts   Vibrations (Vibration API)
@@ -487,7 +564,10 @@ src/
     CardDecor.tsx   Ornements des cartes de profil
     AchievementsModal.tsx  Écran des hauts faits
     RanksModal.tsx         Écran des rangs VIP
-  styles/      Tokens et tapis, cartes, plateau, interface, comptes, rangs
+    LegendModal.tsx        Salon Légendaire (boutique, voie, jetons noirs)
+    LegendCeremony.tsx     Cérémonie d'accession au rang Légendaire
+  styles/      Tokens et tapis, cartes, plateau, interface, comptes, rangs,
+               rang Légendaire
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
 server/        Fonction api : authentifie, rejoue et enregistre
 supabase/      Configuration, migration SQL (tables, verrous, quotas),
@@ -542,7 +622,10 @@ Quatre étages :
   (pas d’encaissement en pleine partie, pas de double encaissement, une
   seule ouverture de coffre). Vegas, Chrono, moitié à l’abri, paris annexes,
   jackpot progressif et ses conditions, jokers, missions, coffret de rang,
-  donnes garanties et tutoriel ont chacun leur parcours complet.
+  donnes garanties et tutoriel ont chacun leur parcours complet. Le rang
+  Légendaire a le sien : les deux conditions d’accès, la courbe des
+  niveaux, les primes, les jetons noirs, la boutique, le change, la Table
+  Noire et les sauvegardes trafiquées.
 - **Cœur partagé et serveur** : chaque gain est recalculé en rejouant le
   journal de coups ; un journal truqué (coup impossible, pari posé après
   le premier coup, victoire inventée, chrono dépassé) est refusé. Les

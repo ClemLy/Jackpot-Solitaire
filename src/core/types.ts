@@ -12,6 +12,9 @@ import type {
   StakeTableId,
 } from '../state/catalog';
 import type { PeriodProgress } from '../state/missions';
+import type { LegendState } from '../state/legend';
+
+export type { LegendState };
 
 export type GameMode =
   'classic' | 'gambling' | 'zen' | 'chrono' | 'daily' | 'vegas';
@@ -142,6 +145,8 @@ export interface PlayerState {
   progressive: ProgressiveState;
   missions: MissionsState;
   perks: PerksState;
+  /** Rang Legendaire: niveaux et jetons noirs. */
+  legend: LegendState;
   equipped: Equipped;
   session: Session;
 }
@@ -201,6 +206,8 @@ export interface WinSummary {
   /** Jackpot progressif remporte sur cette manche (0 sinon). */
   progressive: number;
   vegas: VegasSummary | null;
+  /** Jetons noirs gagnes sur cette manche (rang Legendaire). */
+  black: number;
   /** Partie sur graine imposee: rien n'est verse. */
   unpaid: boolean;
 }
@@ -218,9 +225,13 @@ export interface LostSummary {
   vegas: VegasSummary | null;
 }
 
-/** Message a montrer au joueur apres une action (haut fait, promotion...). */
+/**
+ * Message a montrer au joueur apres une action (haut fait, promotion...).
+ * 'legend' annonce l'accession au rang Legendaire (ceremonie plein ecran),
+ * 'level' un nouveau niveau Legendaire.
+ */
 export interface Notice {
-  kind: 'achievement' | 'vip' | 'reward' | 'error';
+  kind: 'achievement' | 'vip' | 'reward' | 'error' | 'legend' | 'level';
   title: string;
   text: string;
 }

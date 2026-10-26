@@ -7,6 +7,7 @@
 
 import type { PlayerState } from '../core/types';
 import { COLLECTIBLES, tierIndex, vipTierFor } from './catalog';
+import { legendLabel } from './legend';
 
 export type Medal = 'bronze' | 'silver' | 'gold' | 'diamond';
 
@@ -63,7 +64,7 @@ export interface AchievementFamily {
   value: (s: PlayerState) => number | null;
   /** Vrai pour un record de temps: plus c'est bas, mieux c'est. */
   lowerIsBetter?: boolean;
-  format?: 'number' | 'time' | 'rank';
+  format?: 'number' | 'time' | 'rank' | 'legend';
   describe: (goal: number) => string;
   tiers: AchievementTier[];
 }
@@ -289,6 +290,27 @@ export const ACHIEVEMENT_FAMILIES: readonly AchievementFamily[] = [
       ['rank-platinum', 3, 'Membre Platine'],
       ['rank-diamond', 4, 'Membre Diamant'],
     ]),
+  },
+  {
+    id: 'legend',
+    category: 'regularite',
+    icon: 'crown',
+    label: 'Rang Légendaire',
+    value: (s) => s.legend.level,
+    format: 'legend',
+    describe: (n) =>
+      n === 1
+        ? 'Atteindre le rang Légendaire: 1 000 000 jetons gagnés et une victoire à la Table Légende.'
+        : `Atteindre le niveau ${legendLabel(n)}.`,
+    tiers: tiers(
+      [
+        ['legend-1', 1, 'Fin du tutoriel'],
+        ['legend-5', 5, 'Initié du Salon noir'],
+        ['legend-10', 10, 'Mythe vivant'],
+        ['legend-25', 25, 'Au-delà de tout'],
+      ],
+      ['gold', 'gold', 'diamond', 'diamond'],
+    ),
   },
 
   // ---- Collection ----

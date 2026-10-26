@@ -16,7 +16,7 @@ import {
   formatNumber,
 } from '../utils/format';
 import { Stage } from './Modal';
-import { Chip } from './ui';
+import { BlackChip, Chip } from './ui';
 import { InsuranceToggle } from './Insurance';
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -135,6 +135,7 @@ export function WinOverlay() {
       list.push({ key: 'progressive', delay: 1600, sound: 'jackpot' });
     if (!gambling && !vegas && win.tip + win.dailyBonus > 0)
       list.push({ key: 'reward', delay: 900, sound: 'coins' });
+    if (win.black > 0) list.push({ key: 'black', delay: 900, sound: 'chip' });
     list.push({ key: 'actions', delay: 200 });
     return list;
   }, [win, scoring, gambling, vegas]);
@@ -382,6 +383,24 @@ export function WinOverlay() {
               />{' '}
               jetons pour ta banque
               {win.dailyBonus > 0 && <small>, prime du défi comprise</small>}
+            </span>
+          </div>
+        )}
+
+        {win.black > 0 && (
+          <div
+            className={`ticket__reward ticket__reward--black${reached('black') ? ' is-in' : ''}`}
+          >
+            <BlackChip size={20} />
+            <span>
+              <Count
+                to={win.black}
+                prefix="+"
+                active={reached('black')}
+                instant={instant}
+              />{' '}
+              {win.black > 1 ? 'jetons noirs' : 'jeton noir'}
+              <small>, rang Légendaire</small>
             </span>
           </div>
         )}

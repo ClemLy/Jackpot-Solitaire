@@ -645,6 +645,276 @@ function supernovaScene(
   };
 }
 
+/** Un jeton noir vu de face: laque, encoches d'or, coeur violet. */
+function drawBlackChip(ctx: CanvasRenderingContext2D, r: number): void {
+  ctx.fillStyle = '#0B0910';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#E3B95A';
+  for (let i = 0; i < 8; i++) {
+    ctx.save();
+    ctx.rotate((i * Math.PI) / 4);
+    ctx.fillRect(-r * 0.12, -r, r * 0.24, r * 0.26);
+    ctx.restore();
+  }
+  ctx.strokeStyle = '#F3D27C';
+  ctx.lineWidth = Math.max(1, r * 0.08);
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.96, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#3A2260';
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.62, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#F3D27C';
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.32, r * 0.22);
+  ctx.lineTo(-r * 0.38, -r * 0.2);
+  ctx.lineTo(-r * 0.16, -r * 0.04);
+  ctx.lineTo(0, -r * 0.34);
+  ctx.lineTo(r * 0.16, -r * 0.04);
+  ctx.lineTo(r * 0.38, -r * 0.2);
+  ctx.lineTo(r * 0.32, r * 0.22);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** Pluie noire: des jetons noirs tombent en tournoyant, des eclats d'or. */
+function blackRainScene(
+  width: number,
+  height: number,
+  preview: boolean,
+): Scene {
+  type Drop = {
+    x: number;
+    y: number;
+    vy: number;
+    vx: number;
+    r: number;
+    rot: number;
+    vr: number;
+    flip: number;
+    vf: number;
+  };
+  const drops: Drop[] = [];
+  const glints: { x: number; y: number; life: number; s: number }[] = [];
+  const spawn = (y?: number) => {
+    drops.push({
+      x: Math.random() * width,
+      y: y ?? -30 - Math.random() * 60,
+      vy: 2.2 + Math.random() * 3.2,
+      vx: (Math.random() - 0.5) * 0.8,
+      r: 9 + Math.random() * 11,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.06,
+      flip: Math.random() * Math.PI * 2,
+      vf: 0.05 + Math.random() * 0.08,
+    });
+  };
+  const max = preview ? 36 : 70;
+  let spawned = 0;
+  let acc = 0;
+  return {
+    trails: false,
+    frame: (ctx, t, dt) => {
+      const k = dt / 16.67;
+      acc += dt;
+      // En partie, la pluie ne cesse jamais; l'apercu s'arrete de lui-meme.
+      while (acc > 70 && (!preview || spawned < max)) {
+        acc -= 70;
+        if (drops.length < max) {
+          spawn();
+          spawned += 1;
+        }
+      }
+      for (let i = drops.length - 1; i >= 0; i--) {
+        const d = drops[i];
+        d.vy = Math.min(9, d.vy + 0.05 * k);
+        d.y += d.vy * k;
+        d.x += d.vx * k;
+        d.rot += d.vr * k;
+        d.flip += d.vf * k;
+        if (d.y - d.r > height) {
+          drops.splice(i, 1);
+          if (Math.random() < 0.5) {
+            glints.push({ x: d.x, y: height - 8, life: 1, s: d.r * 0.6 });
+          }
+          continue;
+        }
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.rot);
+        // Le jeton tourne sur lui-meme: on l'ecrase selon l'angle.
+        const sx = Math.cos(d.flip);
+        ctx.scale(Math.max(0.12, Math.abs(sx)), 1);
+        ctx.shadowColor = 'rgba(176, 124, 255, 0.55)';
+        ctx.shadowBlur = 10;
+        drawBlackChip(ctx, d.r);
+        ctx.restore();
+      }
+      for (let i = glints.length - 1; i >= 0; i--) {
+        const g = glints[i];
+        g.life -= 0.03 * k;
+        if (g.life <= 0) {
+          glints.splice(i, 1);
+          continue;
+        }
+        ctx.globalAlpha = g.life;
+        ctx.fillStyle = '#FFF1BF';
+        const r = g.s * (1.4 - g.life * 0.4);
+        ctx.beginPath();
+        ctx.moveTo(g.x, g.y - r * 2);
+        ctx.lineTo(g.x + r * 0.35, g.y);
+        ctx.lineTo(g.x, g.y + r * 2);
+        ctx.lineTo(g.x - r * 0.35, g.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(g.x - r * 2, g.y - r * 0.18, r * 4, r * 0.36);
+      }
+      ctx.globalAlpha = 1;
+      return !preview || spawned < max || drops.length > 0 || t < 1200;
+    },
+  };
+}
+
+/**
+ * Eclipse totale: la salle s'assombrit, un soleil noir monte, sa couronne
+ * d'or s'embrase et palpite, des eclats en jaillissent.
+ */
+function eclipseScene(width: number, height: number, preview: boolean): Scene {
+  const cx = width / 2;
+  const cy = height * 0.4;
+  const R = Math.min(width, height) * 0.14;
+  type Spark = {
+    a: number;
+    d: number;
+    v: number;
+    life: number;
+    c: string;
+  };
+  const sparks: Spark[] = [];
+  const palette = ['#FFF1BF', '#F3D27C', '#C9A0FF', '#FFFFFF'];
+  const duration = preview ? 4200 : Infinity;
+  let lastBurst = 0;
+  const burst = (n: number) => {
+    for (let i = 0; i < n; i++) {
+      sparks.push({
+        a: Math.random() * Math.PI * 2,
+        d: R * 1.05,
+        v: 1.5 + Math.random() * 4,
+        life: 1,
+        c: palette[Math.floor(Math.random() * palette.length)],
+      });
+    }
+  };
+  return {
+    trails: false,
+    frame: (ctx, t, dt) => {
+      const k = dt / 16.67;
+      // Ouverture puis, pour l'apercu, fondu de sortie.
+      const open = Math.min(1, t / 900);
+      const fade =
+        duration === Infinity
+          ? 1
+          : Math.max(0, Math.min(1, (duration - t) / 700));
+      const a = open * fade;
+      ctx.fillStyle = `rgba(5, 3, 8, ${0.55 * a})`;
+      ctx.fillRect(0, 0, width, height);
+
+      const rise = 1 - Math.pow(1 - Math.min(1, t / 1200), 3);
+      const y = cy + (1 - rise) * R * 1.4;
+      const pulse = 1 + 0.06 * Math.sin(t / 380);
+
+      // Couronne: un halo d'or qui palpite.
+      const glow = ctx.createRadialGradient(
+        cx,
+        y,
+        R * 0.9,
+        cx,
+        y,
+        R * 3.2 * pulse,
+      );
+      glow.addColorStop(0, `rgba(255, 241, 191, ${0.95 * a})`);
+      glow.addColorStop(0.18, `rgba(243, 210, 124, ${0.55 * a})`);
+      glow.addColorStop(0.5, `rgba(176, 124, 255, ${0.22 * a})`);
+      glow.addColorStop(1, 'rgba(176, 124, 255, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, y, R * 3.3 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Rayons de la couronne, qui tournent lentement.
+      ctx.save();
+      ctx.translate(cx, y);
+      ctx.rotate(t / 9000);
+      ctx.globalAlpha = 0.5 * a;
+      ctx.strokeStyle = '#FFF1BF';
+      for (let i = 0; i < 48; i++) {
+        const ang = (i / 48) * Math.PI * 2;
+        const len = R * (1.5 + 0.5 * Math.sin(i * 1.7 + t / 500));
+        ctx.lineWidth = i % 3 === 0 ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(ang) * R * 1.02, Math.sin(ang) * R * 1.02);
+        ctx.lineTo(Math.cos(ang) * len, Math.sin(ang) * len);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+
+      // Le disque noir, cerne d'un fil d'or.
+      ctx.fillStyle = `rgba(5, 3, 8, ${a})`;
+      ctx.beginPath();
+      ctx.arc(cx, y, R, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255, 241, 191, ${0.9 * a})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // L'eclat du "diamant", au bord du disque.
+      const flash = Math.max(0, Math.sin(t / 700)) ** 6;
+      const dx = cx + Math.cos(-0.7) * R;
+      const dy = y + Math.sin(-0.7) * R;
+      ctx.globalAlpha = a * (0.4 + 0.6 * flash);
+      ctx.fillStyle = '#FFFFFF';
+      const s = 6 + flash * 18;
+      ctx.beginPath();
+      ctx.moveTo(dx, dy - s);
+      ctx.lineTo(dx + s * 0.18, dy);
+      ctx.lineTo(dx, dy + s);
+      ctx.lineTo(dx - s * 0.18, dy);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillRect(dx - s, dy - s * 0.09, s * 2, s * 0.18);
+      ctx.globalAlpha = 1;
+
+      if (t - lastBurst > (preview ? 700 : 1100) && fade > 0.5) {
+        lastBurst = t;
+        burst(preview ? 40 : 60);
+      }
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const p = sparks[i];
+        p.d += p.v * k;
+        p.v *= 0.99;
+        p.life -= 0.012 * k;
+        if (p.life <= 0) {
+          sparks.splice(i, 1);
+          continue;
+        }
+        const px = cx + Math.cos(p.a) * p.d;
+        const py = y + Math.sin(p.a) * p.d;
+        ctx.globalAlpha = p.life * a;
+        ctx.fillStyle = p.c;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.2 + p.life * 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      return t < duration;
+    },
+  };
+}
+
 const SCENES: Record<
   string,
   (w: number, h: number, preview: boolean) => Scene
@@ -656,6 +926,8 @@ const SCENES: Record<
   champagne: champagneScene,
   goldbars: goldbarsScene,
   supernova: supernovaScene,
+  'pluie-noire': blackRainScene,
+  'eclipse-totale': eclipseScene,
 };
 
 export function VictoryLayer({

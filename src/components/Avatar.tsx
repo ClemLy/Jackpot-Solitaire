@@ -697,6 +697,109 @@ const AVATARS: Record<string, AvatarDef> = {
       </>
     ),
   },
+  // Boutique Legendaire. L'Ombre: une capuche, deux yeux d'or, un jeton noir.
+  ombre: {
+    bg: ['#3A2260', '#07050B'],
+    draw: () => (
+      <>
+        <path
+          d="M8 104 C12 80 28 70 50 70 C72 70 88 80 92 104 Z"
+          fill="#120C1C"
+        />
+        <path d="M41 72 L50 104 L59 72 Z" fill="#050307" />
+        <path
+          d="M28 78 C34 74 40 72 44 72 M72 78 C66 74 60 72 56 72"
+          fill="none"
+          stroke="#6B4FA0"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M24 66 C22 40 32 17 50 15 C68 17 78 40 76 66 C70 73 30 73 24 66 Z"
+          fill="#1D1430"
+        />
+        <path
+          d="M30 64 C29 44 38 26 50 25 C62 26 71 44 70 64"
+          fill="none"
+          stroke="#6B4FA0"
+          strokeWidth="1.3"
+        />
+        <path
+          d="M32 62 C31 46 39 30 50 30 C61 30 69 46 68 62 C62 67 38 67 32 62 Z"
+          fill="#050307"
+        />
+        <path
+          d="M40 72 Q50 81 60 72"
+          fill="none"
+          stroke={GOLD}
+          strokeWidth="0.9"
+        />
+        <circle
+          cx="50"
+          cy="84"
+          r="6.6"
+          fill="#0B0910"
+          stroke={GOLD}
+          strokeWidth="1.3"
+        />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <rect
+            key={i}
+            x="49"
+            y="77.6"
+            width="2"
+            height="2"
+            rx="0.4"
+            fill={GOLD}
+            transform={`rotate(${i * 60} 50 84)`}
+          />
+        ))}
+        <circle cx="50" cy="84" r="3.4" fill="#3A2260" />
+        <path d="M50 81.6 L51.6 84 L50 86.4 L48.4 84 Z" fill="#F3D27C" />
+      </>
+    ),
+  },
+  // Le Phenix: ailes de feu deployees, aigrette de flammes, braises.
+  phenix: {
+    bg: ['#FF9A3A', '#4A0A12'],
+    draw: () => (
+      <>
+        <path
+          d="M38 104 C39 88 44 78 50 74 C56 78 61 88 62 104 Z"
+          fill="#FF8A2A"
+        />
+        <path
+          d="M44 104 C45 92 47 85 50 80 C53 85 55 92 56 104 Z"
+          fill="#FFD25A"
+        />
+        <ellipse cx="50" cy="63" rx="13" ry="15" fill="#E2452A" />
+        <ellipse cx="50" cy="67" rx="8" ry="10" fill="#FFB347" />
+        <path
+          d="M45 69 Q50 72 55 69 M45.5 74 Q50 77 54.5 74"
+          fill="none"
+          stroke="#E2452A"
+          strokeWidth="1"
+          opacity="0.7"
+        />
+        <path
+          d="M42 44 C42 52 44 56 46 58 L54 58 C56 56 58 52 58 44 Z"
+          fill="#E2452A"
+        />
+        <circle cx="50" cy="38" r="11" fill="#E2452A" />
+        <path d="M58 36 L70 40 L58 44 Z" fill="#F3D27C" />
+        <path d="M58 40 L70 40 L58 44 Z" fill="#C99532" />
+        <circle cx="53" cy="35.5" r="2.6" fill="#FFF1BF" />
+        <circle cx="53.8" cy="35.5" r="1.3" fill="#2A0A05" />
+        <path
+          d="M49 31.5 Q53 30 57 32"
+          fill="none"
+          stroke="#7A1A10"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+        />
+      </>
+    ),
+  },
   nabab: {
     bg: ['#F3D27C', '#8F6418'],
     draw: () => (
@@ -1300,6 +1403,146 @@ const EXTRAS: Record<
             cx={[74, 84, 92, 80][i]}
             cy={[52, 48, 58, 64][i]}
             r="1.2"
+            fill="#FFE7A0"
+          />
+        ))}
+      </>
+    ),
+  },
+
+  // Boutique Legendaire: brume violette, yeux qui brillent, jetons qui montent.
+  ombre: {
+    scene: () => (
+      <>
+        <ellipse
+          cx="50"
+          cy="42"
+          rx="40"
+          ry="34"
+          fill="#7B4FC8"
+          opacity="0.28"
+        />
+        <Twinkles
+          points={[
+            [14, 20, 2],
+            [86, 26, 1.6],
+            [18, 58, 1.3],
+            [84, 62, 1.8],
+          ]}
+          fill="#C9A0FF"
+        />
+      </>
+    ),
+    fx: () => (
+      <>
+        <g className="av-pulse">
+          <ellipse
+            cx="43"
+            cy="47"
+            rx="6.5"
+            ry="3.6"
+            fill="#F3D27C"
+            opacity="0.3"
+          />
+          <ellipse
+            cx="57"
+            cy="47"
+            rx="6.5"
+            ry="3.6"
+            fill="#F3D27C"
+            opacity="0.3"
+          />
+        </g>
+        <path
+          d="M39.4 47 Q43 44.4 46.6 47 Q43 49 39.4 47 Z M53.4 47 Q57 44.4 60.6 47 Q57 49 53.4 47 Z"
+          fill="#FFE6A0"
+        />
+        {[
+          [16, 0],
+          [84, 1],
+          [26, 2],
+        ].map(([x, i]) => (
+          <g key={i} className="av-rise" style={anim(i)}>
+            <circle
+              cx={x}
+              cy={86 - i * 6}
+              r="3"
+              fill="#0B0910"
+              stroke={GOLD}
+              strokeWidth="0.9"
+            />
+            <circle cx={x} cy={86 - i * 6} r="1.3" fill="#7B4FC8" />
+          </g>
+        ))}
+      </>
+    ),
+  },
+
+  // Boutique Legendaire: rayons de soleil, ailes de feu et braises.
+  phenix: {
+    scene: () => (
+      <>
+        <g className="av-spin" opacity="0.28">
+          {Array.from({ length: 12 }, (_, i) => (
+            <path
+              key={i}
+              d="M50 50 L46 -10 H54 Z"
+              fill="#FFF1BF"
+              transform={`rotate(${i * 30} 50 50)`}
+            />
+          ))}
+        </g>
+        {[1, -1].map((side) => {
+          const m = (x: number) => (side === 1 ? x : 100 - x);
+          return (
+            <g key={side}>
+              <path
+                d={`M${m(44)} 64 C${m(30)} 60 ${m(14)} 50 ${m(3)} 20 C${m(11)} 28 ${m(17)} 31 ${m(22)} 29 C${m(17)} 37 ${m(23)} 44 ${m(30)} 44 C${m(27)} 50 ${m(34)} 54 ${m(40)} 54 Z`}
+                fill="#C42A3D"
+              />
+              <path
+                d={`M${m(44)} 63 C${m(34)} 59 ${m(22)} 51 ${m(13)} 34 C${m(19)} 39 ${m(24)} 41 ${m(28)} 39 C${m(27)} 46 ${m(32)} 50 ${m(39)} 50 Z`}
+                fill="#FF8A2A"
+              />
+              <path
+                d={`M${m(44)} 62 C${m(37)} 58 ${m(29)} 53 ${m(23)} 45 C${m(29)} 47 ${m(33)} 47 ${m(36)} 46 C${m(36)} 50 ${m(39)} 53 ${m(43)} 54 Z`}
+                fill="#FFD25A"
+              />
+            </g>
+          );
+        })}
+      </>
+    ),
+    fx: () => (
+      <>
+        <g className="av-flicker">
+          <path
+            d="M46 29 C40 20 42 12 48 5 C47 14 50 20 50 27 Z"
+            fill="#FFD25A"
+          />
+          <path
+            d="M50 28 C50 18 56 11 63 9 C58 16 56 22 54 29 Z"
+            fill="#FF8A2A"
+          />
+          <path
+            d="M43 31 C35 26 32 18 34 11 C37 20 41 24 46 28 Z"
+            fill="#FF8A2A"
+          />
+        </g>
+        {[
+          [26, 84],
+          [74, 82],
+          [18, 64],
+          [82, 60],
+          [60, 92],
+        ].map(([x, y], i) => (
+          <circle
+            key={i}
+            className="av-rise"
+            style={anim(i)}
+            cx={x}
+            cy={y}
+            r="1.3"
             fill="#FFE7A0"
           />
         ))}
