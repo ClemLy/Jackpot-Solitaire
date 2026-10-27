@@ -59,6 +59,17 @@ describe('accueil', () => {
   });
 });
 
+describe('effets visuels', () => {
+  it('allege les effets par defaut et les rend complets sur demande', async () => {
+    const { container } = render(<App />);
+    const app = container.querySelector('.app')!;
+    expect(app.getAttribute('data-effects')).toBe('light');
+    act(() => useMetaStore.getState().updateSettings({ fullEffects: true }));
+    expect(app.getAttribute('data-effects')).toBe('full');
+    act(() => useMetaStore.getState().updateSettings({ fullEffects: false }));
+  });
+});
+
 describe('rangs', () => {
   it('montre le rang, ce qui manque et ce que chaque rang apporte', async () => {
     useMetaStore.setState({

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useMetaStore } from '../state/meta';
 import { useOwnAtelier } from './atelierView';
+import { isIdle, onIdleChange } from '../utils/idle';
 import { decodeAtelier, type AtelierConfig } from '../state/atelier';
 import {
   rankLabel,
@@ -1095,6 +1096,9 @@ export function VictoryLayer({
   );
 }
 
+/** Duree d'un effet de victoire en mode allege. */
+const LIGHT_FX_MS = 7000;
+
 function FxCanvas({
   fx,
   preview,
@@ -1129,7 +1133,7 @@ function FxCanvas({
 
     const scene = (SCENES[effect] ?? bounceScene)(width, height, preview);
     let raf = 0;
-    const start = performance.now();
+    let start = performance.now();
     let last = start;
 
     const frame = (now: number) => {
@@ -1145,16 +1149,40 @@ function FxCanvas({
       } else {
         ctx.clearRect(0, 0, width, height);
       }
-      const alive = scene.frame(ctx, now - start, dt);
-      if (alive) {
+      // Effets allages: en partie, l'effet se fige apres quelques secondes
+      // (la recomposition continue de l'ecran coute cher a la carte
+      // graphique). Les effets complets tournent jusqu'au bout.
+      const light = !useMetaStore.getState().settings.fullEffects;
+      const timedOut = light && !preview && now - start > LIGHT_FX_MS;
+      const alive = scene.frame(ctx, now - start, dt) && !timedOut;
+      if (alive && isIdle() && !preview) {
+        // Ecran au repos: l'effet se fige jusqu'au prochain geste.
+        stoppedAt = now;
+      } else if (alive) {
         raf = requestAnimationFrame(frame);
+      } else if (timedOut) {
+        // Fin en fondu: le calque s'efface doucement, puis plus rien ne tourne.
+        canvas.classList.add('victory-layer--done');
       } else {
         if (preview || !scene.trails) ctx.clearRect(0, 0, width, height);
         doneRef.current?.();
       }
     };
+    let stoppedAt: number | null = null;
+    const stopWatching = onIdleChange((nowIdle) => {
+      if (nowIdle || stoppedAt === null) return;
+      // Reprise: le temps de l'effet repart la ou il s'etait arrete.
+      const resumeAt = performance.now();
+      start += resumeAt - stoppedAt;
+      last = resumeAt;
+      stoppedAt = null;
+      raf = requestAnimationFrame(frame);
+    });
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      stopWatching();
+    };
   }, [reduced, effect, preview]);
 
   if (reduced) return null;

@@ -59,6 +59,11 @@ export interface Settings {
   /** Difficulte des nouvelles donnes (pioche, donne et gains). */
   difficulty: DifficultyId;
   reducedMotion: boolean;
+  /**
+   * Effets visuels complets: decors et reflets animes en permanence. Par
+   * defaut, ils ne s'animent qu'au survol, pour menager la carte graphique.
+   */
+  fullEffects: boolean;
   /** Vibrations sur mobile, quand l'appareil le permet. */
   haptics: boolean;
   /** Ne servir que des donnes dont on a prouve qu'elles sont gagnables. */
@@ -133,6 +138,7 @@ const initialSettings: Settings = {
   volume: 0.6,
   difficulty: DEFAULT_DIFFICULTY,
   reducedMotion: false,
+  fullEffects: false,
   haptics: true,
   guaranteed: false,
 };
@@ -357,6 +363,7 @@ export function mergePersisted(
     volume,
     difficulty: isValidDifficulty(s.difficulty) ? s.difficulty : cs.difficulty,
     reducedMotion: bool(s.reducedMotion, cs.reducedMotion),
+    fullEffects: bool(s.fullEffects, cs.fullEffects),
     haptics: bool(s.haptics, cs.haptics),
     guaranteed: bool(s.guaranteed, cs.guaranteed),
   };

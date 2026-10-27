@@ -3,7 +3,13 @@
 // les bords (le centre est couvert par les cartes), et seules l'opacite et
 // la position s'animent, pour rester fluide.
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 
 /** Cadre de reference des dessins (ecran 16:10). */
 const W = 1600;
@@ -37,7 +43,18 @@ function place(box: Box, x: number, y: number): [number, number] {
 /** Les ornements des bords retrecissent sur un ecran etroit. */
 const edgeScale = (box: Box) => Math.min(1, box.w / W);
 
-const anim = (i: number) => ({ '--i': i }) as CSSProperties;
+/**
+ * Calques: le decor est dessine une fois, fige ("base"); chaque mouvement
+ * (reflet, nuages, meduses...) vit sur son propre calque, que la carte
+ * graphique deplace ou fait palpiter sans jamais le redessiner.
+ */
+const LayerCtx = createContext('base');
+
+/** Groupe anime: visible seulement sur son calque. */
+function Fx({ name, children }: { name: string; children: ReactNode }) {
+  const layer = useContext(LayerCtx);
+  return <g visibility={layer === name ? 'visible' : 'hidden'}>{children}</g>;
+}
 
 // ---------------------------------------------------------------------------
 // Salon noir (niveau II): velours noir et or, medaillon soleil Art deco.
@@ -151,15 +168,16 @@ function SalonNoir({ box }: { box: Box }) {
         strokeOpacity="0.28"
         strokeWidth="1.5"
       />
-      <rect
-        className="td-sheen"
-        x="-400"
-        y="-300"
-        width="260"
-        height={box.h + 700}
-        fill="url(#td-sheen)"
-        transform="rotate(20)"
-      />
+      <Fx name="sheen">
+        <rect
+          x="-400"
+          y="-300"
+          width="260"
+          height={box.h + 700}
+          fill="url(#td-sheen)"
+          transform="rotate(20)"
+        />
+      </Fx>
     </>
   );
 }
@@ -209,7 +227,7 @@ function Nebuleuse({ box }: { box: Box }) {
           <stop offset="1" stopColor="#C9A0FF" stopOpacity="0" />
         </radialGradient>
       </defs>
-      <g className="td-drift">
+      <Fx name="drift">
         {NEBULA_CLOUDS.map(([x0, y0, rx, ry, g], i) => {
           const [x, y] = place(box, x0, y0);
           return (
@@ -223,13 +241,9 @@ function Nebuleuse({ box }: { box: Box }) {
             />
           );
         })}
-      </g>
+      </Fx>
       <g transform={shift(box, 'r', 't')}>
-        <g
-          className="td-spin"
-          style={{ transformOrigin: '1380px 150px' }}
-          opacity="0.7"
-        >
+        <g opacity="0.7">
           <ellipse cx="1380" cy="150" rx="90" ry="30" fill="url(#td-nb-core)" />
           <path
             d="M1380 150 C1420 120 1470 140 1460 170 M1380 150 C1340 180 1290 160 1300 130"
@@ -243,7 +257,7 @@ function Nebuleuse({ box }: { box: Box }) {
       {NEBULA_STARS.map(([x0, y0, s], i) => {
         const [x, y] = place(box, x0, y0);
         return (
-          <g key={i} className="td-twinkle" style={anim(i)}>
+          <Fx key={i} name={i % 2 ? 'twinkle' : 'twinkle2'}>
             <circle cx={x} cy={y} r={3 * s} fill="#FFFFFF" />
             <path
               d={`M${x - 16 * s} ${y} H${x + 16 * s} M${x} ${y - 16 * s} V${y + 16 * s}`}
@@ -251,7 +265,7 @@ function Nebuleuse({ box }: { box: Box }) {
               strokeWidth="1.2"
               strokeOpacity="0.7"
             />
-          </g>
+          </Fx>
         );
       })}
     </>
@@ -268,16 +282,14 @@ function Jellyfish({
   y,
   s,
   hue,
-  i,
 }: {
   x: number;
   y: number;
   s: number;
   hue: string;
-  i: number;
 }) {
   return (
-    <g className="td-bob" style={anim(i)}>
+    <g>
       <g transform={`translate(${x} ${y}) scale(${s})`}>
         <ellipse cx="0" cy="-6" rx="70" ry="60" fill={hue} opacity="0.12" />
         <path
@@ -295,13 +307,7 @@ function Jellyfish({
           strokeOpacity="0.45"
           strokeWidth="1.4"
         />
-        <g
-          className="td-sway"
-          fill="none"
-          stroke={hue}
-          strokeOpacity="0.55"
-          strokeWidth="1.4"
-        >
+        <g fill="none" stroke={hue} strokeOpacity="0.55" strokeWidth="1.4">
           {[-30, -16, -4, 8, 20, 32].map((tx, k) => (
             <path
               key={k}
@@ -332,9 +338,9 @@ const JELLIES: [number, number, number, string][] = [
 ];
 
 /** Une algue qui ondule, pointe lumineuse; dessinee au pied du decor. */
-function Kelp({ x, s, i }: { x: number; s: number; i: number }) {
+function Kelp({ x, s }: { x: number; s: number }) {
   return (
-    <g className="td-sway td-sway--root" style={anim(i)}>
+    <g>
       <path
         d={`M${x} ${H} C${x - 40 * s} ${H - 120 * s} ${x + 40 * s} ${H - 220 * s} ${x - 10 * s} ${H - 340 * s} C${x + 20 * s} ${H - 220 * s} ${x - 10 * s} ${H - 120 * s} ${x + 24 * s} ${H}`}
         fill="#03222E"
@@ -353,9 +359,9 @@ function Kelp({ x, s, i }: { x: number; s: number; i: number }) {
   );
 }
 
-function Bubbles({ x, i }: { x: number; i: number }) {
+function Bubbles({ x }: { x: number }) {
   return (
-    <g className="td-bubbles" style={anim(i)}>
+    <Fx name="bubbles">
       {Array.from({ length: 6 }, (_, k) => (
         <circle
           key={k}
@@ -368,7 +374,7 @@ function Bubbles({ x, i }: { x: number; i: number }) {
           strokeWidth="1.4"
         />
       ))}
-    </g>
+    </Fx>
   );
 }
 
@@ -392,7 +398,7 @@ function Abysse({ box }: { box: Box }) {
       </defs>
       <rect width={box.w} height={box.h} fill="url(#td-ab-surface)" />
       <g transform={`scale(${box.w / W} ${box.h / H})`}>
-        <g className="td-rays">
+        <Fx name="rays">
           {[
             [300, 140, 18],
             [620, 110, -6],
@@ -406,64 +412,66 @@ function Abysse({ box }: { box: Box }) {
               transform={`rotate(${r} ${x} -20)`}
             />
           ))}
-        </g>
+        </Fx>
       </g>
       {/* Reflets mouvants de la surface. */}
-      <g
-        className="td-caustic"
-        fill="none"
-        stroke="#BFF6FF"
-        strokeOpacity="0.22"
-        strokeWidth="2"
-        transform={`scale(${box.w / W} 1)`}
-      >
-        {Array.from({ length: 6 }, (_, i) => (
-          <path
-            key={i}
-            d={`M-100 ${30 + i * 26} C200 ${10 + i * 26} 400 ${50 + i * 26} 700 ${30 + i * 26} S1200 ${10 + i * 26} 1700 ${40 + i * 26}`}
-          />
-        ))}
-      </g>
+      <Fx name="caustic">
+        <g
+          fill="none"
+          stroke="#BFF6FF"
+          strokeOpacity="0.22"
+          strokeWidth="2"
+          transform={`scale(${box.w / W} 1)`}
+        >
+          {Array.from({ length: 6 }, (_, i) => (
+            <path
+              key={i}
+              d={`M-100 ${30 + i * 26} C200 ${10 + i * 26} 400 ${50 + i * 26} 700 ${30 + i * 26} S1200 ${10 + i * 26} 1700 ${40 + i * 26}`}
+            />
+          ))}
+        </g>
+      </Fx>
       <rect width={box.w} height={box.h} fill="url(#td-ab-deep)" />
-      {JELLIES.map(([x0, y0, sc, hue], i) => {
-        const [, y] = place(box, x0, y0);
-        const x = x0 < W / 2 ? x0 * k : box.w - (W - x0) * k;
-        return (
-          <Jellyfish
-            key={i}
-            x={x}
-            y={y}
-            s={sc * Math.max(0.8, k)}
-            hue={hue}
-            i={i}
-          />
-        );
-      })}
+      <Fx name="bob">
+        {JELLIES.map(([x0, y0, sc, hue], i) => {
+          const [, y] = place(box, x0, y0);
+          const x = x0 < W / 2 ? x0 * k : box.w - (W - x0) * k;
+          return (
+            <Jellyfish
+              key={i}
+              x={x}
+              y={y}
+              s={sc * Math.max(0.8, k)}
+              hue={hue}
+            />
+          );
+        })}
+      </Fx>
       {/* Fond: algues et rochers dans les coins, bulles qui montent. */}
       <g transform={`translate(0 ${box.h}) scale(${k}) translate(0 ${-H})`}>
-        <Kelp x={40} s={1} i={0} />
-        <Kelp x={110} s={0.8} i={1} />
+        <Kelp x={40} s={1} />
+        <Kelp x={110} s={0.8} />
         <path
           d={`M0 ${H} C80 ${H - 70} 160 ${H - 40} 220 ${H - 90} C260 ${H - 60} 300 ${H - 30} 360 ${H} Z`}
           fill="#021821"
         />
-        <Bubbles x={80} i={0} />
-        <Bubbles x={210} i={1} />
+        <Bubbles x={80} />
+        <Bubbles x={210} />
       </g>
       <g
         transform={`translate(${box.w} ${box.h}) scale(${-k} ${k}) translate(0 ${-H})`}
       >
-        <Kelp x={40} s={1.1} i={2} />
-        <Kelp x={100} s={0.75} i={3} />
+        <Kelp x={40} s={1.1} />
+        <Kelp x={100} s={0.75} />
         <path
           d={`M0 ${H} C90 ${H - 80} 170 ${H - 40} 240 ${H - 100} C280 ${H - 60} 330 ${H - 30} 380 ${H} Z`}
           fill="#021821"
         />
-        <Bubbles x={200} i={2} />
-        <Bubbles x={70} i={3} />
+        <Bubbles x={200} />
+        <Bubbles x={70} />
       </g>
       <g transform={shift(box, 'c', 'b')}>
-        <Bubbles x={720} i={4} />
+        <Bubbles x={720} />
       </g>
     </>
   );
@@ -525,24 +533,19 @@ function Drape() {
 }
 
 /** Candelabre a trois bougies, et sa lueur qui vacille. */
-function Candelabra({ x, y, i }: { x: number; y: number; i: number }) {
+function Candelabra({ x, y }: { x: number; y: number }) {
   return (
     <g>
-      <circle
-        className="td-flicker"
-        style={anim(i)}
-        cx={x}
-        cy={y}
-        r="150"
-        fill="url(#td-tr-candle)"
-      />
+      <Fx name="flicker">
+        <circle cx={x} cy={y} r="150" fill="url(#td-tr-candle)" />
+      </Fx>
       <path
         d={`M${x - 30} ${y + 40} H${x + 30} M${x} ${y + 40} V${y + 90}`}
         stroke="#E3B95A"
         strokeOpacity="0.6"
         strokeWidth="4"
       />
-      {[-24, 0, 24].map((dx, k) => (
+      {[-24, 0, 24].map((dx) => (
         <g key={dx}>
           <rect
             x={x + dx - 4}
@@ -553,11 +556,15 @@ function Candelabra({ x, y, i }: { x: number; y: number; i: number }) {
             opacity="0.8"
           />
           <path
-            className="td-flame"
-            style={anim(i * 3 + k)}
             d={`M${x + dx} ${y - 14} C${x + dx + 6} ${y - 4} ${x + dx + 4} ${y + 6} ${x + dx} ${y + 6} C${x + dx - 4} ${y + 6} ${x + dx - 6} ${y - 4} ${x + dx} ${y - 14} Z`}
-            fill="#FFD98A"
+            fill="#F3A94A"
           />
+          <Fx name="flame">
+            <path
+              d={`M${x + dx} ${y - 18} C${x + dx + 7} ${y - 6} ${x + dx + 4} ${y + 6} ${x + dx} ${y + 6} C${x + dx - 4} ${y + 6} ${x + dx - 7} ${y - 6} ${x + dx} ${y - 18} Z`}
+              fill="#FFE6A8"
+            />
+          </Fx>
         </g>
       ))}
     </g>
@@ -624,7 +631,7 @@ function Trone({ box }: { box: Box }) {
         [1270, 800],
       ].map(([x0, y0], i) => {
         const [x, y] = place(box, x0, y0);
-        return <Candelabra key={i} x={x} y={y} i={i} />;
+        return <Candelabra key={i} x={x} y={y} />;
       })}
       <g transform={`scale(${k} ${box.h / H})`}>
         <Drape />
@@ -641,6 +648,14 @@ const SCENES: Record<string, (props: { box: Box }) => ReactNode> = {
   nebuleuse: Nebuleuse,
   abysse: Abysse,
   trone: Trone,
+};
+
+/** Calques animes de chaque scene (voir legend.css). */
+const LAYERS: Record<string, string[]> = {
+  'salon-noir': ['sheen'],
+  nebuleuse: ['drift', 'twinkle', 'twinkle2'],
+  abysse: ['rays', 'caustic', 'bob', 'bubbles'],
+  trone: ['flicker', 'flame'],
 };
 
 /** Taille du decor en unites de dessin, d'apres la forme de la fenetre. */
@@ -677,10 +692,12 @@ export function TableDecor({
   const box = preview ? PREVIEW_BOX : screen;
   const scene = SCENES[table];
   if (!scene) return null;
-  return (
+  const svg = (layer: string) => (
     <svg
-      className="table-decor"
+      key={layer}
+      className={`table-decor${layer === 'base' ? '' : ' table-decor--fx'}`}
       data-table-decor={table}
+      data-layer={layer}
       viewBox={`0 0 ${box.w} ${box.h}`}
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
@@ -692,7 +709,19 @@ export function TableDecor({
           <stop offset="1" stopColor="#FFF1BF" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {scene({ box })}
+      <LayerCtx.Provider value={layer}>
+        {layer === 'base' ? (
+          scene({ box })
+        ) : (
+          <g visibility="hidden">{scene({ box })}</g>
+        )}
+      </LayerCtx.Provider>
     </svg>
+  );
+  return (
+    <>
+      {svg('base')}
+      {(LAYERS[table] ?? []).map(svg)}
+    </>
   );
 }

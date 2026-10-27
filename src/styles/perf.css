@@ -62,3 +62,119 @@
 .hero-fan .card[data-face-up='true'] .card__back {
   display: none;
 }
+
+/* ---------------------------------------------------------------------------
+   Animations qui obligent a redessiner (et non simplement a deplacer) leur
+   element a chaque image: position d'arriere-plan, angle de degrade, ombre.
+   Sur le plateau (31 dos de cartes a la fois), les etiquettes de rang, les
+   plaques et les cartes de profil, elles chargeaient la carte graphique en
+   continu. Elles restent figees sur leur plus bel etat; les reflets qui
+   glissent par simple translation (pris en charge par la carte graphique)
+   sont gardes.
+--------------------------------------------------------------------------- */
+
+.game .card__back,
+.hero-fan .card__back,
+.rank__label,
+.rank-pill,
+.plaque,
+.pcard,
+.pcard__rainbow,
+.pcard__foil,
+.pcard__shine,
+.rk-step[data-state='current'] .rk-step__node,
+.lg-step[data-state='current'] .lg-step__node {
+  animation: none !important;
+}
+/* Le titre de la ceremonie garde son entree, sans le prisme qui defile. */
+.ascension__title {
+  animation: ascensionText 800ms var(--ease-out) 1050ms both !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Animations a l'interieur des SVG (rayons et etincelles des emblemes,
+   orbites des cadres, effets des avatars): elles obligent a repeindre le
+   dessin et a recomposer toute la page a chaque image. Elles jouent dans
+   l'apercu de l'Atelier et pendant la ceremonie, et partout ailleurs au
+   survol (le reste du decor, anime par la carte graphique, ne s'arrete
+   pas).
+--------------------------------------------------------------------------- */
+
+svg * {
+  animation-play-state: paused !important;
+}
+:is(.atl__preview, .ascension) svg *,
+:is(
+    .preview,
+    .choice,
+    .rank-track,
+    .profile-plate,
+    .vip-pill,
+    .rank-pill,
+    .hub-tile,
+    .mode-card,
+    .player-row,
+    .rk-step,
+    .pcard,
+    .lg-hero,
+    .rk-hero,
+    .lg-seal__hero
+  ):hover
+  svg
+  * {
+  animation-play-state: running !important;
+}
+
+/* Effet de victoire arrive a son terme (effets allages): fondu de sortie. */
+.victory-layer--done {
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+
+/* ---------------------------------------------------------------------------
+   Effets allages (par defaut, voir Reglages): plus aucune animation
+   decorative ne tourne en continu. Une seule petite animation en boucle
+   suffit a faire recomposer tout l'ecran 60 fois par seconde. Les decors
+   s'animent au survol, dans les apercus et a leur entree; les scenes de
+   tapis restent visibles, immobiles.
+--------------------------------------------------------------------------- */
+
+.app[data-effects='light'] .table-decor--fx,
+.app[data-effects='light'] .game .card__front::after,
+.app[data-effects='light'] .game .card__back::before,
+.app[data-effects='light'] .game .card__back::after,
+.app[data-effects='light'] .hero-fan .card__back::before,
+.app[data-effects='light'] .hero-fan .card__back::after,
+.app[data-effects='light'] .wheel-glyph {
+  animation: none !important;
+}
+.app[data-effects='light'][data-table]::before {
+  animation: none !important;
+}
+.app[data-effects='light'] .game .card__front::after {
+  opacity: 0;
+}
+.app[data-effects='light'] .mode-card:not(:hover) .emblem,
+.app[data-effects='light'] .mode-card:not(:hover) .emblem *,
+.app[data-effects='light'] .mode-card:not(:hover) .emblem__spark,
+.app[data-effects='light'] .pcard:not(:hover) .pcard__decor *,
+.app[data-effects='light'] .pcard:not(:hover) .pcard__sheen,
+.app[data-effects='light'] .profile-plate:not(:hover) *,
+.app[data-effects='light'] .rank-track:not(:hover) *,
+.app[data-effects='light'] .lg-hero:not(:hover) *,
+.app[data-effects='light'] .rk-hero:not(:hover) *,
+.app[data-effects='light'] .lg-seal__hero:not(:hover) *,
+.app[data-effects='light'] .hub-tile:not(:hover) *,
+.app[data-effects='light'] .item:not(:hover) *,
+.app[data-effects='light'] .item:not(:hover)::after,
+.app[data-effects='light'] .rk-step__node *,
+.app[data-effects='light'] .lg-step__node *,
+.app[data-effects='light'] .black-pill *,
+.app[data-effects='light'] .vip-pill:not(:hover) * {
+  animation-play-state: paused !important;
+}
+/* Immobiles, les calques de decor n'ont plus besoin d'etre separes: ils se
+   fondent dans le tapis, et chaque recomposition coute moins cher. */
+.app[data-effects='light'] .table-decor--fx {
+  will-change: auto;
+}

@@ -86,6 +86,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
         )}
 
         <Switch
+          label="Effets visuels complets"
+          hint="Décors de tapis, reflets des cartes et emblèmes animés en permanence. Plus vivant, mais nettement plus gourmand pour la carte graphique. Désactivés, ils s’animent au survol."
+          value={settings.fullEffects}
+          onChange={(v) => update({ fullEffects: v })}
+        />
+
+        <Switch
           label="Animations réduites"
           hint="Coupe les vols de cartes et les effets, pour un rendu plus calme."
           value={settings.reducedMotion}

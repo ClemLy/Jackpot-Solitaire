@@ -651,13 +651,26 @@ Choix techniques notables :
 - **Animations FLIP** via la Web Animations API, mesurées sur la position de
   mise en page plutôt que sur la position affichée : plusieurs cartes
   peuvent voler en même temps sans se fausser.
-- **Fluidité** : pas de flou d’arrière-plan (recalculé à chaque image dès
-  que quelque chose bouge dessous), des halos en ombres portées plutôt
-  qu’en filtres, des animations figées sous une fenêtre ouverte et, dans les
-  grilles de la boutique et du profil, des vignettes qui ne s’animent qu’au
-  survol. Les cartes décoratives sont dessinées à plat, et les effets de
-  victoire réutilisent des images pré-dessinées. Tout tient 60 images par
-  seconde, boutique et Salon compris.
+- **Légèreté pour la carte graphique** : une seule animation qui tourne en
+  boucle suffit à faire recomposer tout l’écran 60 fois par seconde. Par
+  défaut, aucune animation décorative ne tourne donc en continu : les
+  décors s’animent au survol, dans les aperçus et à leur arrivée, et les
+  effets de victoire s’arrêtent en fondu après quelques secondes. Le
+  réglage « Effets visuels complets » les rend permanents. Dans tous les
+  cas :
+  - pas de flou d’arrière-plan ni de grain en mode de fusion ;
+  - aucun reflet en position d’arrière-plan, ni bordure tournante, ni
+    ombre qui pulse (ils obligeaient à tout redessiner) ;
+  - les scènes de tapis sont peintes une fois, et leurs mouvements vivent
+    sur des calques que la carte graphique déplace seule ;
+  - les animations à l’intérieur des SVG ne jouent qu’au survol ;
+  - après 15 secondes sans activité, tout se met au repos, et repart au
+    premier geste ;
+  - les cartes décoratives sont dessinées à plat, et les effets de
+    victoire réutilisent des images pré-dessinées.
+
+  Résultat mesuré dans Chrome sur écran Retina : de 1 à 3 % de GPU sur
+  tous les écrans, contre 50 à 120 % auparavant.
 - **Colonnes adaptatives** : les écarts de chaque colonne sont calculés à
   partir de la hauteur réellement disponible.
 

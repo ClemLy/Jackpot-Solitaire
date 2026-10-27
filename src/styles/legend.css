@@ -2372,7 +2372,8 @@
    Decors des tapis legendaires (TableDecor): une scene sous le plateau.
 --------------------------------------------------------------------------- */
 
-.app > .table-decor {
+.app > .table-decor,
+.preview > .table-decor {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -2380,32 +2381,38 @@
   height: 100%;
   pointer-events: none;
 }
-.td-sheen {
+/* Calques animes: chaque calque entier glisse ou palpite. Seules la
+   translation, la rotation et l'opacite changent: la carte graphique s'en
+   charge sans rien redessiner. */
+.table-decor--fx {
+  will-change: transform, opacity;
+}
+.table-decor--fx[data-layer='sheen'] {
   animation: tdSheen 14s ease-in-out infinite;
 }
 @keyframes tdSheen {
   0%,
   40% {
-    translate: 0 0;
+    translate: -20% 0;
   }
   100% {
-    translate: 2200px 0;
+    translate: 130% 0;
   }
 }
-.td-drift {
+.table-decor--fx[data-layer='drift'] {
   animation: tdDrift 30s ease-in-out infinite alternate;
 }
 @keyframes tdDrift {
   to {
-    translate: 40px -24px;
+    translate: 2.5% -1.6%;
   }
 }
-.td-spin {
-  animation: frameSpin 120s linear infinite;
-}
-.td-twinkle {
+.table-decor--fx[data-layer='twinkle'],
+.table-decor--fx[data-layer='twinkle2'] {
   animation: tdTwinkle 3.4s ease-in-out infinite alternate;
-  animation-delay: calc(var(--i, 0) * -0.7s);
+}
+.table-decor--fx[data-layer='twinkle2'] {
+  animation-delay: -1.7s;
 }
 @keyframes tdTwinkle {
   from {
@@ -2415,93 +2422,71 @@
     opacity: 1;
   }
 }
-.td-rays {
-  transform-origin: 800px -20px;
+.table-decor--fx[data-layer='rays'] {
+  transform-origin: 50% 0;
   animation: tdRays 12s ease-in-out infinite alternate;
 }
 @keyframes tdRays {
   from {
-    rotate: -1.5deg;
+    rotate: -1.2deg;
     opacity: 0.75;
   }
   to {
-    rotate: 1.5deg;
+    rotate: 1.2deg;
     opacity: 1;
   }
 }
-.td-caustic {
+.table-decor--fx[data-layer='caustic'] {
   animation: tdCaustic 8s ease-in-out infinite alternate;
 }
 @keyframes tdCaustic {
   to {
-    translate: -60px 6px;
+    translate: -3% 0.4%;
   }
 }
-.td-bob {
+.table-decor--fx[data-layer='bob'] {
   animation: tdBob 7s ease-in-out infinite alternate;
-  animation-delay: calc(var(--i, 0) * -2.3s);
 }
 @keyframes tdBob {
   to {
-    translate: 0 -40px;
+    translate: 0 -3%;
   }
 }
-.td-sway {
-  transform-box: fill-box;
-  transform-origin: 50% 0%;
-  animation: tdSway 5s ease-in-out infinite alternate;
-  animation-delay: calc(var(--i, 0) * -1.2s);
-}
-.td-sway--root {
-  transform-origin: 50% 100%;
-}
-@keyframes tdSway {
-  from {
-    rotate: -3deg;
-  }
-  to {
-    rotate: 3deg;
-  }
-}
-.td-bubbles {
+.table-decor--fx[data-layer='bubbles'] {
   animation: tdBubbles 9s linear infinite;
-  animation-delay: calc(var(--i, 0) * -1.9s);
 }
 @keyframes tdBubbles {
   from {
     translate: 0 0;
     opacity: 0;
   }
-  10% {
+  12% {
     opacity: 1;
   }
   to {
-    translate: 0 -500px;
+    translate: 0 -40%;
     opacity: 0;
   }
 }
-.td-flicker {
+.table-decor--fx[data-layer='flicker'] {
   animation: tdFlicker 2.4s ease-in-out infinite alternate;
-  animation-delay: calc(var(--i, 0) * -0.6s);
+}
+.table-decor--fx[data-layer='flame'] {
+  animation: tdFlicker 0.7s ease-in-out infinite alternate;
 }
 @keyframes tdFlicker {
   from {
-    opacity: 0.7;
+    opacity: 0.6;
   }
   to {
     opacity: 1;
   }
 }
-.td-flame {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: flameDance 0.7s ease-in-out infinite alternate;
-}
-.app[data-covered='true'] > .table-decor * {
+.app[data-covered='true'] > .table-decor {
   animation-play-state: paused !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  .table-decor * {
+  .table-decor--fx {
     animation: none !important;
   }
 }
@@ -2513,48 +2498,17 @@
   width: 100%;
   height: 100%;
 }
-.pcard-sway-rays {
-  transform-box: view-box;
-  transform-origin: 50px -4px;
-  animation: tdRays 9s ease-in-out infinite alternate;
-}
-.pcard-caustic {
-  animation: pcardCaustic 6s ease-in-out infinite alternate;
-}
-@keyframes pcardCaustic {
-  to {
-    translate: -6px 0.6px;
-  }
-}
-.pcard-bob {
-  animation: pcardBob 6s ease-in-out infinite alternate;
-  animation-delay: calc(var(--i, 0) * -2s);
-}
-@keyframes pcardBob {
-  to {
-    translate: 0 -5px;
-  }
-}
-.pcard-school {
-  animation: pcardSchool 16s linear infinite;
-}
-@keyframes pcardSchool {
-  from {
-    translate: -30px 0;
-  }
-  to {
-    translate: 110px -8px;
-  }
-}
-.pcard-kelp {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: tdSway 4.5s ease-in-out infinite alternate;
-  animation-delay: calc(var(--i, 0) * -1.1s);
-}
-.pcard-shock {
-  transform-box: view-box;
-  transform-origin: 50px 44px;
+/* Les scenes dessinees des cartes restent fixes (une animation dans un
+   SVG oblige a le redessiner a chaque image); le mouvement vient des
+   elements poses par-dessus: bulles, eclats et ondes de choc. */
+.pcard__wave {
+  left: 50%;
+  top: 30%;
+  width: 40%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 241, 191, 0.8);
   animation: pcardShock 4.5s ease-out infinite;
   animation-delay: calc(var(--i, 0) * -1.5s);
 }
@@ -2567,11 +2521,6 @@
     scale: 3.2;
     opacity: 0;
   }
-}
-.pcard-spin-slow {
-  transform-box: view-box;
-  transform-origin: 50px 44px;
-  animation: frameSpin 40s linear infinite;
 }
 .pcard[data-style='carte-abysse'],
 .pcard[data-style='carte-big-bang'] {
@@ -2588,13 +2537,7 @@
     inset 0 0 0 4px rgba(157, 232, 244, 0.18);
 }
 @media (prefers-reduced-motion: reduce) {
-  .pcard-sway-rays,
-  .pcard-caustic,
-  .pcard-bob,
-  .pcard-school,
-  .pcard-kelp,
-  .pcard-shock,
-  .pcard-spin-slow {
+  .pcard__wave {
     animation: none !important;
   }
 }

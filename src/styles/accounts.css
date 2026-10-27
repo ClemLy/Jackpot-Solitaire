@@ -790,15 +790,25 @@
   }
 }
 .pcard__sheen {
-  inset: 0;
+  /* Un voile plus large que la carte, qui glisse: anime par la carte
+     graphique (translation), sans redessiner la carte. */
+  inset: 0 -100%;
   background: linear-gradient(
     115deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.32) 50%,
-    transparent 60%
+    transparent 44%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 56%
   );
-  background-size: 300% 100%;
-  animation: pcardSheen 6s ease-in-out infinite;
+  animation: pcardSheenX 6s ease-in-out infinite;
+}
+@keyframes pcardSheenX {
+  0%,
+  45% {
+    translate: -34% 0;
+  }
+  100% {
+    translate: 34% 0;
+  }
 }
 @keyframes pcardSheen {
   0%,

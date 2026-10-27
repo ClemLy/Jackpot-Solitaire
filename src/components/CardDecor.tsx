@@ -315,7 +315,7 @@ function AbyssScene() {
           <stop offset="1" stopColor="#9DFFEE" stopOpacity="0" />
         </radialGradient>
       </defs>
-      <g className="pcard-sway-rays">
+      <g>
         {[
           [16, 10, 10],
           [40, 8, -4],
@@ -330,13 +330,7 @@ function AbyssScene() {
           />
         ))}
       </g>
-      <g
-        className="pcard-caustic"
-        fill="none"
-        stroke="#C8F8FF"
-        strokeOpacity="0.3"
-        strokeWidth="0.4"
-      >
+      <g fill="none" stroke="#C8F8FF" strokeOpacity="0.3" strokeWidth="0.4">
         {[4, 8, 12].map((y) => (
           <path
             key={y}
@@ -350,11 +344,7 @@ function AbyssScene() {
         [88, 104, 0.12, '#C9A0FF', 1],
         [80, 40, 0.09, '#7FE3FF', 2],
       ].map(([x, y, s, hue, i]) => (
-        <g
-          key={i as number}
-          className="pcard-bob"
-          style={{ '--i': i } as CSSProperties}
-        >
+        <g key={i as number}>
           <g transform={`translate(${x} ${y}) scale(${s})`}>
             <circle cx="0" cy="-6" r="70" fill="url(#pc-ab-glow)" />
             <path
@@ -381,7 +371,7 @@ function AbyssScene() {
         </g>
       ))}
       {/* Banc de poissons qui traverse lentement. */}
-      <g className="pcard-school" fill="#BFF6FF" fillOpacity="0.55">
+      <g fill="#BFF6FF" fillOpacity="0.55">
         {[
           [0, 0],
           [5, -2],
@@ -403,7 +393,7 @@ function AbyssScene() {
         [93, 0.5, 2],
         [87, 0.35, 3],
       ].map(([x, k, i]) => (
-        <g key={i} className="pcard-kelp" style={{ '--i': i } as CSSProperties}>
+        <g key={i}>
           <path
             d={`M${x} 148 C${x - 5 * k} ${148 - 14 * k} ${x + 5 * k} ${148 - 26 * k} ${x - 1 * k} ${148 - 40 * k} C${x + 3 * k} ${148 - 26 * k} ${x - 1 * k} ${148 - 14 * k} ${x + 3 * k} 148`}
             fill="#03303E"
@@ -461,21 +451,7 @@ function BigBangScene() {
       <ellipse cx="60" cy="128" rx="44" ry="22" fill="url(#pc-bb-c)" />
       <ellipse cx="28" cy="20" rx="30" ry="18" fill="url(#pc-bb-c)" />
       <circle cx="50" cy="44" r="40" fill="url(#pc-bb-core)" />
-      {[0, 1, 2].map((i) => (
-        <circle
-          key={i}
-          className="pcard-shock"
-          style={{ '--i': i } as CSSProperties}
-          cx="50"
-          cy="44"
-          r="20"
-          fill="none"
-          stroke="#FFF1BF"
-          strokeWidth="0.8"
-        />
-      ))}
       <ellipse
-        className="pcard-spin-slow"
         cx="50"
         cy="44"
         rx="46"
@@ -608,6 +584,13 @@ export function CardDecor({ style }: { style: string }) {
       decor = (
         <>
           <BigBangScene />
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="pcard__wave"
+              style={{ '--i': i } as CSSProperties}
+            />
+          ))}
           <span className="pcard__burst" />
           <Shards />
           <Dots className="pcard__star" points={VOID_STARS} />

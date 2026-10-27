@@ -84,6 +84,7 @@ export default function App() {
   const cardBack = useMetaStore((s) => s.equipped.cardBack);
   const cardFace = useMetaStore((s) => s.equipped.cardFace);
   const reducedMotion = useMetaStore((s) => s.settings.reducedMotion);
+  const fullEffects = useMetaStore((s) => s.settings.fullEffects);
   // Objets sur mesure (Atelier): leurs variables composees sur le plateau.
   const atelier = useOwnAtelier();
   const backStyle = useAtelierStyle('back', cardBack);
@@ -146,6 +147,7 @@ export default function App() {
       data-back={cardBack}
       data-face={cardFace}
       data-motion={reducedMotion ? 'reduced' : 'full'}
+      data-effects={fullEffects ? 'full' : 'light'}
       data-route={route}
       data-covered={modal !== 'none' || overlay !== 'none' ? 'true' : undefined}
       style={
