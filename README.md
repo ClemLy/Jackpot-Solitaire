@@ -626,7 +626,8 @@ src/
     LegendCeremony.tsx     Cérémonie d'accession au rang Légendaire
     AtelierPanel.tsx       L'Atelier: composer, prévisualiser, enregistrer
   styles/      Tokens et tapis, cartes, plateau, interface, comptes, rangs,
-               rang Légendaire, fluidité (perf.css)
+               rang Légendaire, fluidité (perf.css), grands montants
+               (bignum.css)
   utils/       Formatage, graines, adresses, erreurs, tracés des enseignes
 server/        Fonction api : authentifie, rejoue et enregistre
 supabase/      Configuration, migration SQL (tables, verrous, quotas),
@@ -671,6 +672,12 @@ Choix techniques notables :
 
   Résultat mesuré dans Chrome sur écran Retina : de 1 à 3 % de GPU sur
   tous les écrans, contre 50 à 120 % auparavant.
+- **Grands montants** : jusqu’au milliard, rien ne déborde. Les pastilles,
+  le magot et les boutons abrègent au-delà du million (98,7 M, 1,23 Md,
+  tronqué et jamais arrondi vers le haut), avec le montant exact en
+  infobulle et pour les lecteurs d’écran ; les bordereaux, les
+  statistiques et le Salon gardent le montant exact et se réduisent ou
+  passent à la ligne.
 - **Colonnes adaptatives** : les écarts de chaque colonne sont calculés à
   partir de la hauteur réellement disponible.
 

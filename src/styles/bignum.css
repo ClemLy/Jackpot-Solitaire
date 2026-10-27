@@ -1,0 +1,73 @@
+/* ---------------------------------------------------------------------------
+   Grands montants. Au-dela du million (et jusqu'au milliard), les chiffres
+   ne doivent jamais deborder: les pastilles et boutons les abregent
+   (formatCompact), et les blocs qui gardent le montant exact se reduisent
+   ou passent a la ligne proprement.
+--------------------------------------------------------------------------- */
+
+/* Les chiffres d'une tuile de statistique se reduisent avec la tuile. */
+.stat {
+  min-width: 0;
+  container-type: inline-size;
+}
+.stat__v {
+  font-size: min(1.42rem, 13cqi);
+  white-space: nowrap;
+}
+
+/* Hauts faits: la legende et la prime passent sous la jauge si besoin. */
+.achv__meter {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.achv__bar {
+  min-width: 90px;
+}
+
+/* Jauge de rang de l'accueil: elle grandit avec son contenu, le reste
+   passe a la ligne au lieu de deborder de la tuile. */
+.rank-track {
+  width: auto;
+  min-width: min(100%, 420px);
+  max-width: 100%;
+}
+.rank-track__line {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+/* Grands titres de rang (Legendaire XXVIII...): ils se reduisent avec la
+   fenetre plutot que de sortir de leur cadre. */
+.rk-hero__rank,
+.lg-hero__rank {
+  font-size: clamp(1.25rem, 5.4vw, 2rem);
+  overflow-wrap: anywhere;
+}
+.rk-hero__body,
+.lg-hero__body {
+  min-width: 0;
+}
+
+/* Montants des bordereaux: toujours sur une ligne, le libelle se replie. */
+.ticket__line > :last-child,
+.tally__value {
+  white-space: nowrap;
+}
+
+/* Boutons de decision du bordereau (Quitte ou double / Encaisser): un peu
+   moins de marge interieure, pour que le montant tienne toujours. */
+.stage__duo .btn {
+  min-width: 0;
+  padding-inline: 14px;
+}
+.stage__duo .btn__amount {
+  flex: none;
+}
+
+/* Tuiles du menu: l'etat peut tenir sur deux lignes plutot que d'etre coupe. */
+.hub-tile__text > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+}

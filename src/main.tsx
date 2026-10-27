@@ -25,6 +25,7 @@ import './styles/ranks.css';
 import './styles/achievements.css';
 import './styles/legend.css';
 import './styles/perf.css';
+import './styles/bignum.css';
 
 console.info(`Jackpot Solitaire: ${BUILD_TAG}`);
 

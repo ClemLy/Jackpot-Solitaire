@@ -33,7 +33,12 @@ import {
   vipProgress,
   vipTierFor,
 } from '../state/catalog';
-import { formatDuration, formatNumber, percent } from '../utils/format';
+import {
+  formatCompact,
+  formatDuration,
+  formatNumber,
+  percent,
+} from '../utils/format';
 import { dailySeed, todayISO } from '../utils/seed';
 import type { Card } from '../engine';
 import { CardView } from './CardView';
@@ -431,7 +436,7 @@ export function Home() {
                 icon={<BlackChip size={24} />}
                 label="Salon légendaire"
                 shortLabel="Le Salon"
-                meta={`${formatNumber(legend.black)} jetons noirs`}
+                meta={`${formatCompact(legend.black)} jetons noirs`}
                 onClick={() => openModal('legend')}
               />
             )}
@@ -696,7 +701,7 @@ function RankTrack() {
             <RankBadge tier="legend" level={legend.level + 1} emblem={false} />
           </span>
           <span className="rank-track__left">
-            encore <strong>{formatNumber(left)}</strong>
+            encore <strong>{formatCompact(left)}</strong>
           </span>
         </span>
         <span
@@ -738,7 +743,7 @@ function RankTrack() {
           <span className="rank-track__left">
             {chipsLeft > 0 ? (
               <>
-                encore <strong>{formatNumber(chipsLeft)}</strong>
+                encore <strong>{formatCompact(chipsLeft)}</strong>
               </>
             ) : needTable ? (
               <strong>Vaincre la Table Légende</strong>
@@ -782,7 +787,7 @@ function RankTrack() {
             </span>
             <RankBadge tier={next.id} emblem={false} />
             <span className="rank-track__left">
-              encore <strong>{formatNumber(next.threshold - lifetime)}</strong>
+              encore <strong>{formatCompact(next.threshold - lifetime)}</strong>
             </span>
           </>
         )}

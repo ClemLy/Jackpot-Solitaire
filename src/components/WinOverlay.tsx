@@ -10,6 +10,7 @@ import {
 import { useMetaStore } from '../state/meta';
 import { playSound } from '../audio/sfx';
 import {
+  formatCompact,
   formatDuration,
   formatMultiplier,
   formatNumber,
@@ -435,8 +436,11 @@ export function WinOverlay() {
               </button>
               <button className="btn btn--emerald btn--lg" onClick={cashOut}>
                 Encaisser
-                <span className="btn__amount">
-                  <Chip size={16} /> {formatNumber(win.potAfter)}
+                <span
+                  className="btn__amount"
+                  title={`${formatNumber(win.potAfter)} jetons`}
+                >
+                  <Chip size={16} /> {formatCompact(win.potAfter)}
                 </span>
               </button>
             </div>
@@ -509,8 +513,8 @@ export function HalfCashOut({
       <span className="half-cash__text">
         <strong>Mettre la moitié à l’abri et rejouer</strong>
         <small>
-          +{formatNumber(half)} à la banque · {formatNumber(remaining)} restent
-          en jeu
+          +{formatCompact(half)} à la banque · {formatCompact(remaining)}{' '}
+          restent en jeu
         </small>
       </span>
     </button>

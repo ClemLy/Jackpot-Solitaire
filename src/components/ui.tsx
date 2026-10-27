@@ -7,7 +7,7 @@ import {
   findDifficulty,
   type DifficultyId,
 } from '../state/catalog';
-import { formatMultiplier, formatNumber } from '../utils/format';
+import { formatCompact, formatMultiplier, formatNumber } from '../utils/format';
 
 type ChipTone = 'gold' | 'red' | 'black' | 'blue' | 'violet';
 
@@ -161,9 +161,18 @@ export function BlackChip({
 export function BlackBalance({ className }: { className?: string }) {
   const black = useMetaStore((s) => s.legend.black);
   return (
-    <span className={`balance balance--black ${className ?? ''}`}>
+    <span
+      className={`balance balance--black ${className ?? ''}`}
+      title={`${formatNumber(black)} jetons noirs`}
+    >
       <BlackChip size="1.25em" />
-      <RollingNumber value={black} className="balance__value" />
+      <span className="sr-only">{formatNumber(black)} jetons noirs</span>
+      <RollingNumber
+        value={black}
+        className="balance__value"
+        format={formatCompact}
+        aria-hidden
+      />
     </span>
   );
 }
@@ -189,6 +198,8 @@ export function RollingNumber({
   className,
   format = formatNumber,
   onTick,
+  title,
+  'aria-hidden': ariaHidden,
 }: {
   value: number;
   /** Valeur de depart au montage (sinon on part directement de `value`). */
@@ -197,6 +208,10 @@ export function RollingNumber({
   className?: string;
   format?: (n: number) => string;
   onTick?: () => void;
+  /** Infobulle (le montant exact, quand l'affichage est abrege). */
+  title?: string;
+  /** Masque aux lecteurs d'ecran (le montant exact est dit a cote). */
+  'aria-hidden'?: boolean;
 }) {
   const [display, setDisplay] = useState(from ?? value);
   const shown = useRef(from ?? value);
@@ -229,16 +244,32 @@ export function RollingNumber({
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
 
-  return <span className={className}>{format(display)}</span>;
+  return (
+    <span className={className} title={title} aria-hidden={ariaHidden}>
+      {format(display)}
+    </span>
+  );
 }
 
-/** Solde de la banque: jeton + montant qui roule a chaque gain ou achat. */
+/**
+ * Solde de la banque: jeton + montant qui roule a chaque gain ou achat.
+ * Abrege au-dela du million (98,7 M): ces pastilles ont une place comptee.
+ */
 export function Balance({ className }: { className?: string }) {
   const balance = useMetaStore((s) => s.wallet.balance);
   return (
-    <span className={`balance ${className ?? ''}`}>
+    <span
+      className={`balance ${className ?? ''}`}
+      title={`${formatNumber(balance)} jetons`}
+    >
       <Chip size="1.25em" />
-      <RollingNumber value={balance} className="balance__value" />
+      <span className="sr-only">{formatNumber(balance)} jetons</span>
+      <RollingNumber
+        value={balance}
+        className="balance__value"
+        format={formatCompact}
+        aria-hidden
+      />
     </span>
   );
 }

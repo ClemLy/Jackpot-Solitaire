@@ -28,7 +28,12 @@ import {
   vegasRecycles,
 } from '../state/catalog';
 import { playSound } from '../audio/sfx';
-import { formatDuration, formatMultiplier } from '../utils/format';
+import {
+  formatCompact,
+  formatDuration,
+  formatMultiplier,
+  formatNumber,
+} from '../utils/format';
 import { Chip, RollingNumber } from './ui';
 import { JokerTray } from './Jokers';
 
@@ -203,7 +208,12 @@ export function Hud() {
             <Chip size={22} />
             <span className="pot__body">
               <span className="pot__label">Magot</span>
-              <RollingNumber value={pot} className="pot__value" />
+              <RollingNumber
+                value={pot}
+                className="pot__value"
+                format={formatCompact}
+                title={`${formatNumber(pot)} jetons`}
+              />
             </span>
             {combo > 0 && <span className="pot__combo">série {combo}</span>}
             {table.multiplier > 1 && (

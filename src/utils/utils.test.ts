@@ -7,6 +7,7 @@ import {
   errorReport,
   installGlobalErrorHandlers,
 } from './errors';
+import { formatCompact } from './format';
 
 describe('graines', () => {
   afterEach(() => window.history.replaceState({}, '', '/'));
@@ -129,5 +130,28 @@ describe('erreurs', () => {
     uninstall();
     window.dispatchEvent(new ErrorEvent('error', { message: 'apres' }));
     expect(report).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('montants abreges', () => {
+  // Espaces insecables: on les normalise pour comparer.
+  const f = (n: number) => formatCompact(n).replace(/[\u00a0\u202f]/g, ' ');
+
+  it('reste exact sous le million', () => {
+    expect(f(0)).toBe('0');
+    expect(f(999_999)).toBe('999 999');
+  });
+
+  it('abrege en millions et milliards, trois chiffres significatifs', () => {
+    expect(f(1_000_000)).toBe('1 M');
+    expect(f(1_234_567)).toBe('1,23 M');
+    expect(f(45_678_901)).toBe('45,6 M');
+    expect(f(987_654_321)).toBe('987 M');
+    expect(f(1_234_567_890)).toBe('1,23 Md');
+  });
+
+  it('ne gonfle jamais un montant en arrondissant', () => {
+    expect(f(999_999_999)).toBe('999 M');
+    expect(f(9_999_999)).toBe('9,99 M');
   });
 });

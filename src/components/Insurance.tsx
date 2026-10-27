@@ -7,7 +7,7 @@ import {
 } from '../state/catalog';
 import { playSound } from '../audio/sfx';
 import { tryBuy } from '../state/economy';
-import { formatNumber } from '../utils/format';
+import { formatCompact, formatNumber } from '../utils/format';
 import { Chip } from './ui';
 
 /**
@@ -47,7 +47,7 @@ export function InsuranceToggle({
         <Shield size={18} />
         <span className="insure__text">
           <strong>Assurer la manche</strong>
-          <small>Récupère {formatNumber(refund)} si tu perds</small>
+          <small>Récupère {formatCompact(refund)} si tu perds</small>
         </span>
         <span className="insure__price">
           <Chip size={14} /> {formatNumber(price)}
